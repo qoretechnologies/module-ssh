@@ -1501,12 +1501,15 @@ class SshServerTest inherits QUnit::Test {
 
         Qore::Ssh::SshSession session = server.acceptSession(5000);
         hash<SshAuthDecision> decision = server.authenticateSession(session, 5000);
+        hash<SshCommandResult> result = server.dispatchCommandSession(session, 5000);
         hash<SshAuthContextInfo> auth_info = session.getAuthContextInfo();
         done.waitForZero(10s);
         session.disconnect();
         server.stop();
 
         assertTrue(decision.accepted);
+        assertTrue(result.accepted);
+        assertEq(0, result.exit_status);
         assertEq("publickey:nobody", decision.principal);
         assertEq("publickey", auth_info.auth_method);
         assertEq("nobody", auth_info.username);
@@ -1584,6 +1587,7 @@ class SshServerTest inherits QUnit::Test {
 
         Qore::Ssh::SshSession session = server.acceptSession(5000);
         hash<SshAuthDecision> decision = server.authenticateSession(session, 5000);
+        hash<SshCommandResult> result = server.dispatchCommandSession(session, 5000);
         hash<SshSessionInfo> info = session.getInfo();
         hash<SshAuthContextInfo> auth_info = session.getAuthContextInfo();
         done.waitForZero(10s);
@@ -1591,6 +1595,8 @@ class SshServerTest inherits QUnit::Test {
         server.stop();
 
         assertTrue(decision.accepted);
+        assertTrue(result.accepted);
+        assertEq(0, result.exit_status);
         assertEq("principal:nobody", decision.principal);
         assertTrue(info.authenticated);
         assertEq("nobody", info.username);
@@ -1625,6 +1631,7 @@ class SshServerTest inherits QUnit::Test {
 
         Qore::Ssh::SshSession session = server.acceptSession(5000);
         hash<SshAuthDecision> decision = server.authenticateSession(session, 5000);
+        hash<SshCommandResult> result = server.dispatchCommandSession(session, 5000);
         hash<SshSessionInfo> info = session.getInfo();
         hash<SshAuthContextInfo> auth_info = session.getAuthContextInfo();
         done.waitForZero(10s);
@@ -1632,6 +1639,8 @@ class SshServerTest inherits QUnit::Test {
         server.stop();
 
         assertTrue(decision.accepted);
+        assertTrue(result.accepted);
+        assertEq(0, result.exit_status);
         assertEq("provider:nobody", decision.principal);
         assertTrue(info.authenticated);
         assertEq("provider:nobody", info.principal);
@@ -1666,12 +1675,15 @@ class SshServerTest inherits QUnit::Test {
 
         Qore::Ssh::SshSession session = server.acceptSession(5000);
         hash<SshAuthDecision> decision = server.authenticateSession(session, 5000);
+        hash<SshCommandResult> result = server.dispatchCommandSession(session, 5000);
         hash<SshAuthContextInfo> auth_info = session.getAuthContextInfo();
         done.waitForZero(10s);
         session.disconnect();
         server.stop();
 
         assertTrue(decision.accepted);
+        assertTrue(result.accepted);
+        assertEq(0, result.exit_status);
         assertEq("provider-publickey:nobody", decision.principal);
         assertEq("publickey", auth_info.auth_method);
         assertEq("ssh-ed25519", auth_info.public_key_type);
