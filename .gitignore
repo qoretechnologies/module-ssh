@@ -1,0 +1,7 @@
+build/
+build-debug/
+vgcore*
+*.swp
+*.swo
+*~
+src/*.dox.h

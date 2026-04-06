@@ -1,0 +1,459 @@
+#!/usr/bin/env qore
+# -*- mode: qore; indent-tabs-mode: nil -*-
+
+/*  SshServerConnections.qtest Copyright 2026 Qore Technologies, s.r.o.
+
+    Permission is hereby granted, free of charge, to any person obtaining a
+    copy of this software and associated documentation files (the "Software"),
+    to deal in the Software without restriction, including without limitation
+    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+    and/or sell copies of the Software, and to permit persons to whom the
+    Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+*/
+
+%modern
+%requires QUnit
+%requires ../qlib/SshServerConnections
+%requires ../qlib/SshServerAuthProvider
+%requires ../qlib/SftpServerDataProvider
+%requires ../qlib/SshServerCommandProvider
+
+%exec-class SshServerConnectionsTest
+
+class EventObserver inherits DataProvider::Observer {
+    public {
+        list<hash<auto>> events = ();
+    }
+
+    update(string event_id, hash<auto> data_) {
+        events += ((data_ + ("event_id": event_id)),);
+    }
+}
+
+class SshServerConnectionsTest inherits QUnit::Test {
+    constructor() : Test("SshServerConnectionsTest", "0.1", \ARGV) {
+        addTestCase("registered schemes expose the expected classes", \testRegisteredSchemes());
+        addTestCase("SFTP server connection projects typed server config", \testSftpConnectionConfig());
+        addTestCase("SSH server connection projects typed server config", \testSshConnectionConfig());
+        addTestCase("connection grouped limits project deterministically", \testConnectionLimits());
+        addTestCase("connection grouped services project deterministically", \testConnectionServices());
+        addTestCase("connection grouped auth projects a typed auth provider", \testConnectionAuthProvider());
+        addTestCase("SSH server connection synthesizes a virtual command callback", \testSshCommandBackend());
+        addTestCase("SFTP server connection exposes the generic data provider bridge", \testSftpConnectionProvider());
+        addTestCase("SFTP server connection exposes inbound submission events", \testSftpConnectionEvents());
+        addTestCase("host_keys option is required", \testHostKeysRequired());
+        addTestCase("connection get starts and stops the server", \testServerStartStop());
+        set_return_value(main());
+    }
+
+    private string getHostKeyPath() {
+        return get_script_dir() + "data/ssh_host_ed25519_key";
+    }
+
+    testRegisteredSchemes() {
+        hash<ConnectionProvider::ConnectionSchemeInfo> ssh_info
+            = ConnectionProvider::ConnectionSchemeCache::getSchemeEx("sshsrv");
+        hash<ConnectionProvider::ConnectionSchemeInfo> sftp_info
+            = ConnectionProvider::ConnectionSchemeCache::getSchemeEx("sftpsrv");
+
+        assertEq("SshCommandServerConnection", ssh_info.cls.getName());
+        assertEq("SftpServerConnection", sftp_info.cls.getName());
+        assertEq("host_keys", ssh_info.required_options);
+        assertEq("host_keys", sftp_info.required_options);
+    }
+
+    testSftpConnectionConfig() {
+        SshServerConnections::SftpServerConnection conn({
+            "name": "sftp-conn",
+            "url": "sftpsrv://127.0.0.1:0",
+            "opts": {
+                "host_keys": (getHostKeyPath(),),
+                "listener_name": "sftp-listener",
+                "services": <SshServerConnections::SshServerConnectionServices>{
+                    "enabled_auth_methods": ("none", "password"),
+                },
+                "sftp_config": {"root_dir": "/virtual", "read_only": True},
+            },
+        });
+
+        hash<Qore::Ssh::SshServerConfig> server_config = conn.getServerConfig();
+        hash<Qore::Ssh::SshListenerConfig> listener = server_config.listeners[0];
+
+        assertEq("sftp-conn", server_config.name);
+        assertEq("sftp-listener", listener.name);
+        assertEq("127.0.0.1", listener.bind_address);
+        assertEq(0, listener.port);
+        assertEq((getHostKeyPath(),), listener.host_keys);
+        assertEq(("none", "password"), listener.enabled_auth_methods);
+        assertEq(False, listener.allow_command_service);
+        assertEq(True, listener.allow_sftp_service);
+        assertEq("/virtual", server_config.sftp_config.root_dir);
+        assertEq(True, server_config.sftp_config.read_only);
+    }
+
+    testSshConnectionConfig() {
+        SshServerConnections::SshCommandServerConnection conn({
+            "name": "ssh-conn",
+            "url": "sshsrv://0.0.0.0:2222",
+            "opts": {
+                "host_keys": (getHostKeyPath(),),
+                "banner": "Test banner",
+                "command_config": {"mode": "exec"},
+            },
+        });
+
+        hash<Qore::Ssh::SshServerConfig> server_config = conn.getServerConfig();
+        hash<Qore::Ssh::SshListenerConfig> listener = server_config.listeners[0];
+
+        assertEq("ssh-conn", server_config.name);
+        assertEq("ssh-conn", listener.name);
+        assertEq("0.0.0.0", listener.bind_address);
+        assertEq(2222, listener.port);
+        assertEq("Test banner", listener.banner);
+        assertEq(True, listener.allow_command_service);
+        assertEq(False, listener.allow_sftp_service);
+        assertEq("exec", server_config.command_config.mode);
+    }
+
+    testConnectionLimits() {
+        SshServerConnections::SshCommandServerConnection conn({
+            "name": "ssh-limits",
+            "url": "sshsrv://127.0.0.1:0",
+            "opts": {
+                "host_keys": (getHostKeyPath(),),
+                "limits": <SshServerConnections::SshServerConnectionLimits>{
+                    "max_sessions": 3,
+                },
+            },
+        });
+
+        hash<Qore::Ssh::SshListenerConfig> listener = conn.getListenerConfig();
+        assertEq(3, listener.max_sessions);
+
+        assertThrows("CONNECTION-OPTION-ERROR", sub() {
+            new SshServerConnections::SshCommandServerConnection({
+                "name": "ssh-limits-invalid",
+                "url": "sshsrv://127.0.0.1:0",
+                "opts": {
+                    "host_keys": (getHostKeyPath(),),
+                    "limits": <SshServerConnections::SshServerConnectionLimits>{
+                        "max_sessions": -1,
+                    },
+                },
+            });
+        });
+    }
+
+    testConnectionServices() {
+        SshServerConnections::SftpServerConnection conn({
+            "name": "sftp-services",
+            "url": "sftpsrv://127.0.0.1:0",
+            "opts": {
+                "host_keys": (getHostKeyPath(),),
+                "services": <SshServerConnections::SshServerConnectionServices>{
+                    "enabled_auth_methods": ("none", "password"),
+                    "allow_command_service": True,
+                    "allow_sftp_service": False,
+                },
+            },
+        });
+
+        hash<Qore::Ssh::SshListenerConfig> listener = conn.getListenerConfig();
+        assertEq(("none", "password"), listener.enabled_auth_methods);
+        assertEq(True, listener.allow_command_service);
+        assertEq(False, listener.allow_sftp_service);
+
+        assertThrows("CONNECTION-OPTION-ERROR", sub() {
+            new SshServerConnections::SshCommandServerConnection({
+                "name": "ssh-services-invalid",
+                "url": "sshsrv://127.0.0.1:0",
+                "opts": {
+                    "host_keys": (getHostKeyPath(),),
+                    "services": <SshServerConnections::SshServerConnectionServices>{
+                        "enabled_auth_methods": ("password", "kerberos"),
+                    },
+                },
+            });
+        });
+    }
+
+    testConnectionAuthProvider() {
+        SshServerConnections::SshCommandServerConnection conn({
+            "name": "ssh-auth-provider",
+            "url": "sshsrv://127.0.0.1:0",
+            "opts": {
+                "host_keys": (getHostKeyPath(),),
+                "auth": <SshServerAuthProvider::VirtualSshAuthProviderOptions>{
+                    "methods": ("password", "publickey", "interactive", "hostbased", "gssapi-mic"),
+                    "password": <SshServerAuthProvider::VirtualSshPasswordAuthOptions>{
+                        "users": (
+                            <SshServerAuthProvider::VirtualSshPasswordUserInfo>{
+                                "username": "alice",
+                                "password": "secret",
+                                "decision": <SshServerAuthProvider::VirtualSshAuthDecisionTemplate>{
+                                    "principal": "principal:alice",
+                                },
+                            },
+                        ),
+                    },
+                },
+            },
+        });
+
+        hash<Qore::Ssh::SshServerConfig> server_config = conn.getServerConfig();
+        hash<Qore::Ssh::SshListenerConfig> listener = server_config.listeners[0];
+        assertEq(("password", "publickey", "interactive", "hostbased", "gssapi-mic"),
+            listener.enabled_auth_methods);
+        @assert(server_config.auth_provider);
+        assertEq(NOTHING, server_config.auth_callback);
+
+        hash<Qore::Ssh::SshAuthDecision> decision = server_config.auth_provider.authenticate(
+            <Qore::Ssh::SshAuthContextInfo>{
+                "session_id": "session-1",
+                "server_name": "ssh-auth-provider",
+                "listener_name": "ssh-auth-provider",
+                "remote_address": "127.0.0.1",
+                "remote_port": 2222,
+                "username": "alice",
+                "auth_method": "password",
+                "password": "secret",
+            });
+        assertEq(True, decision.accepted);
+        assertEq("principal:alice", decision.principal);
+
+        assertThrows("CONNECTION-OPTION-ERROR", sub() {
+            new SshServerConnections::SshCommandServerConnection({
+                "name": "ssh-auth-invalid",
+                "url": "sshsrv://127.0.0.1:0",
+                "opts": {
+                    "host_keys": (getHostKeyPath(),),
+                    "auth": <SshServerAuthProvider::VirtualSshAuthProviderOptions>{
+                        "methods": ("kerberos",),
+                    },
+                },
+            });
+        });
+    }
+
+    testSshCommandBackend() {
+        SshServerCommandProvider::VirtualSshCommandService service();
+        service.addTextCommand("status", "ok\n", "warn\n", 23, True, {"mode": "virtual"}, "handled");
+
+        SshServerConnections::SshCommandServerConnection conn({
+            "name": "ssh-virtual-command",
+            "url": "sshserver://127.0.0.1:0",
+            "opts": {
+                "host_keys": (getHostKeyPath(),),
+                "command_backend": service,
+            },
+        });
+
+        hash<Qore::Ssh::SshServerConfig> server_config = conn.getServerConfig();
+        @assert(server_config.command_callback);
+        hash<Qore::Ssh::SshCommandResult> result = server_config.command_callback(<Qore::Ssh::SshCommandRequest>{
+            "session_id": "session-1",
+            "server_name": "ssh-virtual-command",
+            "listener_name": "ssh-virtual-command",
+            "command": "status",
+        });
+
+        assertEq(True, result.accepted);
+        assertEq(23, result.exit_status);
+        assertEq(binary("ok\n"), result.stdout);
+        assertEq(binary("warn\n"), result.stderr);
+        assertEq("virtual", result.result_data.mode);
+        assertEq(1, service.getRequests().size());
+        assertEq("status", service.getRequests()[0].command);
+    }
+
+    testSftpConnectionProvider() {
+        SftpServerDataProvider::VirtualSftpExchangeRecordStore store(
+            <SftpServerDataProvider::VirtualSftpExchangeOptions>{
+                "archive_dir": "/archive",
+                "claim_dir": "/claim",
+                "inbound_retention_policy": <SftpServerDataProvider::VirtualSftpRetentionPolicy>{
+                    "max_age_seconds": 10,
+                },
+            }
+        );
+        store.addOutboundTextRecord("hello.txt", "hello\n", {"kind": "greeting"});
+
+        SshServerConnections::SftpServerConnection conn({
+            "name": "sftp-provider-conn",
+            "url": "sftpserver://127.0.0.1:0",
+            "opts": {
+                "host_keys": (getHostKeyPath(),),
+                "backend": store,
+            },
+        });
+
+        assertEq(True, conn.hasDataProvider());
+        assertEq("SftpServerExchange", conn.getAppName());
+
+        hash<string, hash<DataProviderOptionInfo>> ctor_options = conn.getDataProviderConstructorOptions();
+        @assert(ctor_options.backend);
+
+        hash<string, *hash<string, hash<DataProviderOptionInfo>>> subtypes = conn.getDataProviderSubtypes();
+        assertEq(("exchange",), keys subtypes);
+        @assert(subtypes.exchange.backend);
+
+        AbstractDataProvider provider = conn.getDataProvider();
+        hash<auto> list_result = provider.getChildProviderEx("list-outbound").doRequest({});
+        assertEq(1, list_result.records.size());
+        assertEq("hello.txt", list_result.records[0].name);
+        provider.getChildProviderEx("submit-inbound").doRequest({
+            "name": "tenant/bridge-old.dat",
+            "data": binary("cleanup\n"),
+        });
+        hash<auto> retained_stat = store.getExchange().stat({"path": "/inbound/tenant/bridge-old.dat"});
+        hash<auto> cleanup_result = provider.getChildProviderEx("cleanup-expired").doRequest({
+            "queue": SftpServerDataProvider::RetentionQueueInbound,
+            "now_s": retained_stat.metadata.expires_at,
+            "remove_empty_directories": True,
+        });
+        assertEq(1, cleanup_result.removed_count);
+        assertEq(("/inbound/tenant/bridge-old.dat",), cleanup_result.removed_paths);
+
+        store.getExchange().submit({
+            "path": "/inbound/tenant/bridge-alpha.dat",
+            "data": binary("alpha\n"),
+            "session_info": <Qore::Ssh::SftpSessionInfo>{
+                "session_info": <Qore::Ssh::SshSessionInfo>{
+                    "session_id": "bridge-alpha",
+                    "server_name": "sftp-provider-conn",
+                    "listener_name": "sftp-provider-conn",
+                    "remote_address": "127.0.0.1",
+                    "remote_port": 22,
+                    "local_address": "127.0.0.1",
+                    "local_port": 22,
+                    "username": "alpha",
+                    "authenticated": True,
+                    "auth_method": "none",
+                    "principal": "principal:alpha",
+                    "started": now(),
+                    "last_activity": now(),
+                },
+                "principal": "principal:alpha",
+                "read_only": False,
+            },
+        });
+        store.getExchange().submit({
+            "path": "/inbound/tenant/bridge-beta.dat",
+            "data": binary("beta\n"),
+            "session_info": <Qore::Ssh::SftpSessionInfo>{
+                "session_info": <Qore::Ssh::SshSessionInfo>{
+                    "session_id": "bridge-beta",
+                    "server_name": "sftp-provider-conn",
+                    "listener_name": "sftp-provider-conn",
+                    "remote_address": "127.0.0.1",
+                    "remote_port": 22,
+                    "local_address": "127.0.0.1",
+                    "local_port": 22,
+                    "username": "beta",
+                    "authenticated": True,
+                    "auth_method": "none",
+                    "principal": "principal:beta",
+                    "started": now(),
+                    "last_activity": now(),
+                },
+                "principal": "principal:beta",
+                "read_only": False,
+            },
+        });
+        hash<auto> alpha_stat = store.getExchange().stat({"path": "/inbound/tenant/bridge-alpha.dat"});
+        hash<auto> alpha_cleanup = provider.getChildProviderEx("cleanup-expired").doRequest({
+            "queue": SftpServerDataProvider::RetentionQueueInbound,
+            "now_s": alpha_stat.metadata.expires_at,
+            "principal": "principal:alpha",
+        });
+        assertEq("principal:alpha", alpha_cleanup.principal);
+        assertEq(1, alpha_cleanup.removed_count);
+        assertEq(("/inbound/tenant/bridge-alpha.dat",), alpha_cleanup.removed_paths);
+        assertTrue(store.getExchange().getFilesystem().exists("/inbound/tenant/bridge-beta.dat"));
+
+        hash<Qore::Ssh::SshServerConfig> server_config = conn.getServerConfig();
+        @assert(server_config.sftp_factory_callback);
+        hash<auto> factory_result = server_config.sftp_factory_callback(<Qore::Ssh::SftpSessionInfo>{});
+        assertEq(store, factory_result.backend);
+    }
+
+    testSftpConnectionEvents() {
+        SftpServerDataProvider::VirtualSftpExchangeRecordStore store(
+            <SftpServerDataProvider::VirtualSftpExchangeOptions>{}
+        );
+
+        SshServerConnections::SftpServerConnection conn({
+            "name": "sftp-provider-events",
+            "url": "sftpserver://127.0.0.1:0",
+            "opts": {
+                "host_keys": (getHostKeyPath(),),
+                "backend": store,
+            },
+        });
+
+        AbstractDataProvider provider = conn.getDataProvider();
+        AbstractDataProvider event_provider = provider.getChildProviderEx(SftpServerDataProvider::EventInboundFileAccepted);
+        EventObserver observer();
+        cast<DataProvider::Observable>(event_provider).registerObserver(
+            observer, SftpServerDataProvider::EventInboundFileAccepted);
+        cast<DataProvider::DelayedObservable>(event_provider).observersReady();
+
+        hash<auto> submit_result = provider.getChildProviderEx("submit-inbound").doRequest({
+            "name": "bridge-upload.txt",
+            "data": binary("bridge payload\n"),
+            "metadata": {"mode": "bridge"},
+        });
+
+        assertEq("bridge-upload.txt", submit_result.name);
+        assertEq(1, observer.events.size());
+        assertEq(SftpServerDataProvider::EventInboundFileAccepted, observer.events[0].event_id);
+        assertEq("/inbound/bridge-upload.txt", observer.events[0].path);
+        assertEq(NOTHING, observer.events[0].data);
+        assertEq("bridge", observer.events[0].metadata.mode);
+    }
+
+    testHostKeysRequired() {
+        assertThrows("CONNECTION-OPTION-ERROR", sub () {
+            new SshServerConnections::SftpServerConnection({
+                "name": "missing-host-keys",
+                "url": "sftpsrv://127.0.0.1:0",
+                "opts": {},
+            });
+        });
+    }
+
+    testServerStartStop() {
+        SshServerConnections::SftpServerConnection conn({
+            "name": "running-sftp-conn",
+            "url": "sftpsrv://127.0.0.1:0",
+            "opts": {
+                "host_keys": (getHostKeyPath(),),
+            },
+        });
+
+        Qore::Ssh::SshServer server = cast<Qore::Ssh::SshServer>(conn.get());
+        on_exit server.stop();
+
+        hash<Qore::Ssh::SshServerStatus> running_status = server.getStatus();
+        assertEq(True, running_status.running);
+        assertEq(1, running_status.listener_count);
+        assertEq(True, running_status.listeners[0].running);
+        assertTrue(running_status.listeners[0].bound_port > 0);
+
+        server.stop();
+        hash<Qore::Ssh::SshServerStatus> stopped_status = server.getStatus();
+        assertEq(False, stopped_status.running);
+        assertEq(False, stopped_status.listeners[0].running);
+    }
+}

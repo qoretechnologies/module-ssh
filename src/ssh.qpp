@@ -1,0 +1,146 @@
+/* -*- mode: c++; indent-tabs-mode: nil -*- */
+/*
+    ssh.qpp
+
+    Qore Programming Language
+
+    Copyright (C) 2026 Qore Technologies, s.r.o.
+
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; either
+    version 2.1 of the License, or (at your option) any later version.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+*/
+
+#include "ssh-module.h"
+
+static QoreNamespace SshNS("Qore::Ssh");
+
+DLLLOCAL const TypedHashDecl* hashdeclSshListenerConfig;
+DLLLOCAL const TypedHashDecl* hashdeclSshServerConfig;
+DLLLOCAL const TypedHashDecl* hashdeclSshListenerStatus;
+DLLLOCAL const TypedHashDecl* hashdeclSshServerStatus;
+DLLLOCAL const TypedHashDecl* hashdeclSshSessionInfo;
+DLLLOCAL const TypedHashDecl* hashdeclSshAuthContextInfo;
+DLLLOCAL const TypedHashDecl* hashdeclSshAuthDecision;
+DLLLOCAL const TypedHashDecl* hashdeclSshCommandRequest;
+DLLLOCAL const TypedHashDecl* hashdeclSshCommandResult;
+DLLLOCAL const TypedHashDecl* hashdeclSftpSessionInfo;
+DLLLOCAL const TypedHashDecl* hashdeclSftpProtocolMessage;
+DLLLOCAL const TypedHashDecl* hashdeclSftpTransferRequest;
+DLLLOCAL const TypedHashDecl* hashdeclSftpTransferInfo;
+DLLLOCAL const TypedHashDecl* hashdeclSftpTransferDecision;
+DLLLOCAL const TypedHashDecl* hashdeclSftpPathRequest;
+DLLLOCAL const TypedHashDecl* hashdeclSftpPathInfo;
+DLLLOCAL const TypedHashDecl* hashdeclSftpListResult;
+DLLLOCAL const TypedHashDecl* hashdeclSftpOpenRequest;
+DLLLOCAL const TypedHashDecl* hashdeclSftpOpenResult;
+DLLLOCAL const TypedHashDecl* hashdeclSftpOperationResult;
+DLLLOCAL const TypedHashDecl* hashdeclSftpRenameRequest;
+DLLLOCAL const TypedHashDecl* hashdeclSftpSubmissionRequest;
+DLLLOCAL const TypedHashDecl* hashdeclSftpOperationRequest;
+DLLLOCAL const TypedHashDecl* hashdeclSftpReadRequest;
+DLLLOCAL const TypedHashDecl* hashdeclSftpReadResult;
+DLLLOCAL const TypedHashDecl* hashdeclSftpWriteRequest;
+DLLLOCAL const TypedHashDecl* hashdeclSftpCloseRequest;
+
+DLLLOCAL QoreClass* initSshServerClass(QoreNamespace& ns);
+DLLLOCAL QoreClass* initSshSessionClass(QoreNamespace& ns);
+DLLLOCAL QoreClass* initSshAuthContextClass(QoreNamespace& ns);
+DLLLOCAL QoreClass* initSshCommandSessionClass(QoreNamespace& ns);
+DLLLOCAL QoreClass* initSftpSessionClass(QoreNamespace& ns);
+
+DLLLOCAL TypedHashDecl* init_hashdecl_SshListenerConfig(QoreNamespace& ns);
+DLLLOCAL TypedHashDecl* init_hashdecl_SshServerConfig(QoreNamespace& ns);
+DLLLOCAL TypedHashDecl* init_hashdecl_SshListenerStatus(QoreNamespace& ns);
+DLLLOCAL TypedHashDecl* init_hashdecl_SshServerStatus(QoreNamespace& ns);
+DLLLOCAL TypedHashDecl* init_hashdecl_SshSessionInfo(QoreNamespace& ns);
+DLLLOCAL TypedHashDecl* init_hashdecl_SshAuthContextInfo(QoreNamespace& ns);
+DLLLOCAL TypedHashDecl* init_hashdecl_SshAuthDecision(QoreNamespace& ns);
+DLLLOCAL TypedHashDecl* init_hashdecl_SshCommandRequest(QoreNamespace& ns);
+DLLLOCAL TypedHashDecl* init_hashdecl_SshCommandResult(QoreNamespace& ns);
+DLLLOCAL TypedHashDecl* init_hashdecl_SftpSessionInfo(QoreNamespace& ns);
+DLLLOCAL TypedHashDecl* init_hashdecl_SftpProtocolMessage(QoreNamespace& ns);
+DLLLOCAL TypedHashDecl* init_hashdecl_SftpTransferRequest(QoreNamespace& ns);
+DLLLOCAL TypedHashDecl* init_hashdecl_SftpTransferInfo(QoreNamespace& ns);
+DLLLOCAL TypedHashDecl* init_hashdecl_SftpTransferDecision(QoreNamespace& ns);
+DLLLOCAL TypedHashDecl* init_hashdecl_SftpPathRequest(QoreNamespace& ns);
+DLLLOCAL TypedHashDecl* init_hashdecl_SftpPathInfo(QoreNamespace& ns);
+DLLLOCAL TypedHashDecl* init_hashdecl_SftpListResult(QoreNamespace& ns);
+DLLLOCAL TypedHashDecl* init_hashdecl_SftpOpenRequest(QoreNamespace& ns);
+DLLLOCAL TypedHashDecl* init_hashdecl_SftpOpenResult(QoreNamespace& ns);
+DLLLOCAL TypedHashDecl* init_hashdecl_SftpOperationResult(QoreNamespace& ns);
+DLLLOCAL TypedHashDecl* init_hashdecl_SftpRenameRequest(QoreNamespace& ns);
+DLLLOCAL TypedHashDecl* init_hashdecl_SftpSubmissionRequest(QoreNamespace& ns);
+DLLLOCAL TypedHashDecl* init_hashdecl_SftpOperationRequest(QoreNamespace& ns);
+DLLLOCAL TypedHashDecl* init_hashdecl_SftpReadRequest(QoreNamespace& ns);
+DLLLOCAL TypedHashDecl* init_hashdecl_SftpReadResult(QoreNamespace& ns);
+DLLLOCAL TypedHashDecl* init_hashdecl_SftpWriteRequest(QoreNamespace& ns);
+DLLLOCAL TypedHashDecl* init_hashdecl_SftpCloseRequest(QoreNamespace& ns);
+
+static void ssh_module_init(QoreModuleInitContext& ctx, ExceptionSink& xsink) {
+    hashdeclSshListenerConfig = init_hashdecl_SshListenerConfig(SshNS);
+    hashdeclSshServerConfig = init_hashdecl_SshServerConfig(SshNS);
+    hashdeclSshListenerStatus = init_hashdecl_SshListenerStatus(SshNS);
+    hashdeclSshServerStatus = init_hashdecl_SshServerStatus(SshNS);
+    hashdeclSshSessionInfo = init_hashdecl_SshSessionInfo(SshNS);
+    hashdeclSshAuthContextInfo = init_hashdecl_SshAuthContextInfo(SshNS);
+    hashdeclSshAuthDecision = init_hashdecl_SshAuthDecision(SshNS);
+    hashdeclSshCommandRequest = init_hashdecl_SshCommandRequest(SshNS);
+    hashdeclSshCommandResult = init_hashdecl_SshCommandResult(SshNS);
+    hashdeclSftpSessionInfo = init_hashdecl_SftpSessionInfo(SshNS);
+    hashdeclSftpProtocolMessage = init_hashdecl_SftpProtocolMessage(SshNS);
+    hashdeclSftpTransferRequest = init_hashdecl_SftpTransferRequest(SshNS);
+    hashdeclSftpTransferInfo = init_hashdecl_SftpTransferInfo(SshNS);
+    hashdeclSftpTransferDecision = init_hashdecl_SftpTransferDecision(SshNS);
+    hashdeclSftpPathRequest = init_hashdecl_SftpPathRequest(SshNS);
+    hashdeclSftpPathInfo = init_hashdecl_SftpPathInfo(SshNS);
+    hashdeclSftpListResult = init_hashdecl_SftpListResult(SshNS);
+    hashdeclSftpOpenRequest = init_hashdecl_SftpOpenRequest(SshNS);
+    hashdeclSftpOpenResult = init_hashdecl_SftpOpenResult(SshNS);
+    hashdeclSftpOperationResult = init_hashdecl_SftpOperationResult(SshNS);
+    hashdeclSftpRenameRequest = init_hashdecl_SftpRenameRequest(SshNS);
+    hashdeclSftpSubmissionRequest = init_hashdecl_SftpSubmissionRequest(SshNS);
+    hashdeclSftpOperationRequest = init_hashdecl_SftpOperationRequest(SshNS);
+    hashdeclSftpReadRequest = init_hashdecl_SftpReadRequest(SshNS);
+    hashdeclSftpReadResult = init_hashdecl_SftpReadResult(SshNS);
+    hashdeclSftpWriteRequest = init_hashdecl_SftpWriteRequest(SshNS);
+    hashdeclSftpCloseRequest = init_hashdecl_SftpCloseRequest(SshNS);
+
+    SshNS.addSystemClass(initSshAuthContextClass(SshNS));
+    SshNS.addSystemClass(initSshCommandSessionClass(SshNS));
+    SshNS.addSystemClass(initSftpSessionClass(SshNS));
+    SshNS.addSystemClass(initSshSessionClass(SshNS));
+    SshNS.addSystemClass(initSshServerClass(SshNS));
+}
+
+static void ssh_module_ns_init(QoreNamespace* rns, QoreNamespace* qns, ExceptionSink& xsink) {
+    qns->addNamespace(SshNS.copy());
+}
+
+static void ssh_module_delete() {
+}
+
+extern "C" DLLEXPORT void ssh_qore_module_desc(QoreModuleInfo& mod_info) {
+    mod_info.name = "ssh";
+    mod_info.version = PACKAGE_VERSION;
+    mod_info.desc = "SSH server module";
+    mod_info.author = "Qore Technologies, s.r.o.";
+    mod_info.url = "http://qore.org";
+    mod_info.api_major = QORE_MODULE_API_MAJOR;
+    mod_info.api_minor = QORE_MODULE_API_MINOR;
+    mod_info.init = ssh_module_init;
+    mod_info.ns_init = ssh_module_ns_init;
+    mod_info.del = ssh_module_delete;
+    mod_info.license = QL_LGPL;
+    mod_info.license_str = "LGPL 2.1";
+}

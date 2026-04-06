@@ -1,0 +1,1571 @@
+/* -*- mode: c++; indent-tabs-mode: nil -*- */
+/*
+    QC_SshSession.qpp
+
+    Qore Programming Language
+
+    Copyright (C) 2026 Qore Technologies, s.r.o.
+
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; either
+    version 2.1 of the License, or (at your option) any later version.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+*/
+
+#include "ssh-module.h"
+
+#include <chrono>
+#include <condition_variable>
+#include <cstring>
+#include <ctime>
+#include <libssh/server.h>
+#include <mutex>
+#include <sstream>
+#include <sys/socket.h>
+#include <sys/select.h>
+#include <vector>
+
+static const char* ssh_auth_method_name(int subtype) {
+    switch (subtype) {
+        case SSH_AUTH_METHOD_NONE:
+            return "none";
+        case SSH_AUTH_METHOD_PASSWORD:
+            return "password";
+        case SSH_AUTH_METHOD_PUBLICKEY:
+            return "publickey";
+        case SSH_AUTH_METHOD_INTERACTIVE:
+            return "interactive";
+        case SSH_AUTH_METHOD_HOSTBASED:
+            return "hostbased";
+        case SSH_AUTH_METHOD_GSSAPI_MIC:
+            return "gssapi-mic";
+        default:
+            return "unknown";
+    }
+}
+
+static int ssh_auth_methods_from_list(const QoreListNode* methods, ExceptionSink* xsink) {
+    if (!methods) {
+        return SSH_AUTH_METHOD_NONE | SSH_AUTH_METHOD_PASSWORD | SSH_AUTH_METHOD_PUBLICKEY
+            | SSH_AUTH_METHOD_INTERACTIVE;
+    }
+
+    int rv = 0;
+    for (size_t i = 0, e = methods->size(); i < e; ++i) {
+        const QoreStringNode* method = methods->retrieveEntry(i).get<QoreStringNode>();
+        if (!method || !method->strlen()) {
+            xsink->raiseException("SSHAUTHCONTEXT-ARG-ERROR",
+                "allowed auth method entry %zu must be a non-empty string", i);
+            return 0;
+        }
+
+        std::string m = method->c_str();
+        if (m == "none") {
+            rv |= SSH_AUTH_METHOD_NONE;
+        } else if (m == "password") {
+            rv |= SSH_AUTH_METHOD_PASSWORD;
+        } else if (m == "publickey") {
+            rv |= SSH_AUTH_METHOD_PUBLICKEY;
+        } else if (m == "interactive") {
+            rv |= SSH_AUTH_METHOD_INTERACTIVE;
+        } else if (m == "hostbased") {
+            rv |= SSH_AUTH_METHOD_HOSTBASED;
+        } else if (m == "gssapi-mic") {
+            rv |= SSH_AUTH_METHOD_GSSAPI_MIC;
+        } else {
+            xsink->raiseException("SSHAUTHCONTEXT-ARG-ERROR",
+                "unsupported auth method \"%s\"", m.c_str());
+            return 0;
+        }
+    }
+
+    return rv;
+}
+
+static int ssh_auth_method_mask_for_subtype(int subtype) {
+    switch (subtype) {
+        case SSH_AUTH_METHOD_NONE:
+            return SSH_AUTH_METHOD_NONE;
+        case SSH_AUTH_METHOD_PASSWORD:
+            return SSH_AUTH_METHOD_PASSWORD;
+        case SSH_AUTH_METHOD_PUBLICKEY:
+            return SSH_AUTH_METHOD_PUBLICKEY;
+        case SSH_AUTH_METHOD_INTERACTIVE:
+            return SSH_AUTH_METHOD_INTERACTIVE;
+        case SSH_AUTH_METHOD_HOSTBASED:
+            return SSH_AUTH_METHOD_HOSTBASED;
+        case SSH_AUTH_METHOD_GSSAPI_MIC:
+            return SSH_AUTH_METHOD_GSSAPI_MIC;
+        default:
+            return 0;
+    }
+}
+
+static const char* ssh_publickey_state_name(enum ssh_publickey_state_e state) {
+    switch (state) {
+        case SSH_PUBLICKEY_STATE_NONE:
+            return "none";
+        case SSH_PUBLICKEY_STATE_VALID:
+            return "valid";
+        case SSH_PUBLICKEY_STATE_WRONG:
+            return "wrong";
+        case SSH_PUBLICKEY_STATE_ERROR:
+            return "error";
+        default:
+            return "unknown";
+    }
+}
+
+// libssh exposes auth payload details for the message-driven server API only
+// through deprecated accessors; keep the warning suppression local to this
+// extraction helper.
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+static int ssh_populate_auth_context_details(ssh_message msg, int subtype, QoreHashNode* info, ExceptionSink* xsink) {
+    switch (subtype) {
+        case SSH_AUTH_METHOD_PASSWORD: {
+            const char* password = ssh_message_auth_password(msg);
+            info->setKeyValue("password", password ? new QoreStringNode(password) : QoreValue(), xsink);
+            return *xsink ? -1 : 0;
+        }
+        case SSH_AUTH_METHOD_PUBLICKEY: {
+            ssh_key pubkey = ssh_message_auth_pubkey(msg);
+            if (!pubkey) {
+                return 0;
+            }
+
+            enum ssh_keytypes_e key_type = ssh_key_type(pubkey);
+            const char* key_type_name = ssh_key_type_to_char(key_type);
+            if (key_type_name && *key_type_name) {
+                info->setKeyValue("public_key_type", new QoreStringNode(key_type_name), xsink);
+            }
+
+            char* b64_key = nullptr;
+            if (ssh_pki_export_pubkey_base64(pubkey, &b64_key) != SSH_OK || !b64_key || !*b64_key) {
+                SSH_STRING_FREE_CHAR(b64_key);
+                xsink->raiseException("SSHSESSION-AUTH-ERROR", "could not export the public key");
+                return -1;
+            }
+            ON_BLOCK_EXIT([&b64_key]() {
+                SSH_STRING_FREE_CHAR(b64_key);
+            });
+
+            SimpleRefHolder<QoreStringNode> b64_str(new QoreStringNode(b64_key));
+            SimpleRefHolder<BinaryNode> key_bin(b64_str->parseBase64(xsink));
+            if (*xsink) {
+                return -1;
+            }
+
+            info->setKeyValue("public_key", key_bin.release(), xsink);
+            if (*xsink) {
+                return -1;
+            }
+
+            ReferenceHolder<QoreHashNode> metadata(new QoreHashNode(autoTypeInfo), xsink);
+            metadata->setKeyValue("public_key_state",
+                new QoreStringNode(ssh_publickey_state_name(ssh_message_auth_publickey_state(msg))), xsink);
+            if (*xsink) {
+                return -1;
+            }
+
+            info->setKeyValue("metadata", metadata.release(), xsink);
+            return *xsink ? -1 : 0;
+        }
+        default:
+            return 0;
+    }
+}
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
+
+static QoreHashNode* ssh_copy_decision_hash(const QoreHashNode* decision, ExceptionSink* xsink) {
+    return decision ? reinterpret_cast<QoreHashNode*>(hashdeclSshAuthDecision->doRuntimeCast(decision, xsink))
+                    : new QoreHashNode(hashdeclSshAuthDecision, xsink);
+}
+
+static void ssh_session_validate_logger(const QoreObject* logger, const char* err, ExceptionSink* xsink) {
+    if (!logger) {
+        return;
+    }
+
+    const QoreClass* cls = logger->getClass();
+    if (!cls || !cls->findMethod("info") || !cls->findMethod("warn") || !cls->findMethod("error")
+            || !cls->findMethod("debug")) {
+        xsink->raiseException(err,
+            "logger objects must implement info(), warn(), error(), and debug() methods");
+    }
+}
+
+static void ssh_session_log_message(QoreObject* logger, const char* method, const std::string& msg) {
+    if (!logger || !method) {
+        return;
+    }
+
+    ExceptionSink xsink;
+    ReferenceHolder<QoreListNode> args(new QoreListNode(autoTypeInfo), &xsink);
+    args->push(new QoreStringNode(msg.c_str()), &xsink);
+    if (xsink) {
+        return;
+    }
+
+    ValueHolder rv(logger->evalMethod(method, *args, &xsink), &xsink);
+}
+
+static bool ssh_policy_mode_enabled(const QoreHashNode* policy) {
+    if (!policy) {
+        return false;
+    }
+
+    const QoreStringNode* mode = policy->getKeyValue("mode").get<QoreStringNode>();
+    if (!mode || !mode->strlen()) {
+        return false;
+    }
+
+    std::string mode_str = mode->c_str();
+    return mode_str != "disabled";
+}
+
+static bool ssh_policy_mode_read_only(const QoreHashNode* policy) {
+    if (!policy) {
+        return false;
+    }
+
+    const QoreStringNode* mode = policy->getKeyValue("mode").get<QoreStringNode>();
+    if (mode && !strcmp(mode->c_str(), "read-only")) {
+        return true;
+    }
+
+    return policy->getKeyValue("read_only").getAsBool();
+}
+
+class SshAuthContextPriv : public AbstractPrivateData {
+public:
+    explicit SshAuthContextPriv(const QoreHashNode* info) : info(info ? info->copy() : nullptr), msg(nullptr),
+            handled(true), logger(nullptr) {
+    }
+
+    SshAuthContextPriv(QoreHashNode* info, QoreObject* logger, ssh_message msg)
+            : info(info), msg(msg), handled(msg == nullptr), logger(logger) {
+    }
+
+    ~SshAuthContextPriv() {
+        std::lock_guard<std::mutex> lock(m);
+        if (msg) {
+            ssh_message_free(msg);
+            msg = nullptr;
+        }
+        if (info) {
+            info->deref(nullptr);
+        }
+        if (logger) {
+            logger->deref(nullptr);
+        }
+    }
+
+    void setLogger(QoreObject* q_logger, ExceptionSink* xsink) {
+        ssh_session_validate_logger(q_logger, "SSHAUTHCONTEXT-LOGGER-ERROR", xsink);
+        if (*xsink) {
+            return;
+        }
+
+        QoreObject* old_logger = nullptr;
+        {
+            std::lock_guard<std::mutex> lock(m);
+            old_logger = logger;
+            logger = q_logger ? q_logger->objectRefSelf() : nullptr;
+        }
+        if (old_logger) {
+            old_logger->deref(xsink);
+        }
+    }
+
+    QoreObject* getLogger() const {
+        std::lock_guard<std::mutex> lock(m);
+        return logger ? logger->objectRefSelf() : nullptr;
+    }
+
+    QoreHashNode* getInfo(ExceptionSink* xsink) const {
+        return info ? reinterpret_cast<QoreHashNode*>(hashdeclSshAuthContextInfo->doRuntimeCast(info, xsink))
+                    : new QoreHashNode(hashdeclSshAuthContextInfo, xsink);
+    }
+
+    int accept(bool partial, ExceptionSink* xsink) {
+        {
+            std::lock_guard<std::mutex> lock(m);
+            if (!msg || handled) {
+                xsink->raiseException("SSHAUTHCONTEXT-STATE-ERROR", "authentication request has already been handled");
+                return -1;
+            }
+
+            if (ssh_message_auth_reply_success(msg, partial) != SSH_OK) {
+                xsink->raiseException("SSHAUTHCONTEXT-ERROR", "could not send auth success reply");
+                return -1;
+            }
+
+            ssh_message_free(msg);
+            msg = nullptr;
+            handled = true;
+        }
+        log("info", "SshAuthContext accepted authentication request");
+        return 0;
+    }
+
+    int reject(const QoreListNode* methods, ExceptionSink* xsink) {
+        {
+            std::lock_guard<std::mutex> lock(m);
+            if (!msg || handled) {
+                xsink->raiseException("SSHAUTHCONTEXT-STATE-ERROR", "authentication request has already been handled");
+                return -1;
+            }
+
+            int auth_methods = ssh_auth_methods_from_list(methods, xsink);
+            if (*xsink) {
+                return -1;
+            }
+            if (ssh_message_auth_set_methods(msg, auth_methods) != SSH_OK) {
+                xsink->raiseException("SSHAUTHCONTEXT-ERROR", "could not set auth methods in rejection reply");
+                return -1;
+            }
+            if (ssh_message_reply_default(msg) != SSH_OK) {
+                xsink->raiseException("SSHAUTHCONTEXT-ERROR", "could not send auth rejection reply");
+                return -1;
+            }
+
+            ssh_message_free(msg);
+            msg = nullptr;
+            handled = true;
+        }
+        log("warn", "SshAuthContext rejected authentication request");
+        return 0;
+    }
+
+    int replyPublicKeyOk(ExceptionSink* xsink) {
+        {
+            std::lock_guard<std::mutex> lock(m);
+            if (!msg || handled) {
+                xsink->raiseException("SSHAUTHCONTEXT-STATE-ERROR", "authentication request has already been handled");
+                return -1;
+            }
+
+            if (ssh_message_auth_reply_pk_ok_simple(msg) != SSH_OK) {
+                xsink->raiseException("SSHAUTHCONTEXT-ERROR", "could not send public-key-ok reply");
+                return -1;
+            }
+
+            ssh_message_free(msg);
+            msg = nullptr;
+            handled = true;
+        }
+        log("debug", "SshAuthContext acknowledged public-key probe");
+        return 0;
+    }
+
+    int applyDecision(const QoreHashNode* decision, ExceptionSink* xsink) {
+        ReferenceHolder<QoreHashNode> typed_decision(ssh_copy_decision_hash(decision, xsink), xsink);
+        if (*xsink) {
+            return -1;
+        }
+
+        bool accepted = typed_decision->getKeyValue("accepted").getAsBool();
+        if (*xsink) {
+            xsink->raiseException("SSHAUTHCONTEXT-DECISION-ERROR",
+                "the \"accepted\" decision key must be a boolean");
+            return -1;
+        }
+
+        if (accepted) {
+            bool partial = typed_decision->getKeyValue("partial").getAsBool();
+            if (*xsink) {
+                xsink->raiseException("SSHAUTHCONTEXT-DECISION-ERROR",
+                    "the \"partial\" decision key must be a boolean when present");
+                return -1;
+            }
+            return accept(partial, xsink);
+        }
+
+        return reject(typed_decision->getKeyValue("allowed_auth_methods").get<QoreListNode>(), xsink);
+    }
+
+    QoreHashNode* info;
+    mutable std::mutex m;
+    ssh_message msg;
+    bool handled;
+    QoreObject* logger;
+
+private:
+    void log(const char* method, const char* msg_text) const {
+        ReferenceHolder<QoreObject> logger_holder(getLogger(), nullptr);
+        if (!logger_holder) {
+            return;
+        }
+        ssh_session_log_message(*logger_holder, method, msg_text ? std::string(msg_text) : std::string());
+    }
+};
+
+class SshSessionPriv : public AbstractPrivateData {
+public:
+    explicit SshSessionPriv(const QoreHashNode* info, const QoreHashNode* auth_info)
+            : info(info ? info->copy() : nullptr), auth_info(auth_info ? auth_info->copy() : nullptr),
+            logger(nullptr), session(nullptr), active_session_counter(),
+            enabled_auth_methods_mask(SSH_AUTH_METHOD_NONE | SSH_AUTH_METHOD_PASSWORD | SSH_AUTH_METHOD_PUBLICKEY
+                | SSH_AUTH_METHOD_INTERACTIVE), connected(true), io_waiters(0) {
+    }
+
+    SshSessionPriv(QoreHashNode* info, QoreHashNode* auth_info, QoreObject* logger, ssh_session session,
+            std::shared_ptr<std::atomic<int64>> active_session_counter, int enabled_auth_methods_mask)
+            : info(info), auth_info(auth_info), logger(logger), session(session),
+            active_session_counter(active_session_counter), enabled_auth_methods_mask(enabled_auth_methods_mask),
+            connected(session != nullptr), io_waiters(0) {
+    }
+
+    ~SshSessionPriv() {
+        disconnectIntern();
+        if (info) {
+            info->deref(nullptr);
+        }
+        if (auth_info) {
+            auth_info->deref(nullptr);
+        }
+        if (logger) {
+            logger->deref(nullptr);
+        }
+    }
+
+    void setLogger(QoreObject* q_logger, ExceptionSink* xsink) {
+        ssh_session_validate_logger(q_logger, "SSHSESSION-LOGGER-ERROR", xsink);
+        if (*xsink) {
+            return;
+        }
+
+        QoreObject* old_logger = nullptr;
+        {
+            std::lock_guard<std::mutex> lock(m);
+            old_logger = logger;
+            logger = q_logger ? q_logger->objectRefSelf() : nullptr;
+        }
+        if (old_logger) {
+            old_logger->deref(xsink);
+        }
+    }
+
+    QoreObject* getLogger() const {
+        std::lock_guard<std::mutex> lock(m);
+        return logger ? logger->objectRefSelf() : nullptr;
+    }
+
+    QoreHashNode* getInfo(ExceptionSink* xsink) const {
+        return info ? reinterpret_cast<QoreHashNode*>(hashdeclSshSessionInfo->doRuntimeCast(info, xsink))
+                    : new QoreHashNode(hashdeclSshSessionInfo, xsink);
+    }
+
+    QoreHashNode* getAuthInfo(ExceptionSink* xsink) const {
+        return auth_info ? reinterpret_cast<QoreHashNode*>(hashdeclSshAuthContextInfo->doRuntimeCast(auth_info, xsink))
+                         : nullptr;
+    }
+
+    int applyAuthDecision(const QoreHashNode* auth_context_info, const QoreHashNode* decision, ExceptionSink* xsink) {
+        ReferenceHolder<QoreHashNode> typed_auth_context(
+            reinterpret_cast<QoreHashNode*>(hashdeclSshAuthContextInfo->doRuntimeCast(auth_context_info, xsink)), xsink);
+        ReferenceHolder<QoreHashNode> typed_decision(ssh_copy_decision_hash(decision, xsink), xsink);
+        if (*xsink) {
+            return -1;
+        }
+
+        bool accepted = typed_decision->getKeyValue("accepted").getAsBool();
+        if (*xsink) {
+            xsink->raiseException("SSHSESSION-AUTH-ERROR", "the auth decision must define a boolean \"accepted\" key");
+            return -1;
+        }
+
+        std::lock_guard<std::mutex> lock(m);
+        if (auth_info) {
+            auth_info->deref(nullptr);
+        }
+        auth_info = typed_auth_context.release();
+
+        if (!info) {
+            return 0;
+        }
+
+        info->setKeyValue("username", auth_info->getKeyValue("username").refSelf(), xsink);
+        info->setKeyValue("auth_method", auth_info->getKeyValue("auth_method").refSelf(), xsink);
+        info->setKeyValue("authenticated", accepted, xsink);
+        info->setKeyValue("principal", typed_decision->getKeyValue("principal").refSelf(), xsink);
+        info->setKeyValue("session_data", typed_decision->getKeyValue("session_data").refSelf(), xsink);
+        info->setKeyValue("command_policy", typed_decision->getKeyValue("command_policy").refSelf(), xsink);
+        info->setKeyValue("sftp_policy", typed_decision->getKeyValue("sftp_policy").refSelf(), xsink);
+        info->setKeyValue("last_activity", new DateTimeNode(static_cast<int64>(time(nullptr))), xsink);
+        return *xsink ? -1 : 0;
+    }
+
+    QoreObject* waitAuthContext(QoreProgram* pgm, int timeout_ms, ExceptionSink* xsink) const {
+        if (timeout_ms < 0) {
+            xsink->raiseException("SSHSESSION-AUTH-ERROR", "timeout_ms must be >= 0; got %d", timeout_ms);
+            return nullptr;
+        }
+
+        ssh_session current_session = nullptr;
+        ReferenceHolder<QoreHashNode> session_info(getInfo(xsink), xsink);
+        if (*xsink) {
+            return nullptr;
+        }
+
+        // acquire the session pointer under the lock and increment io_waiters
+        // to prevent disconnectIntern from freeing the session while we use it
+        {
+            std::lock_guard<std::mutex> lock(m);
+            if (!connected || !session) {
+                xsink->raiseException("SSHSESSION-STATE-ERROR",
+                    "cannot wait for auth requests on a disconnected session");
+                return nullptr;
+            }
+            current_session = session;
+            ++io_waiters;
+        }
+
+        ON_BLOCK_EXIT([this]() {
+            std::lock_guard<std::mutex> lock(m);
+            --io_waiters;
+            cv.notify_all();
+        });
+
+        socket_t fd = ssh_get_fd(current_session);
+        if (fd == SSH_INVALID_SOCKET) {
+            xsink->raiseException("SSHSESSION-AUTH-ERROR", "could not get the session socket");
+            return nullptr;
+        }
+
+        long timeout_usec = static_cast<long>(timeout_ms) * 1000;
+        if (ssh_options_set(current_session, SSH_OPTIONS_TIMEOUT_USEC, &timeout_usec) != SSH_OK) {
+            xsink->raiseException("SSHSESSION-AUTH-ERROR", "could not set the auth wait timeout");
+            return nullptr;
+        }
+        int old_blocking = ssh_is_blocking(current_session);
+        ssh_set_blocking(current_session, 0);
+        ON_BLOCK_EXIT([current_session, old_blocking]() {
+            ssh_set_blocking(current_session, old_blocking);
+        });
+
+        std::string service("ssh-userauth");
+        auto start = std::chrono::steady_clock::now();
+        while (true) {
+            {
+                std::lock_guard<std::mutex> lock(m);
+                if (!connected) {
+                    xsink->raiseException("SSHSESSION-DISCONNECTED",
+                        "session was disconnected while waiting for an auth request");
+                    return nullptr;
+                }
+            }
+
+            if (qore_check_cancel(xsink, "waiting for SSH auth request")) {
+                return nullptr;
+            }
+
+            if (!ssh_is_connected(current_session)) {
+                return nullptr;
+            }
+
+            auto now = std::chrono::steady_clock::now();
+            int remaining_ms = timeout_ms;
+            if (timeout_ms > 0) {
+                auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count();
+                if (elapsed_ms >= timeout_ms) {
+                    return nullptr;
+                }
+                remaining_ms = timeout_ms - static_cast<int>(elapsed_ms);
+            }
+
+            ssh_message msg = ssh_message_get(current_session);
+            if (!msg) {
+                fd_set read_fds;
+                FD_ZERO(&read_fds);
+                FD_SET(fd, &read_fds);
+                timeval tv;
+                timeval* tvp = nullptr;
+                if (timeout_ms > 0) {
+                    tv.tv_sec = remaining_ms / 1000;
+                    tv.tv_usec = static_cast<suseconds_t>((remaining_ms % 1000) * 1000);
+                    tvp = &tv;
+                }
+                int select_rc = select(fd + 1, &read_fds, nullptr, nullptr, tvp);
+                if (select_rc < 0) {
+                    if (errno == EINTR) {
+                        continue;
+                    }
+                    if (errno == EBADF || errno == ENOTSOCK) {
+                        return nullptr;
+                    }
+                    xsink->raiseErrnoException("SSHSESSION-AUTH-ERROR", errno,
+                        "select() failed while waiting for an auth request");
+                    return nullptr;
+                }
+                if (!select_rc) {
+                    return nullptr;
+                }
+                continue;
+            }
+
+            int type = ssh_message_type(msg);
+            if (type == SSH_REQUEST_SERVICE) {
+                const char* msg_service = ssh_message_service_service(msg);
+                if (msg_service && *msg_service) {
+                    service = msg_service;
+                }
+                if (ssh_message_service_reply_success(msg) != SSH_OK) {
+                    ssh_message_free(msg);
+                    xsink->raiseException("SSHSESSION-AUTH-ERROR", "could not reply to service request");
+                    return nullptr;
+                }
+                ssh_message_free(msg);
+                continue;
+            }
+
+            if (type != SSH_REQUEST_AUTH) {
+                ssh_message_reply_default(msg);
+                ssh_message_free(msg);
+                continue;
+            }
+
+            int subtype = ssh_message_subtype(msg);
+            int subtype_mask = ssh_auth_method_mask_for_subtype(subtype);
+            if (!subtype_mask || !(enabled_auth_methods_mask & subtype_mask)) {
+                if (ssh_message_auth_set_methods(msg, enabled_auth_methods_mask) != SSH_OK) {
+                    ssh_message_free(msg);
+                    xsink->raiseException("SSHSESSION-AUTH-ERROR",
+                        "could not advertise enabled auth methods in rejection reply");
+                    return nullptr;
+                }
+                if (ssh_message_reply_default(msg) != SSH_OK) {
+                    ssh_message_free(msg);
+                    xsink->raiseException("SSHSESSION-AUTH-ERROR",
+                        "could not reject a disabled authentication method");
+                    return nullptr;
+                }
+                ssh_message_free(msg);
+                std::ostringstream log_msg;
+                log_msg << "SshSession rejected disabled auth method " << ssh_auth_method_name(subtype);
+                log("warn", log_msg.str().c_str());
+                continue;
+            }
+
+            ReferenceHolder<QoreHashNode> info(new QoreHashNode(hashdeclSshAuthContextInfo, xsink), xsink);
+            info->setKeyValue("session_id", session_info->getKeyValue("session_id").refSelf(), xsink);
+            info->setKeyValue("server_name", session_info->getKeyValue("server_name").refSelf(), xsink);
+            info->setKeyValue("listener_name", session_info->getKeyValue("listener_name").refSelf(), xsink);
+            info->setKeyValue("remote_address", session_info->getKeyValue("remote_address").refSelf(), xsink);
+            info->setKeyValue("remote_port", session_info->getKeyValue("remote_port").refSelf(), xsink);
+
+            const char* user = ssh_message_auth_user(msg);
+            info->setKeyValue("username", user ? new QoreStringNode(user) : QoreValue(), xsink);
+            info->setKeyValue("auth_method", new QoreStringNode(ssh_auth_method_name(subtype)), xsink);
+            info->setKeyValue("password", QoreValue(), xsink);
+            info->setKeyValue("public_key", QoreValue(), xsink);
+            info->setKeyValue("public_key_type", QoreValue(), xsink);
+            info->setKeyValue("service", new QoreStringNode(service.c_str()), xsink);
+            info->setKeyValue("metadata", QoreValue(), xsink);
+            if (*xsink) {
+                ssh_message_free(msg);
+                return nullptr;
+            }
+
+            if (ssh_populate_auth_context_details(msg, subtype, *info, xsink)) {
+                ssh_message_free(msg);
+                return nullptr;
+            }
+
+            ReferenceHolder<QoreObject> obj(new QoreObject(QC_SSHAUTHCONTEXT, pgm), xsink);
+            obj->setPrivate(CID_SSHAUTHCONTEXT, new SshAuthContextPriv(info.release(), nullptr, msg));
+            return obj.release();
+        }
+    }
+
+    QoreObject* waitCommandSession(QoreProgram* pgm, int timeout_ms, ExceptionSink* xsink) const {
+        if (timeout_ms < 0) {
+            xsink->raiseException("SSHSESSION-COMMAND-ERROR", "timeout_ms must be >= 0; got %d", timeout_ms);
+            return nullptr;
+        }
+
+        ssh_session current_session = nullptr;
+        ReferenceHolder<QoreHashNode> session_info(getInfo(xsink), xsink);
+        if (*xsink) {
+            return nullptr;
+        }
+
+        {
+            std::lock_guard<std::mutex> lock(m);
+            if (!connected || !session) {
+                xsink->raiseException("SSHSESSION-STATE-ERROR",
+                    "cannot wait for command requests on a disconnected session");
+                return nullptr;
+            }
+            if (!info || !info->getKeyValue("authenticated").getAsBool()) {
+                xsink->raiseException("SSHSESSION-STATE-ERROR",
+                    "cannot wait for command requests on an unauthenticated session");
+                return nullptr;
+            }
+            current_session = session;
+            ++io_waiters;
+        }
+
+        ssh_channel accepted_channel = nullptr;
+        ReferenceHolder<QoreHashNode> environment(new QoreHashNode(autoTypeInfo), xsink);
+        ON_BLOCK_EXIT([this, &accepted_channel]() {
+            std::lock_guard<std::mutex> lock(m);
+            --io_waiters;
+            cv.notify_all();
+            if (accepted_channel) {
+                ssh_channel_send_eof(accepted_channel);
+                ssh_channel_close(accepted_channel);
+                ssh_channel_free(accepted_channel);
+                accepted_channel = nullptr;
+            }
+        });
+
+        long timeout_usec = static_cast<long>(timeout_ms) * 1000;
+        if (ssh_options_set(current_session, SSH_OPTIONS_TIMEOUT_USEC, &timeout_usec) != SSH_OK) {
+            xsink->raiseException("SSHSESSION-COMMAND-ERROR", "could not set the command wait timeout");
+            return nullptr;
+        }
+        int old_blocking = ssh_is_blocking(current_session);
+        ssh_set_blocking(current_session, 0);
+        ON_BLOCK_EXIT([current_session, old_blocking]() {
+            ssh_set_blocking(current_session, old_blocking);
+        });
+
+        socket_t fd = ssh_get_fd(current_session);
+        if (fd == SSH_INVALID_SOCKET) {
+            xsink->raiseException("SSHSESSION-COMMAND-ERROR", "could not get the session socket");
+            return nullptr;
+        }
+
+        auto start = std::chrono::steady_clock::now();
+        while (true) {
+            {
+                std::lock_guard<std::mutex> lock(m);
+                if (!connected) {
+                    xsink->raiseException("SSHSESSION-DISCONNECTED",
+                        "session was disconnected while waiting for a command request");
+                    return nullptr;
+                }
+            }
+
+            if (qore_check_cancel(xsink, "waiting for SSH command request")) {
+                return nullptr;
+            }
+
+            int remaining_ms = timeout_ms;
+            if (timeout_ms > 0) {
+                auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::steady_clock::now() - start).count();
+                if (elapsed_ms >= timeout_ms) {
+                    return nullptr;
+                }
+                remaining_ms = timeout_ms - static_cast<int>(elapsed_ms);
+            }
+
+            ssh_message msg = ssh_message_get(current_session);
+            if (!msg) {
+                fd_set read_fds;
+                FD_ZERO(&read_fds);
+                FD_SET(fd, &read_fds);
+                timeval tv;
+                timeval* tvp = nullptr;
+                if (timeout_ms > 0) {
+                    tv.tv_sec = remaining_ms / 1000;
+                    tv.tv_usec = static_cast<suseconds_t>((remaining_ms % 1000) * 1000);
+                    tvp = &tv;
+                }
+
+                int select_rc = select(fd + 1, &read_fds, nullptr, nullptr, tvp);
+                if (select_rc < 0) {
+                    if (errno == EINTR) {
+                        continue;
+                    }
+                    xsink->raiseErrnoException("SSHSESSION-COMMAND-ERROR", errno,
+                        "select() failed while waiting for a command request");
+                    return nullptr;
+                }
+                if (!select_rc) {
+                    return nullptr;
+                }
+                continue;
+            }
+
+            int type = ssh_message_type(msg);
+            int subtype = ssh_message_subtype(msg);
+
+            if (type == SSH_REQUEST_CHANNEL_OPEN) {
+                if (subtype != SSH_CHANNEL_SESSION || accepted_channel) {
+                    ssh_message_reply_default(msg);
+                    ssh_message_free(msg);
+                    continue;
+                }
+
+                accepted_channel = ssh_message_channel_request_open_reply_accept(msg);
+                if (!accepted_channel) {
+                    ssh_message_free(msg);
+                    xsink->raiseException("SSHSESSION-COMMAND-ERROR", "could not accept the channel open request");
+                    return nullptr;
+                }
+
+                ssh_message_free(msg);
+                continue;
+            }
+
+            if (type != SSH_REQUEST_CHANNEL) {
+                ssh_message_reply_default(msg);
+                ssh_message_free(msg);
+                continue;
+            }
+
+            if (!accepted_channel || ssh_message_channel_request_channel(msg) != accepted_channel) {
+                ssh_message_reply_default(msg);
+                ssh_message_free(msg);
+                continue;
+            }
+
+            if (subtype == SSH_CHANNEL_REQUEST_ENV) {
+                const char* env_name = ssh_message_channel_request_env_name(msg);
+                if (env_name && *env_name) {
+                    const char* env_value = ssh_message_channel_request_env_value(msg);
+                    environment->setKeyValue(env_name, env_value ? new QoreStringNode(env_value) : QoreValue(), xsink);
+                    if (*xsink) {
+                        ssh_message_free(msg);
+                        return nullptr;
+                    }
+                }
+                if (ssh_message_channel_request_reply_success(msg) != SSH_OK) {
+                    ssh_message_free(msg);
+                    xsink->raiseException("SSHSESSION-COMMAND-ERROR",
+                        "could not acknowledge the channel environment request");
+                    return nullptr;
+                }
+                ssh_message_free(msg);
+                continue;
+            }
+
+            if (subtype != SSH_CHANNEL_REQUEST_EXEC && subtype != SSH_CHANNEL_REQUEST_SUBSYSTEM) {
+                ssh_message_reply_default(msg);
+                ssh_message_free(msg);
+                continue;
+            }
+
+            const char* request_command = subtype == SSH_CHANNEL_REQUEST_EXEC
+                ? ssh_message_channel_request_command(msg)
+                : ssh_message_channel_request_subsystem(msg);
+            ReferenceHolder<QoreHashNode> request(new QoreHashNode(hashdeclSshCommandRequest, xsink), xsink);
+            request->setKeyValue("session_id", session_info->getKeyValue("session_id").refSelf(), xsink);
+            request->setKeyValue("server_name", session_info->getKeyValue("server_name").refSelf(), xsink);
+            request->setKeyValue("listener_name", session_info->getKeyValue("listener_name").refSelf(), xsink);
+            request->setKeyValue("username", session_info->getKeyValue("username").refSelf(), xsink);
+            request->setKeyValue("principal", session_info->getKeyValue("principal").refSelf(), xsink);
+            request->setKeyValue("command", request_command ? new QoreStringNode(request_command) : new QoreStringNode, xsink);
+            request->setKeyValue("arguments", QoreValue(), xsink);
+            request->setKeyValue("environment", environment->size()
+                ? reinterpret_cast<QoreHashNode*>(environment->copy())
+                : QoreValue(), xsink);
+
+            ReferenceHolder<QoreHashNode> metadata(new QoreHashNode(autoTypeInfo), xsink);
+            metadata->setKeyValue("request_type",
+                new QoreStringNode(subtype == SSH_CHANNEL_REQUEST_EXEC ? "exec" : "subsystem"), xsink);
+            if (subtype == SSH_CHANNEL_REQUEST_SUBSYSTEM && request_command && *request_command) {
+                metadata->setKeyValue("subsystem", new QoreStringNode(request_command), xsink);
+            }
+            request->setKeyValue("metadata", metadata.release(), xsink);
+            if (*xsink) {
+                ssh_message_free(msg);
+                return nullptr;
+            }
+
+            {
+                std::lock_guard<std::mutex> lock(m);
+                if (info) {
+                    info->setKeyValue("last_activity", new DateTimeNode(static_cast<int64>(time(nullptr))), xsink);
+                    if (*xsink) {
+                        ssh_message_free(msg);
+                        return nullptr;
+                    }
+                }
+            }
+
+            ReferenceHolder<QoreObject> logger_holder(getLogger(), xsink);
+            QoreObject* rv = ssh_new_command_session_object(pgm, request.release(),
+                logger_holder ? logger_holder.release() : nullptr, accepted_channel, msg, xsink);
+            if (!*xsink && rv) {
+                log("debug", "SshSession accepted command request");
+            }
+            if (*xsink) {
+                return nullptr;
+            }
+            accepted_channel = nullptr;
+            return rv;
+        }
+    }
+
+    QoreObject* waitSftpSession(QoreProgram* pgm, int timeout_ms, ExceptionSink* xsink) const {
+        if (timeout_ms < 0) {
+            xsink->raiseException("SSHSESSION-SFTP-ERROR", "timeout_ms must be >= 0; got %d", timeout_ms);
+            return nullptr;
+        }
+
+        ssh_session current_session = nullptr;
+        ReferenceHolder<QoreHashNode> session_info(getInfo(xsink), xsink);
+        if (*xsink) {
+            return nullptr;
+        }
+
+        const QoreHashNode* sftp_policy = session_info->getKeyValue("sftp_policy").get<QoreHashNode>();
+        if (!ssh_policy_mode_enabled(sftp_policy)) {
+            xsink->raiseException("SSHSESSION-STATE-ERROR",
+                "cannot wait for SFTP requests when the session SFTP policy is disabled");
+            return nullptr;
+        }
+
+        {
+            std::lock_guard<std::mutex> lock(m);
+            if (!connected || !session) {
+                xsink->raiseException("SSHSESSION-STATE-ERROR",
+                    "cannot wait for SFTP requests on a disconnected session");
+                return nullptr;
+            }
+            if (!info || !info->getKeyValue("authenticated").getAsBool()) {
+                xsink->raiseException("SSHSESSION-STATE-ERROR",
+                    "cannot wait for SFTP requests on an unauthenticated session");
+                return nullptr;
+            }
+            current_session = session;
+            ++io_waiters;
+        }
+
+        ssh_channel accepted_channel = nullptr;
+        ON_BLOCK_EXIT([this, &accepted_channel]() {
+            std::lock_guard<std::mutex> lock(m);
+            --io_waiters;
+            cv.notify_all();
+            if (accepted_channel) {
+                ssh_channel_send_eof(accepted_channel);
+                ssh_channel_close(accepted_channel);
+                ssh_channel_free(accepted_channel);
+                accepted_channel = nullptr;
+            }
+        });
+
+        long timeout_usec = static_cast<long>(timeout_ms) * 1000;
+        if (ssh_options_set(current_session, SSH_OPTIONS_TIMEOUT_USEC, &timeout_usec) != SSH_OK) {
+            xsink->raiseException("SSHSESSION-SFTP-ERROR", "could not set the SFTP wait timeout");
+            return nullptr;
+        }
+        int old_blocking = ssh_is_blocking(current_session);
+        ssh_set_blocking(current_session, 0);
+        ON_BLOCK_EXIT([current_session, old_blocking]() {
+            ssh_set_blocking(current_session, old_blocking);
+        });
+
+        socket_t fd = ssh_get_fd(current_session);
+        if (fd == SSH_INVALID_SOCKET) {
+            xsink->raiseException("SSHSESSION-SFTP-ERROR", "could not get the session socket");
+            return nullptr;
+        }
+
+        auto start = std::chrono::steady_clock::now();
+        while (true) {
+            {
+                std::lock_guard<std::mutex> lock(m);
+                if (!connected) {
+                    xsink->raiseException("SSHSESSION-DISCONNECTED",
+                        "session was disconnected while waiting for an SFTP request");
+                    return nullptr;
+                }
+            }
+
+            if (qore_check_cancel(xsink, "waiting for SSH SFTP request")) {
+                return nullptr;
+            }
+
+            int remaining_ms = timeout_ms;
+            if (timeout_ms > 0) {
+                auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::steady_clock::now() - start).count();
+                if (elapsed_ms >= timeout_ms) {
+                    return nullptr;
+                }
+                remaining_ms = timeout_ms - static_cast<int>(elapsed_ms);
+            }
+
+            ssh_message msg = ssh_message_get(current_session);
+            if (!msg) {
+                fd_set read_fds;
+                FD_ZERO(&read_fds);
+                FD_SET(fd, &read_fds);
+                timeval tv;
+                timeval* tvp = nullptr;
+                if (timeout_ms > 0) {
+                    tv.tv_sec = remaining_ms / 1000;
+                    tv.tv_usec = static_cast<suseconds_t>((remaining_ms % 1000) * 1000);
+                    tvp = &tv;
+                }
+
+                int select_rc = select(fd + 1, &read_fds, nullptr, nullptr, tvp);
+                if (select_rc < 0) {
+                    if (errno == EINTR) {
+                        continue;
+                    }
+                    xsink->raiseErrnoException("SSHSESSION-SFTP-ERROR", errno,
+                        "select() failed while waiting for an SFTP request");
+                    return nullptr;
+                }
+                if (!select_rc) {
+                    return nullptr;
+                }
+                continue;
+            }
+
+            int type = ssh_message_type(msg);
+            int subtype = ssh_message_subtype(msg);
+
+            if (type == SSH_REQUEST_CHANNEL_OPEN) {
+                if (subtype != SSH_CHANNEL_SESSION || accepted_channel) {
+                    ssh_message_reply_default(msg);
+                    ssh_message_free(msg);
+                    continue;
+                }
+
+                accepted_channel = ssh_message_channel_request_open_reply_accept(msg);
+                if (!accepted_channel) {
+                    ssh_message_free(msg);
+                    xsink->raiseException("SSHSESSION-SFTP-ERROR", "could not accept the channel open request");
+                    return nullptr;
+                }
+
+                ssh_message_free(msg);
+                continue;
+            }
+
+            if (type != SSH_REQUEST_CHANNEL) {
+                ssh_message_reply_default(msg);
+                ssh_message_free(msg);
+                continue;
+            }
+
+            if (!accepted_channel || ssh_message_channel_request_channel(msg) != accepted_channel) {
+                ssh_message_reply_default(msg);
+                ssh_message_free(msg);
+                continue;
+            }
+
+            if (subtype != SSH_CHANNEL_REQUEST_SUBSYSTEM) {
+                ssh_message_reply_default(msg);
+                ssh_message_free(msg);
+                continue;
+            }
+
+            const char* subsystem = ssh_message_channel_request_subsystem(msg);
+            if (!subsystem || strcmp(subsystem, "sftp")) {
+                ssh_message_reply_default(msg);
+                ssh_message_free(msg);
+                continue;
+            }
+
+            if (ssh_message_channel_request_reply_success(msg) != SSH_OK) {
+                ssh_message_free(msg);
+                xsink->raiseException("SSHSESSION-SFTP-ERROR",
+                    "could not acknowledge the SFTP subsystem request");
+                return nullptr;
+            }
+            ssh_message_free(msg);
+
+            QoreValue principal_value = info ? info->getKeyValue("principal") : QoreValue();
+            ReferenceHolder<QoreHashNode> sftp_info(new QoreHashNode(hashdeclSftpSessionInfo, xsink), xsink);
+            sftp_info->setKeyValue("session_info", session_info.release(), xsink);
+            sftp_info->setKeyValue("principal", principal_value.isNothing()
+                ? QoreValue(new QoreStringNode)
+                : principal_value.refSelf(), xsink);
+            sftp_info->setKeyValue("root_dir",
+                sftp_policy ? sftp_policy->getKeyValue("root_dir").refSelf() : QoreValue(), xsink);
+            sftp_info->setKeyValue("read_only", ssh_policy_mode_read_only(sftp_policy), xsink);
+            sftp_info->setKeyValue("session_data",
+                info ? info->getKeyValue("session_data").refSelf() : QoreValue(), xsink);
+            if (*xsink) {
+                return nullptr;
+            }
+
+            {
+                std::lock_guard<std::mutex> lock(m);
+                if (info) {
+                    info->setKeyValue("last_activity", new DateTimeNode(static_cast<int64>(time(nullptr))), xsink);
+                    if (*xsink) {
+                        return nullptr;
+                    }
+                }
+            }
+
+            ReferenceHolder<QoreObject> logger_holder(getLogger(), xsink);
+            QoreObject* rv = ssh_new_sftp_session_object(pgm, sftp_info.release(), nullptr,
+                logger_holder ? logger_holder.release() : nullptr, nullptr, accepted_channel, xsink);
+            if (!*xsink && rv) {
+                log("debug", "SshSession accepted SFTP subsystem request");
+            }
+            if (*xsink) {
+                return nullptr;
+            }
+            accepted_channel = nullptr;
+            return rv;
+        }
+    }
+
+    void disconnectIntern() {
+        ssh_session current_session = nullptr;
+        socket_t fd = SSH_INVALID_SOCKET;
+        {
+            std::lock_guard<std::mutex> lock(m);
+            if (!connected) {
+                return;
+            }
+            connected = false;
+            current_session = session;
+            if (current_session) {
+                fd = ssh_get_fd(current_session);
+            }
+        }
+
+        if (fd != SSH_INVALID_SOCKET) {
+            shutdown(fd, SHUT_RDWR);
+        }
+
+        {
+            std::unique_lock<std::mutex> lock(m);
+            cv.wait(lock, [this]() {
+                return !io_waiters;
+            });
+
+            if (session) {
+                ssh_disconnect(session);
+                ssh_free(session);
+                session = nullptr;
+            }
+            if (active_session_counter) {
+                active_session_counter->fetch_sub(1);
+                active_session_counter.reset();
+            }
+        }
+        log("info", "SshSession disconnected");
+    }
+
+    bool isConnected() const {
+        std::lock_guard<std::mutex> lock(m);
+        return connected;
+    }
+
+    QoreHashNode* info;
+    QoreHashNode* auth_info;
+    mutable std::mutex m;
+    mutable std::condition_variable cv;
+    QoreObject* logger;
+    ssh_session session;
+    std::shared_ptr<std::atomic<int64>> active_session_counter;
+    int enabled_auth_methods_mask;
+    bool connected;
+    mutable int io_waiters;
+
+private:
+    void log(const char* method, const char* msg_text) const {
+        ReferenceHolder<QoreObject> logger_holder(getLogger(), nullptr);
+        if (!logger_holder) {
+            return;
+        }
+        ssh_session_log_message(*logger_holder, method, msg_text ? std::string(msg_text) : std::string());
+    }
+};
+
+DLLLOCAL QoreObject* ssh_new_session_object(QoreProgram* pgm, QoreHashNode* info, QoreHashNode* auth_info,
+        QoreObject* logger, ssh_session session, std::shared_ptr<std::atomic<int64>> active_session_counter,
+        int enabled_auth_methods_mask, ExceptionSink* xsink) {
+    ReferenceHolder<QoreHashNode> info_holder(info, xsink);
+    ReferenceHolder<QoreHashNode> auth_holder(auth_info, xsink);
+    ReferenceHolder<QoreObject> logger_holder(logger, xsink);
+    bool keep_session = false;
+    ON_BLOCK_EXIT([&keep_session, session]() {
+        if (!keep_session && session) {
+            ssh_disconnect(session);
+            ssh_free(session);
+        }
+    });
+    ReferenceHolder<QoreObject> obj(new QoreObject(QC_SSHSESSION, pgm), xsink);
+    obj->setPrivate(CID_SSHSESSION,
+        new SshSessionPriv(info_holder.release(), auth_holder.release(), logger_holder.release(), session,
+            active_session_counter, enabled_auth_methods_mask));
+    keep_session = true;
+    return obj.release();
+}
+
+DLLLOCAL QoreHashNode* ssh_session_get_info(const QoreObject* session_obj, ExceptionSink* xsink) {
+    if (!session_obj) {
+        xsink->raiseException("SSHSESSION-STATE-ERROR", "cannot get info from a null session object");
+        return nullptr;
+    }
+
+    PrivateDataRefHolder<SshSessionPriv> priv(session_obj, CID_SSHSESSION, xsink);
+    return *xsink ? nullptr : priv->getInfo(xsink);
+}
+
+DLLLOCAL QoreObject* ssh_session_wait_auth_context(const QoreObject* session_obj, QoreProgram* pgm, int timeout_ms,
+        ExceptionSink* xsink) {
+    if (!session_obj) {
+        xsink->raiseException("SSHSESSION-STATE-ERROR", "cannot wait for auth on a null session object");
+        return nullptr;
+    }
+
+    PrivateDataRefHolder<SshSessionPriv> priv(session_obj, CID_SSHSESSION, xsink);
+    return *xsink ? nullptr : priv->waitAuthContext(pgm, timeout_ms, xsink);
+}
+
+DLLLOCAL int ssh_session_set_logger(const QoreObject* session_obj, QoreObject* logger, ExceptionSink* xsink) {
+    if (!session_obj) {
+        xsink->raiseException("SSHSESSION-STATE-ERROR", "cannot set logger on a null session object");
+        return -1;
+    }
+
+    PrivateDataRefHolder<SshSessionPriv> priv(session_obj, CID_SSHSESSION, xsink);
+    if (*xsink) {
+        return -1;
+    }
+    priv->setLogger(logger, xsink);
+    return *xsink ? -1 : 0;
+}
+
+DLLLOCAL QoreObject* ssh_session_wait_command_session(const QoreObject* session_obj, QoreProgram* pgm, int timeout_ms,
+        ExceptionSink* xsink) {
+    if (!session_obj) {
+        xsink->raiseException("SSHSESSION-STATE-ERROR", "cannot wait for commands on a null session object");
+        return nullptr;
+    }
+
+    PrivateDataRefHolder<SshSessionPriv> priv(session_obj, CID_SSHSESSION, xsink);
+    return *xsink ? nullptr : priv->waitCommandSession(pgm, timeout_ms, xsink);
+}
+
+DLLLOCAL QoreObject* ssh_session_wait_sftp_session(const QoreObject* session_obj, QoreProgram* pgm, int timeout_ms,
+        ExceptionSink* xsink) {
+    if (!session_obj) {
+        xsink->raiseException("SSHSESSION-STATE-ERROR", "cannot wait for an SFTP request on a null session object");
+        return nullptr;
+    }
+
+    PrivateDataRefHolder<SshSessionPriv> priv(session_obj, CID_SSHSESSION, xsink);
+    return *xsink ? nullptr : priv->waitSftpSession(pgm, timeout_ms, xsink);
+}
+
+DLLLOCAL int ssh_session_apply_auth_decision(const QoreObject* session_obj, const QoreHashNode* auth_context_info,
+        const QoreHashNode* decision, ExceptionSink* xsink) {
+    if (!session_obj) {
+        xsink->raiseException("SSHSESSION-STATE-ERROR", "cannot apply an auth decision to a null session object");
+        return -1;
+    }
+
+    PrivateDataRefHolder<SshSessionPriv> priv(session_obj, CID_SSHSESSION, xsink);
+    return *xsink ? -1 : priv->applyAuthDecision(auth_context_info, decision, xsink);
+}
+
+DLLLOCAL QoreHashNode* ssh_auth_context_get_info(const QoreObject* auth_obj, ExceptionSink* xsink) {
+    if (!auth_obj) {
+        xsink->raiseException("SSHAUTHCONTEXT-STATE-ERROR", "cannot get auth info from a null auth context object");
+        return nullptr;
+    }
+
+    PrivateDataRefHolder<SshAuthContextPriv> priv(auth_obj, CID_SSHAUTHCONTEXT, xsink);
+    return *xsink ? nullptr : priv->getInfo(xsink);
+}
+
+DLLLOCAL int ssh_auth_context_set_logger(const QoreObject* auth_obj, QoreObject* logger, ExceptionSink* xsink) {
+    if (!auth_obj) {
+        xsink->raiseException("SSHAUTHCONTEXT-STATE-ERROR", "cannot set logger on a null auth context object");
+        return -1;
+    }
+
+    PrivateDataRefHolder<SshAuthContextPriv> priv(auth_obj, CID_SSHAUTHCONTEXT, xsink);
+    if (*xsink) {
+        return -1;
+    }
+    priv->setLogger(logger, xsink);
+    return *xsink ? -1 : 0;
+}
+
+DLLLOCAL int ssh_auth_context_reply_public_key_ok(const QoreObject* auth_obj, ExceptionSink* xsink) {
+    if (!auth_obj) {
+        xsink->raiseException("SSHAUTHCONTEXT-STATE-ERROR",
+            "cannot acknowledge public-key auth on a null auth context object");
+        return -1;
+    }
+
+    PrivateDataRefHolder<SshAuthContextPriv> priv(auth_obj, CID_SSHAUTHCONTEXT, xsink);
+    return *xsink ? -1 : priv->replyPublicKeyOk(xsink);
+}
+
+DLLLOCAL int ssh_auth_context_apply_decision(const QoreObject* auth_obj, const QoreHashNode* decision,
+        ExceptionSink* xsink) {
+    if (!auth_obj) {
+        xsink->raiseException("SSHAUTHCONTEXT-STATE-ERROR",
+            "cannot apply an auth decision to a null auth context object");
+        return -1;
+    }
+
+    PrivateDataRefHolder<SshAuthContextPriv> priv(auth_obj, CID_SSHAUTHCONTEXT, xsink);
+    return *xsink ? -1 : priv->applyDecision(decision, xsink);
+}
+
+//! Authentication context wrapper
+/** This class wraps structured authentication-request metadata.
+
+    @since ssh 0.1
+*/
+qclass SshAuthContext [arg=SshAuthContextPriv* priv; ns=Qore::Ssh; dom=NETWORK; flags=final];
+
+//! Creates an authentication context from typed metadata
+/** @param info the typed authentication context metadata hash
+
+    @par Example:
+    @code{.py}
+SshAuthContext cx(auth_info);
+hash<SshAuthContextInfo> info = cx.getInfo();
+    @endcode
+ */
+SshAuthContext::constructor(hash<SshAuthContextInfo> info) {
+    self->setPrivate(CID_SSHAUTHCONTEXT, new SshAuthContextPriv(info));
+}
+
+//! Throws an exception; SshAuthContext objects cannot be copied
+/** @throw SSHAUTHCONTEXT-COPY-ERROR copying SshAuthContext objects is not supported
+ */
+SshAuthContext::copy() {
+    xsink->raiseException("SSHAUTHCONTEXT-COPY-ERROR", "copying SshAuthContext objects is not supported");
+}
+
+//! Destroys the object
+/** Releases private resources held by the authentication context.
+ */
+SshAuthContext::destructor() {
+    priv->deref();
+}
+
+//! Returns the typed authentication context info hash
+/** @return the wrapped `SshAuthContextInfo` typed hash
+ */
+hash<SshAuthContextInfo> SshAuthContext::getInfo() [flags=RET_VALUE_ONLY] {
+    return priv->getInfo(xsink);
+}
+
+//! Accepts the pending authentication request
+/** Sends SSH auth success for the wrapped pending request.
+
+    @param partial set to `True` when the authentication is partially
+    accepted and additional authentication is required
+
+    @par Example:
+    @code{.py}
+# accept full authentication
+ctx.accept();
+    @endcode
+ */
+nothing SshAuthContext::accept(bool partial = False) {
+    priv->accept(partial, xsink);
+}
+
+//! Rejects the pending authentication request
+/** Rejects the wrapped pending request and optionally advertises allowed methods.
+
+    @param allowed_methods an optional list of allowed authentication method
+    names (e.g. \c "password", \c "publickey") to advertise to the client
+
+    @par Example:
+    @code{.py}
+ctx.reject(("password", "publickey"));
+    @endcode
+ */
+nothing SshAuthContext::reject(*list<string> allowed_methods) {
+    priv->reject(allowed_methods, xsink);
+}
+
+//! Applies a typed authentication decision to the pending request
+/** Accepts or rejects the pending authentication request according to the
+    supplied `SshAuthDecision` hash.
+
+    @param decision the typed authentication decision to apply
+ */
+nothing SshAuthContext::applyDecision(hash<SshAuthDecision> decision) {
+    priv->applyDecision(decision, xsink);
+}
+
+//! Sets the logger object used by the authentication context
+/** @param logger an optional logger object
+ */
+nothing SshAuthContext::setLogger(*object logger) {
+    priv->setLogger(logger, xsink);
+}
+
+//! Returns the configured logger object
+/** @return the configured logger object or `NOTHING`
+ */
+*object SshAuthContext::getLogger() [flags=RET_VALUE_ONLY] {
+    return priv->getLogger();
+}
+
+//! SSH session wrapper
+/** This class wraps structured session metadata and optional authentication
+    context metadata.
+
+    @since ssh 0.1
+*/
+qclass SshSession [arg=SshSessionPriv* priv; ns=Qore::Ssh; dom=NETWORK; flags=final];
+
+//! Creates a session from typed metadata
+/** @param info the typed session metadata hash
+    @param auth_info optional authentication context metadata
+
+    @par Example:
+    @code{.py}
+SshSession session(session_info, auth_info);
+    @endcode
+ */
+SshSession::constructor(hash<SshSessionInfo> info, *hash<SshAuthContextInfo> auth_info) {
+    self->setPrivate(CID_SSHSESSION, new SshSessionPriv(info, auth_info));
+}
+
+//! Throws an exception; SshSession objects cannot be copied
+/** @throw SSHSESSION-COPY-ERROR copying SshSession objects is not supported
+ */
+SshSession::copy() {
+    xsink->raiseException("SSHSESSION-COPY-ERROR", "copying SshSession objects is not supported");
+}
+
+//! Destroys the object
+/** Releases private resources held by the session.
+ */
+SshSession::destructor() {
+    priv->deref();
+}
+
+//! Returns the typed session info hash
+/** @return the wrapped `SshSessionInfo` typed hash
+ */
+hash<SshSessionInfo> SshSession::getInfo() [flags=RET_VALUE_ONLY] {
+    return priv->getInfo(xsink);
+}
+
+//! Returns the typed authentication context hash if available
+/** @return the wrapped `SshAuthContextInfo` typed hash or `NOTHING`
+ */
+*hash<SshAuthContextInfo> SshSession::getAuthContextInfo() [flags=RET_VALUE_ONLY] {
+    return priv->getAuthInfo(xsink);
+}
+
+//! Applies an authentication decision to the session state
+/** Records the authentication request metadata and the typed decision on the
+    session, updating the public session info.
+
+    @param auth_context_info the authentication request metadata
+    @param decision the typed authentication decision
+ */
+nothing SshSession::applyAuthDecision(hash<SshAuthContextInfo> auth_context_info, hash<SshAuthDecision> decision) {
+    priv->applyAuthDecision(auth_context_info, decision, xsink);
+}
+
+//! Waits for the next authentication request on the session
+/** Automatically accepts the \c ssh-userauth service request and then returns
+    the next authentication request as a `SshAuthContext` object. Returns
+    `NOTHING` on timeout.
+
+    @param timeout_ms the maximum time in milliseconds to wait for an
+    authentication request; 0 means no timeout (wait indefinitely)
+    @return a `SshAuthContext` object wrapping the authentication request, or
+    `NOTHING` on timeout
+
+    @par Example:
+    @code{.py}
+*SshAuthContext ctx = session.waitAuthContext(5000);
+if (ctx) {
+    hash<SshAuthContextInfo> info = ctx.getInfo();
+    printf("auth attempt from %y via %y\n", info.username, info.auth_method);
+}
+    @endcode
+ */
+*SshAuthContext SshSession::waitAuthContext(int timeout_ms = 0) {
+    QoreObject* auth = priv->waitAuthContext(getProgram(), timeout_ms, xsink);
+    if (!*xsink && auth) {
+        ReferenceHolder<QoreObject> logger(priv->getLogger(), xsink);
+        if (!*xsink && logger) {
+            ssh_auth_context_set_logger(auth, *logger, xsink);
+        }
+    }
+    return auth;
+}
+
+//! Waits for the next exec or subsystem request on the session
+/** Returns a live `SshCommandSession` object for the next command-style
+    request on the authenticated session, or `NOTHING` on timeout.
+
+    @param timeout_ms the maximum time in milliseconds to wait for a request;
+    0 means no timeout
+    @return a live `SshCommandSession` object or `NOTHING`
+ */
+*SshCommandSession SshSession::waitCommandSession(int timeout_ms = 0) {
+    return priv->waitCommandSession(getProgram(), timeout_ms, xsink);
+}
+
+//! Waits for the next SFTP subsystem request on the session
+/** Returns a live `SftpSession` object for the next `sftp` subsystem
+    request on the authenticated session, or `NOTHING` on timeout.
+
+    @param timeout_ms the maximum time in milliseconds to wait for a request;
+    0 means no timeout
+    @return a live `SftpSession` object or `NOTHING`
+ */
+*SftpSession SshSession::waitSftpSession(int timeout_ms = 0) {
+    return priv->waitSftpSession(getProgram(), timeout_ms, xsink);
+}
+
+//! Sets the logger object used by the session
+/** @param logger an optional logger object
+ */
+nothing SshSession::setLogger(*object logger) {
+    priv->setLogger(logger, xsink);
+}
+
+//! Returns the configured logger object
+/** @return the configured logger object or `NOTHING`
+ */
+*object SshSession::getLogger() [flags=RET_VALUE_ONLY] {
+    return priv->getLogger();
+}
+
+//! Disconnects the SSH session
+/** Disconnects the underlying SSH transport and releases the libssh session.
+
+    @par Example:
+    @code{.py}
+session.disconnect();
+assertFalse(session.connected());
+    @endcode
+ */
+nothing SshSession::disconnect() {
+    priv->disconnectIntern();
+}
+
+//! Returns whether the session is connected
+/** @return `True` when the session is connected
+ */
+bool SshSession::connected() [flags=CONSTANT] {
+    return priv->isConnected();
+}

@@ -1,0 +1,1583 @@
+#!/usr/bin/env qore
+# -*- mode: qore; indent-tabs-mode: nil -*-
+
+/*  SftpServerDataProvider.qtest Copyright 2026 Qore Technologies, s.r.o.
+
+    Permission is hereby granted, free of charge, to any person obtaining a
+    copy of this software and associated documentation files (the "Software"),
+    to deal in the Software without restriction, including without limitation
+    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+    and/or sell copies of the Software, and to permit persons to whom the
+    Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+*/
+
+%modern
+%requires ../qlib/SftpServerDataProvider
+%requires ssh
+%requires QUnit
+%requires ./TestLoggerInterface.qm
+
+%exec-class SftpServerDataProviderTest
+
+class TestLogger inherits RecordingLoggerInterface {
+}
+
+class SftpServerDataProviderTest inherits QUnit::Test {
+    constructor() : Test("SftpServerDataProviderTest", "0.1", \ARGV) {
+        addTestCase("virtual filesystem basic file and directory operations", \testVirtualFilesystemBasic());
+        addTestCase("virtual filesystem mutation operations", \testVirtualFilesystemMutations());
+        addTestCase("virtual filesystem atomic exchange helpers", \testVirtualFilesystemAtomicExchange());
+        addTestCase("virtual filesystem works through SftpSession backend API", \testVirtualFilesystemWithSftpSession());
+        addTestCase("virtual filesystem inspection helpers", \testVirtualFilesystemInspectionHelpers());
+        addTestCase("virtual filesystem rejects escaping paths", \testVirtualFilesystemRejectsEscapingPaths());
+        addTestCase("virtual filesystem logger roundtrip", \testVirtualFilesystemLogger());
+        addTestCase("virtual filesystem exposes typed snapshot and listing data", \testVirtualFilesystemTypedResults());
+        addTestCase("virtual filesystem typed constructor options reject invalid values", \testVirtualFilesystemTypedOptions());
+        addTestCase("virtual filesystem accepts typed request hashes", \testVirtualFilesystemTypedRequests());
+        addTestCase("virtual filesystem accepts typed backend request hashes", \testVirtualFilesystemTypedBackendRequests());
+        addTestCase("virtual filesystem rejects invalid typed backend request hashes",
+            \testVirtualFilesystemInvalidTypedBackendRequests());
+        addTestCase("virtual exchange convenience API", \testVirtualExchangeConvenienceApi());
+        addTestCase("virtual exchange enforces claim configuration and exported path model", \testVirtualExchangePathModel());
+        addTestCase("virtual exchange exposes typed completion results and fallback archive semantics",
+            \testVirtualExchangeTypedCompletions());
+        addTestCase("virtual exchange rejects invalid entry names and typed options", \testVirtualExchangeInvalidInputs());
+        addTestCase("virtual exchange enforces inbound acceptance policy", \testVirtualExchangeInboundPolicy());
+        addTestCase("virtual exchange rejects duplicate inbound basenames deterministically",
+            \testVirtualExchangeRejectsDuplicateInboundBasenames());
+        addTestCase("virtual exchange rejects duplicate inbound size and content deterministically",
+            \testVirtualExchangeRejectsDuplicateInboundSizeAndContent());
+        addTestCase("virtual exchange enforces inbound file-count and total-byte quotas",
+            \testVirtualExchangeInboundQuotas());
+        addTestCase("virtual exchange supports directory policy overrides and accepted checksums",
+            \testVirtualExchangeDirectoryPoliciesAndChecksums());
+        addTestCase("virtual exchange enforces content-aware inbound policy",
+            \testVirtualExchangeContentAwareInboundPolicy());
+        addTestCase("virtual exchange supports custom inbound validation callbacks",
+            \testVirtualExchangeCustomInboundValidation());
+        addTestCase("virtual exchange supports principal-aware inbound policy and routing",
+            \testVirtualExchangePrincipalAwareInboundPolicy());
+        addTestCase("virtual exchange enforces principal-scoped quotas in a shared inbound root",
+            \testVirtualExchangePrincipalScopedQuotas());
+        addTestCase("virtual exchange enforces concurrent upload caps deterministically",
+            \testVirtualExchangeConcurrentUploadCap());
+        addTestCase("virtual exchange stamps and cleans up retention metadata deterministically",
+            \testVirtualExchangeRetentionCleanup());
+        addTestCase("virtual exchange emits typed outbound completion events",
+            \testVirtualExchangeOutboundCompletionEvents());
+        addTestCase("virtual exchange logs event listener failures at error level",
+            \testVirtualExchangeLoggerLevels());
+        addTestCase("virtual exchange enforces inbound acceptance policy for source_path submissions",
+            \testVirtualExchangeInboundPolicyWithSourcePath());
+        addTestCase("virtual exchange accepts typed request hashes", \testVirtualExchangeTypedRequests());
+        addTestCase("virtual exchange accepts typed backend request hashes", \testVirtualExchangeTypedBackendRequests());
+        addTestCase("virtual exchange rejects invalid typed backend request hashes",
+            \testVirtualExchangeInvalidTypedBackendRequests());
+        addTestCase("virtual exchange works through SftpSession backend API", \testVirtualExchangeWithSftpSession());
+        addTestCase("virtual exchange record store convenience API", \testVirtualExchangeRecordStoreApi());
+        addTestCase("virtual exchange record store accepts typed requests", \testVirtualExchangeRecordStoreTypedRequests());
+        addTestCase("virtual exchange record store rejects mismatched typed completion modes",
+            \testVirtualExchangeRecordStoreRejectsMismatchedCompletionMode());
+        addTestCase("virtual exchange record store works through backend API", \testVirtualExchangeRecordStoreBackend());
+        set_return_value(main());
+    }
+
+    private hash<Qore::Ssh::SshSessionInfo> getSessionInfo() {
+        date ts = now();
+        return <Qore::Ssh::SshSessionInfo>{
+            "session_id": "provider-1",
+            "server_name": "srv",
+            "listener_name": "lst",
+            "remote_address": "127.0.0.1",
+            "remote_port": 22,
+            "local_address": "127.0.0.1",
+            "local_port": 2222,
+            "username": "user",
+            "authenticated": True,
+            "auth_method": "none",
+            "principal": "principal:user",
+            "started": ts,
+            "last_activity": ts,
+        };
+    }
+
+    private hash<Qore::Ssh::SftpSessionInfo> getSftpInfo() {
+        return <Qore::Ssh::SftpSessionInfo>{
+            "session_info": getSessionInfo(),
+            "principal": "principal:user",
+            "root_dir": "/virtual",
+            "read_only": False,
+            "session_data": {"tenant": "test"},
+        };
+    }
+
+    private string getTmpFile(string suffix) {
+        return sprintf("/tmp/module-ssh-provider-test-%d-%d%s", getpid(), now_us(), suffix);
+    }
+
+    private nothing cleanupFile(string path) {
+        if (is_readable(path)) {
+            unlink(path);
+        }
+    }
+
+    private nothing writeTextFile(string path, string data) {
+        File f();
+        f.open(path, O_WRONLY | O_CREAT | O_TRUNC, 0600);
+        f.write(data);
+        f.close();
+    }
+
+    testVirtualFilesystemBasic() {
+        SftpServerDataProvider::VirtualSftpFilesystem vfs(<SftpServerDataProvider::VirtualSftpFilesystemOptions>{
+            "archive_dir": "/archive",
+        });
+        vfs.addDirectory("/inbound");
+        vfs.addTextFile("/outbound/report.txt", "payload\n", {"kind": "report"});
+
+        hash<auto> root_listing = vfs.list({"path": "/"});
+        assertTrue(root_listing.exists);
+        assertEq(3, root_listing.entries.size());
+
+        hash<auto> stat = vfs.stat({"path": "/outbound/report.txt"});
+        assertTrue(stat.exists);
+        assertFalse(stat.directory);
+        assertEq(8, stat.size);
+        assertEq("payload\n", vfs.getFileText("/outbound/report.txt"));
+
+        hash<auto> read_result = vfs.openRead({"path": "/outbound/report.txt"});
+        assertEq(binary("payload\n"), read_result.data);
+    }
+
+    testVirtualFilesystemMutations() {
+        SftpServerDataProvider::VirtualSftpFilesystem vfs();
+        vfs.mkdir({"path": "/incoming"});
+        vfs.addTextFile("/incoming/a.txt", "a\n");
+
+        hash<auto> rename_result = vfs.rename({
+            "path": "/incoming/a.txt",
+            "target_path": "/incoming/b.txt",
+        });
+        assertTrue(rename_result.completed);
+        assertEq("a\n", vfs.getFileText("/incoming/b.txt"));
+
+        hash<auto> remove_result = vfs.removePath({"path": "/incoming/b.txt"});
+        assertTrue(remove_result.completed);
+        assertFalse(vfs.exists("/incoming/b.txt"));
+
+        hash<auto> rmdir_result = vfs.rmdir({"path": "/incoming"});
+        assertTrue(rmdir_result.completed);
+        assertFalse(vfs.exists("/incoming"));
+    }
+
+    testVirtualFilesystemAtomicExchange() {
+        SftpServerDataProvider::VirtualSftpFilesystem vfs(<SftpServerDataProvider::VirtualSftpFilesystemOptions>{
+            "archive_dir": "/archive",
+        });
+        vfs.submit({
+            "path": "/exchange/input.dat",
+            "data": binary("input\n"),
+            "metadata": {"kind": "inbound"},
+        });
+
+        hash<SftpServerDataProvider::VirtualSftpPathRequest> list_req
+            = <SftpServerDataProvider::VirtualSftpPathRequest>{"path": "/exchange"};
+        hash<SftpServerDataProvider::VirtualSftpListResult> listing = vfs.listAvailable(list_req);
+        assertEq(1, listing.entries.size());
+
+        hash<SftpServerDataProvider::VirtualSftpPathRequest> retrieve_req
+            = <SftpServerDataProvider::VirtualSftpPathRequest>{"path": "/exchange/input.dat"};
+        hash<SftpServerDataProvider::VirtualSftpRetrieveResult> retrieve = vfs.retrieve(retrieve_req);
+        assertEq(binary("input\n"), retrieve.data);
+        assertFalse(retrieve.transfer_info.completed);
+
+        hash<SftpServerDataProvider::VirtualSftpCompletionRequest> complete_req
+            = <SftpServerDataProvider::VirtualSftpCompletionRequest>{
+                "path": "/exchange/input.dat",
+                "completion_mode": "archive",
+            };
+        hash<SftpServerDataProvider::VirtualSftpOperationResult> complete = vfs.completeRetrieve(complete_req);
+        assertTrue(complete.completed);
+        assertFalse(vfs.exists("/exchange/input.dat"));
+        assertEq("input\n", vfs.getFileText("/archive/input.dat"));
+    }
+
+    testVirtualFilesystemWithSftpSession() {
+        SftpServerDataProvider::VirtualSftpFilesystem vfs();
+        vfs.addTextFile("/outbound/report.dat", "report\n");
+
+        Qore::Ssh::SftpSession s(getSftpInfo());
+        s.setBackend(vfs);
+
+        binary data = s.retrieveData("/outbound/report.dat", {"kind": "test"});
+        assertEq(binary("report\n"), data);
+
+        hash<Qore::Ssh::SftpOperationResult> submit_result
+            = s.submitData("/inbound/upload.dat", binary("upload\n"), {"kind": "upload"});
+        assertTrue(submit_result.completed);
+        assertEq("upload\n", vfs.getFileText("/inbound/upload.dat"));
+
+        hash<Qore::Ssh::SftpOperationResult> delete_result
+            = s.completeRetrieveDelete("/outbound/report.dat");
+        assertTrue(delete_result.completed);
+        assertFalse(vfs.exists("/outbound/report.dat"));
+    }
+
+    testVirtualFilesystemInspectionHelpers() {
+        SftpServerDataProvider::VirtualSftpFilesystem vfs();
+        vfs.addDirectory("/tree/branch");
+        vfs.addTextFile("/tree/root.txt", "root\n");
+        vfs.addTextFile("/tree/branch/leaf.txt", "leaf\n", {"kind": "leaf"});
+
+        list<string> dirs = vfs.listDirectoryPaths("/tree");
+        assertEq(2, dirs.size());
+        assertEq("/tree", dirs[0]);
+        assertEq("/tree/branch", dirs[1]);
+
+        list<string> files = vfs.listFilePaths("/tree");
+        assertEq(2, files.size());
+        assertEq("/tree/branch/leaf.txt", files[0]);
+        assertEq("/tree/root.txt", files[1]);
+
+        hash<SftpServerDataProvider::VirtualSftpSnapshot> snapshot = vfs.exportSnapshot("/tree");
+        assertEq("/tree", snapshot.root_path);
+        assertEq(2, snapshot.file_paths.size());
+        assertEq(binary("leaf\n"), snapshot.files{"/tree/branch/leaf.txt"}.data);
+        assertEq("leaf", snapshot.files{"/tree/branch/leaf.txt"}.metadata.kind);
+        assertEq(NOTHING, snapshot.files{"/tree/branch/leaf.txt"}.state);
+    }
+
+    testVirtualFilesystemRejectsEscapingPaths() {
+        SftpServerDataProvider::VirtualSftpFilesystem vfs();
+        assertThrows("VIRTUAL-SFTP-FS-ERROR", sub() { vfs.addTextFile("/../../bad.txt", "bad"); });
+        assertThrows("VIRTUAL-SFTP-FS-ERROR", sub() { vfs.stat({"path": "relative.txt"}); });
+    }
+
+    testVirtualFilesystemLogger() {
+        TestLogger logger();
+        SftpServerDataProvider::VirtualSftpFilesystem vfs(<SftpServerDataProvider::VirtualSftpFilesystemOptions>{
+            "logger": logger,
+        });
+        assertEq(logger, vfs.getLogger());
+        vfs.addTextFile("/logged.txt", "log me\n");
+        vfs.rename({"path": "/logged.txt", "target_path": "/renamed.txt"});
+        vfs.removePath({"path": "/renamed.txt"});
+        assertTrue(logger.events.size() >= 3);
+        for (int i = 0; i < logger.events.size(); ++i) {
+            assertEq("detail", logger.events[i].level);
+        }
+    }
+
+    testVirtualFilesystemTypedResults() {
+        SftpServerDataProvider::VirtualSftpFilesystem vfs();
+        vfs.addDirectory("/typed");
+        vfs.addTextFile("/typed/file.txt", "typed\n", {"kind": "typed"});
+
+        hash<SftpServerDataProvider::VirtualSftpSnapshot> snapshot = vfs.exportSnapshot("/typed");
+        assertEq("/typed", snapshot.root_path);
+        assertEq(1, snapshot.file_paths.size());
+        hash<SftpServerDataProvider::VirtualSftpFileSnapshot> file_snapshot = snapshot.files{"/typed/file.txt"};
+        assertEq(6, file_snapshot.size);
+        assertEq(binary("typed\n"), file_snapshot.data);
+        assertEq("typed", file_snapshot.metadata.kind);
+        assertEq(NOTHING, file_snapshot.state);
+
+        list<hash<SftpServerDataProvider::VirtualSftpEntryInfo>> listing = vfs.list({"path": "/typed"}).entries;
+        assertEq(1, listing.size());
+        assertEq("file.txt", listing[0].filename);
+        assertFalse(listing[0].directory);
+        assertEq(6, listing[0].size);
+        assertEq(NOTHING, listing[0].state);
+    }
+
+    testVirtualFilesystemTypedOptions() {
+        hash<SftpServerDataProvider::VirtualSftpFilesystemOptions> options
+            = <SftpServerDataProvider::VirtualSftpFilesystemOptions>{
+                "archive_dir": "/archive",
+                "default_file_permissions": 0100600,
+            };
+        SftpServerDataProvider::VirtualSftpFilesystem vfs(options);
+        vfs.addTextFile("/typed.txt", "typed options\n");
+        hash<SftpServerDataProvider::VirtualSftpSnapshot> snapshot = vfs.exportSnapshot("/");
+        assertEq(0100600, snapshot.files{"/typed.txt"}.permissions);
+
+        assertThrows("RUNTIME-TYPE-ERROR", sub() {
+            hash<auto> raw = {
+                "archive_dir": 1,
+            };
+            hash<SftpServerDataProvider::VirtualSftpFilesystemOptions> bad
+                = cast<hash<SftpServerDataProvider::VirtualSftpFilesystemOptions>>(raw);
+            assertEq(NOTHING, bad);
+        });
+    }
+
+    testVirtualFilesystemTypedRequests() {
+        SftpServerDataProvider::VirtualSftpFilesystem vfs();
+        hash<SftpServerDataProvider::VirtualSftpSubmissionRequest> submit_req
+            = <SftpServerDataProvider::VirtualSftpSubmissionRequest>{
+                "path": "/typed/request.txt",
+                "data": binary("typed request\n"),
+                "metadata": {"kind": "typed"},
+            };
+        hash<SftpServerDataProvider::VirtualSftpOperationResult> submit_result = vfs.submit(submit_req);
+        assertTrue(submit_result.completed);
+
+        hash<SftpServerDataProvider::VirtualSftpPathRequest> list_req
+            = <SftpServerDataProvider::VirtualSftpPathRequest>{"path": "/typed"};
+        hash<SftpServerDataProvider::VirtualSftpListResult> list_result = vfs.listAvailable(list_req);
+        assertEq(1, list_result.entries.size());
+
+        hash<SftpServerDataProvider::VirtualSftpPathRequest> retrieve_req
+            = <SftpServerDataProvider::VirtualSftpPathRequest>{"path": "/typed/request.txt"};
+        hash<SftpServerDataProvider::VirtualSftpRetrieveResult> retrieve_result = vfs.retrieve(retrieve_req);
+        assertEq(binary("typed request\n"), retrieve_result.data);
+
+        assertThrows("RUNTIME-TYPE-ERROR", sub() {
+            hash<auto> raw = {"path": 1};
+            hash<SftpServerDataProvider::VirtualSftpPathRequest> bad
+                = cast<hash<SftpServerDataProvider::VirtualSftpPathRequest>>(raw);
+            assertEq(NOTHING, bad);
+        });
+    }
+
+    testVirtualFilesystemTypedBackendRequests() {
+        SftpServerDataProvider::VirtualSftpFilesystem vfs();
+        vfs.addTextFile("/backend/report.txt", "backend\n", {"kind": "backend"});
+
+        hash<Qore::Ssh::SftpPathRequest> stat_req = <Qore::Ssh::SftpPathRequest>{"path": "/backend/report.txt"};
+        hash<Qore::Ssh::SftpPathInfo> stat_result = vfs.stat(stat_req);
+        assertTrue(stat_result.exists);
+        assertFalse(stat_result.directory);
+        assertEq(8, stat_result.size);
+
+        hash<Qore::Ssh::SftpPathRequest> list_req = <Qore::Ssh::SftpPathRequest>{"path": "/backend"};
+        hash<Qore::Ssh::SftpListResult> list_result = vfs.list(list_req);
+        assertEq(1, list_result.entries.size());
+
+        hash<Qore::Ssh::SftpOpenRequest> open_req = <Qore::Ssh::SftpOpenRequest>{"path": "/backend/report.txt"};
+        hash<Qore::Ssh::SftpOpenResult> open_result = vfs.openRead(open_req);
+        assertEq(binary("backend\n"), open_result.data);
+
+        hash<Qore::Ssh::SftpRenameRequest> rename_req = <Qore::Ssh::SftpRenameRequest>{
+            "path": "/backend/report.txt",
+            "target_path": "/backend/renamed.txt",
+        };
+        hash<Qore::Ssh::SftpOperationResult> rename_result = vfs.rename(rename_req);
+        assertTrue(rename_result.completed);
+        assertEq("/backend/renamed.txt", rename_result.path);
+
+        hash<Qore::Ssh::SftpSubmissionRequest> write_req = <Qore::Ssh::SftpSubmissionRequest>{
+            "path": "/backend/written.txt",
+            "data": binary("written\n"),
+            "metadata": {"kind": "write"},
+        };
+        hash<Qore::Ssh::SftpOpenResult> open_write_result = vfs.openWrite(<Qore::Ssh::SftpOpenRequest>{
+            "path": "/backend/written.txt",
+        });
+        assertTrue(open_write_result.exists);
+        hash<Qore::Ssh::SftpOperationResult> close_write_result = vfs.closeWrite(write_req);
+        assertTrue(close_write_result.completed);
+        assertEq("written\n", vfs.getFileText("/backend/written.txt"));
+    }
+
+    testVirtualFilesystemInvalidTypedBackendRequests() {
+        SftpServerDataProvider::VirtualSftpFilesystem vfs();
+
+        assertThrows("RUNTIME-TYPE-ERROR", sub() {
+            hash<auto> raw = {"path": 1};
+            hash<Qore::Ssh::SftpPathRequest> bad = cast<hash<Qore::Ssh::SftpPathRequest>>(raw);
+            assertEq(NOTHING, bad);
+        });
+
+        assertThrows("RUNTIME-TYPE-ERROR", sub() {
+            hash<auto> raw = {"path": "/ok", "target_path": 1};
+            hash<Qore::Ssh::SftpRenameRequest> bad = cast<hash<Qore::Ssh::SftpRenameRequest>>(raw);
+            assertEq(NOTHING, bad);
+        });
+    }
+
+    testVirtualExchangeConvenienceApi() {
+        SftpServerDataProvider::VirtualSftpExchange exchange(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "archive_dir": "/archive",
+            "claim_dir": "/claimed",
+        });
+        exchange.addOutboundText("report.txt", "report\n", {"kind": "report"});
+        exchange.addInboundText("seed.txt", "seed\n");
+
+        assertEq("/inbound", exchange.getInboundDir());
+        assertEq("/outbound", exchange.getOutboundDir());
+        assertEq("report\n", exchange.getOutboundData("report.txt").toString("UTF-8"));
+        assertEq("seed\n", exchange.getInboundData("seed.txt").toString("UTF-8"));
+        assertEq(1, exchange.listOutbound().size());
+        assertEq(1, exchange.listInbound().size());
+
+        hash<SftpServerDataProvider::VirtualSftpRecordInfo> claim_result = exchange.claimOutbound("report.txt");
+        assertTrue(claim_result.completed);
+        assertEq("claim", claim_result.operation);
+        assertEq("report\n", exchange.getFilesystem().getFileText("/claimed/report.txt"));
+
+        exchange.addOutboundText("archive.txt", "archive\n");
+        hash<SftpServerDataProvider::VirtualSftpRecordInfo> archive_result = exchange.archiveOutbound("archive.txt");
+        assertTrue(archive_result.completed);
+        assertEq("archive", archive_result.operation);
+        assertEq("archive\n", exchange.getFilesystem().getFileText("/archive/archive.txt"));
+
+        exchange.addOutboundText("delete.txt", "delete\n");
+        hash<SftpServerDataProvider::VirtualSftpRecordInfo> delete_result = exchange.deleteOutbound("delete.txt");
+        assertTrue(delete_result.completed);
+        assertEq("delete", delete_result.operation);
+        assertFalse(exchange.getFilesystem().exists("/outbound/delete.txt"));
+    }
+
+    testVirtualExchangePathModel() {
+        SftpServerDataProvider::VirtualSftpExchange exchange(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "archive_dir": "/archive",
+        });
+        exchange.addOutboundText("ready.txt", "ready\n", {"kind": "ready"});
+
+        hash<SftpServerDataProvider::VirtualSftpPathRequest> list_root_req
+            = <SftpServerDataProvider::VirtualSftpPathRequest>{"path": "/"};
+        hash<SftpServerDataProvider::VirtualSftpListResult> list_root = exchange.listAvailable(list_root_req);
+        assertEq("/outbound", list_root.path);
+        assertEq(1, list_root.entries.size());
+        hash<SftpServerDataProvider::VirtualSftpEntryInfo> root_entry = list_root.entries[0];
+        assertEq("ready.txt", root_entry.filename);
+
+        hash<SftpServerDataProvider::VirtualSftpPathRequest> retrieve_simple_req
+            = <SftpServerDataProvider::VirtualSftpPathRequest>{"path": "/ready.txt"};
+        hash<SftpServerDataProvider::VirtualSftpRetrieveResult> retrieve_simple = exchange.retrieve(retrieve_simple_req);
+        assertEq(binary("ready\n"), retrieve_simple.data);
+        assertEq("/outbound/ready.txt", retrieve_simple.path);
+
+        hash<SftpServerDataProvider::VirtualSftpRecordInfo> claim_result = exchange.claimOutbound("ready.txt");
+        assertTrue(claim_result.completed);
+        assertEq("/outbound/ready.txt", claim_result.path);
+        hash<SftpServerDataProvider::VirtualSftpSnapshot> claimed_snapshot
+            = exchange.getFilesystem().exportSnapshot("/outbound");
+        assertTrue(claimed_snapshot.files{"/outbound/ready.txt"}.state.claimed);
+    }
+
+    testVirtualExchangeTypedCompletions() {
+        SftpServerDataProvider::VirtualSftpExchange exchange();
+        exchange.addOutboundText("archive-me.txt", "archive me\n", {"kind": "archive"});
+
+        hash<SftpServerDataProvider::VirtualSftpRecordInfo> archive_result = exchange.archiveOutbound("archive-me.txt");
+        assertTrue(archive_result.completed);
+        assertEq("outbound", archive_result.queue);
+        assertEq("archive", archive_result.operation);
+        assertEq("archive-me.txt", archive_result.final_name);
+        assertEq("/outbound/archive-me.txt", archive_result.path);
+
+        hash<SftpServerDataProvider::VirtualSftpSnapshot> archived_snapshot
+            = exchange.getFilesystem().exportSnapshot("/outbound");
+        assertTrue(archived_snapshot.files{"/outbound/archive-me.txt"}.state.archived);
+
+        exchange.addOutboundText("delete-me.txt", "delete me\n");
+        hash<SftpServerDataProvider::VirtualSftpRecordInfo> delete_result = exchange.deleteOutbound("delete-me.txt");
+        assertTrue(delete_result.completed);
+        assertEq("delete", delete_result.operation);
+        assertEq("delete-me.txt", delete_result.final_name);
+        assertEq(NOTHING, delete_result.path);
+    }
+
+    testVirtualExchangeInvalidInputs() {
+        hash<SftpServerDataProvider::VirtualSftpExchangeOptions> options
+            = <SftpServerDataProvider::VirtualSftpExchangeOptions>{
+                "archive_dir": "/archive",
+                "claim_dir": "/claimed",
+            };
+        SftpServerDataProvider::VirtualSftpExchange exchange(options);
+
+        assertThrows("VIRTUAL-SFTP-EXCHANGE-ERROR", sub() {
+            exchange.addOutboundText("nested/bad.txt", "bad\n");
+        });
+        assertThrows("VIRTUAL-SFTP-EXCHANGE-ERROR", sub() {
+            exchange.addInboundText("..", "bad\n");
+        });
+        assertThrows("RUNTIME-TYPE-ERROR", sub() {
+            hash<auto> raw = {
+                "claim_dir": 1,
+            };
+            hash<SftpServerDataProvider::VirtualSftpExchangeOptions> bad
+                = cast<hash<SftpServerDataProvider::VirtualSftpExchangeOptions>>(raw);
+            assertEq(NOTHING, bad);
+        });
+        assertThrows("VIRTUAL-SFTP-EXCHANGE-ERROR", sub() {
+            SftpServerDataProvider::VirtualSftpExchange exchange_with_bad_payload_mode(
+                <SftpServerDataProvider::VirtualSftpExchangeOptions>{
+                "inbound_event_payload_mode": "bad-mode",
+            });
+            assertEq(NOTHING, exchange_with_bad_payload_mode);
+        });
+    }
+
+    testVirtualExchangeInboundPolicy() {
+        SftpServerDataProvider::VirtualSftpExchange exchange(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "inbound_policy": <SftpServerDataProvider::VirtualSftpInboundPolicy>{
+                "accept_filename_glob": "*.dat",
+                "reject_filename_regex": ".*forbidden.*",
+                "min_size": 2,
+                "max_size": 6,
+                "allow_overwrite": False,
+                "allow_hidden_files": False,
+            },
+        });
+
+        hash<SftpServerDataProvider::VirtualSftpInboundPolicy> policy = exchange.getInboundPolicy();
+        assertEq("*.dat", policy.accept_filename_glob);
+        assertEq(6, policy.max_size);
+        assertEq(False, policy.allow_overwrite);
+
+        exchange.addInboundData("ok.dat", binary("okay"), {"kind": "policy"});
+        assertEq("okay", exchange.getInboundData("ok.dat").toString("UTF-8"));
+
+        assertThrows("VIRTUAL-SFTP-EXCHANGE-ERROR", sub() {
+            exchange.addInboundData("bad.txt", binary("okay"));
+        });
+        assertThrows("VIRTUAL-SFTP-EXCHANGE-ERROR", sub() {
+            exchange.addInboundData(".hidden.dat", binary("okay"));
+        });
+        assertThrows("VIRTUAL-SFTP-EXCHANGE-ERROR", sub() {
+            exchange.addInboundData("forbidden.dat", binary("okay"));
+        });
+        assertThrows("VIRTUAL-SFTP-EXCHANGE-ERROR", sub() {
+            exchange.addInboundData("small.dat", binary("x"));
+        });
+        assertThrows("VIRTUAL-SFTP-EXCHANGE-ERROR", sub() {
+            exchange.addInboundData("large.dat", binary("toolong"));
+        });
+        assertThrows("VIRTUAL-SFTP-EXCHANGE-ERROR", sub() {
+            exchange.addInboundData("ok.dat", binary("again"));
+        });
+
+        assertThrows("VIRTUAL-SFTP-EXCHANGE-ERROR", sub() {
+            exchange.submit(<SftpServerDataProvider::VirtualSftpSubmissionRequest>{
+                "path": "submit.txt",
+                "data": binary("okay"),
+            });
+        });
+    }
+
+    testVirtualExchangePrincipalAwareInboundPolicy() {
+        SftpServerDataProvider::VirtualSftpExchange exchange(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "inbound_policy": <SftpServerDataProvider::VirtualSftpInboundPolicy>{
+                "allow_principals": ("principal:allowed",),
+                "deny_principals": ("principal:blocked",),
+                "principal_routes": (
+                    <SftpServerDataProvider::VirtualSftpPrincipalRoute>{
+                        "principal": "principal:allowed",
+                        "inbound_subdir": "tenant-allowed",
+                    },
+                ),
+            },
+        });
+
+        hash<Qore::Ssh::SftpSessionInfo> allowed_info = getSftpInfo();
+        allowed_info.principal = "principal:allowed";
+        allowed_info.session_info.listener_name = "principal-listener";
+
+        hash<SftpServerDataProvider::VirtualSftpOperationResult> allowed_result
+            = exchange.submit(<SftpServerDataProvider::VirtualSftpSubmissionRequest>{
+                "path": "/inbound/routed.dat",
+                "session_info": allowed_info,
+                "data": binary("allowed\n"),
+            });
+        assertTrue(allowed_result.completed);
+        assertTrue(exchange.getFilesystem().exists("/inbound/tenant-allowed/routed.dat"));
+        assertEq("allowed\n", exchange.getFilesystem().getFileText("/inbound/tenant-allowed/routed.dat"));
+
+        hash<Qore::Ssh::SftpListResult> routed_list = exchange.list(<Qore::Ssh::SftpPathRequest>{
+            "path": "/inbound",
+            "session_info": allowed_info,
+        });
+        assertEq("/inbound", routed_list.path);
+        assertEq(1, routed_list.entries.size());
+        assertEq("routed.dat", routed_list.entries[0].filename);
+
+        hash<Qore::Ssh::SftpSessionInfo> blocked_info = getSftpInfo();
+        blocked_info.principal = "principal:blocked";
+        assertThrows("VIRTUAL-SFTP-EXCHANGE-ERROR", sub() {
+            exchange.submit(<SftpServerDataProvider::VirtualSftpSubmissionRequest>{
+                "path": "/inbound/blocked.dat",
+                "session_info": blocked_info,
+                "data": binary("blocked\n"),
+            });
+        });
+
+        hash<Qore::Ssh::SftpSessionInfo> unknown_info = getSftpInfo();
+        unknown_info.principal = "principal:unknown";
+        assertThrows("VIRTUAL-SFTP-EXCHANGE-ERROR", sub() {
+            exchange.submit(<SftpServerDataProvider::VirtualSftpSubmissionRequest>{
+                "path": "/inbound/unknown.dat",
+                "session_info": unknown_info,
+                "data": binary("unknown\n"),
+            });
+        });
+    }
+
+    testVirtualExchangePrincipalScopedQuotas() {
+        hash<Qore::Ssh::SftpSessionInfo> alpha_info = getSftpInfo();
+        alpha_info.principal = "principal:alpha";
+        alpha_info.session_info.session_id = "session-alpha";
+        hash<Qore::Ssh::SftpSessionInfo> beta_info = getSftpInfo();
+        beta_info.principal = "principal:beta";
+        beta_info.session_info.session_id = "session-beta";
+
+        SftpServerDataProvider::VirtualSftpExchange exchange(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "inbound_policy": <SftpServerDataProvider::VirtualSftpInboundPolicy>{
+                "principal_policies": (
+                    <SftpServerDataProvider::VirtualSftpPrincipalPolicy>{
+                        "principal": "principal:alpha",
+                        "policy": <SftpServerDataProvider::VirtualSftpInboundPolicyRule>{
+                            "max_file_count": 1,
+                            "reject_duplicate_name": True,
+                        },
+                    },
+                    <SftpServerDataProvider::VirtualSftpPrincipalPolicy>{
+                        "principal": "principal:beta",
+                        "policy": <SftpServerDataProvider::VirtualSftpInboundPolicyRule>{
+                            "max_file_count": 1,
+                            "reject_duplicate_name": True,
+                        },
+                    },
+                ),
+            },
+        });
+
+        hash<SftpServerDataProvider::VirtualSftpOperationResult> alpha_result
+            = exchange.submit(<SftpServerDataProvider::VirtualSftpSubmissionRequest>{
+                "path": "/inbound/alpha/shared.dat",
+                "data": binary("alpha\n"),
+                "session_info": alpha_info,
+            });
+        assertTrue(alpha_result.completed);
+
+        hash<SftpServerDataProvider::VirtualSftpOperationResult> beta_result
+            = exchange.submit(<SftpServerDataProvider::VirtualSftpSubmissionRequest>{
+                "path": "/inbound/beta/shared.dat",
+                "data": binary("beta\n"),
+                "session_info": beta_info,
+            });
+        assertTrue(beta_result.completed);
+
+        assertThrows("VIRTUAL-SFTP-EXCHANGE-ERROR", sub() {
+            exchange.submit(<SftpServerDataProvider::VirtualSftpSubmissionRequest>{
+                "path": "/inbound/alpha/second.dat",
+                "data": binary("second\n"),
+                "session_info": alpha_info,
+            });
+        });
+
+        assertEq("alpha\n", exchange.getFilesystem().getFileText("/inbound/alpha/shared.dat"));
+        assertEq("beta\n", exchange.getFilesystem().getFileText("/inbound/beta/shared.dat"));
+        assertFalse(exchange.getFilesystem().exists("/inbound/alpha/second.dat"));
+    }
+
+    testVirtualExchangeConcurrentUploadCap() {
+        list<hash<auto>> events = ();
+        SftpServerDataProvider::VirtualSftpExchange exchange(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "inbound_policy": <SftpServerDataProvider::VirtualSftpInboundPolicy>{
+                "max_concurrent_uploads": 1,
+            },
+        });
+        exchange.registerInboundEventListener(sub(hash<SftpServerDataProvider::VirtualSftpInboundEventInfo> event) {
+            events += (event,);
+        });
+
+        hash<Qore::Ssh::SftpOpenResult> first_open = exchange.openWrite(<Qore::Ssh::SftpOpenRequest>{
+            "path": "/inbound/first.dat",
+            "session_info": getSftpInfo(),
+        });
+        assertEq("/inbound/first.dat", first_open.path);
+        assertTrue(first_open.backend_handle.size() > 0);
+
+        assertThrows("VIRTUAL-SFTP-EXCHANGE-ERROR", sub() {
+            exchange.openWrite(<Qore::Ssh::SftpOpenRequest>{
+                "path": "/inbound/second.dat",
+                "session_info": getSftpInfo(),
+            });
+        });
+        assertEq(1, events.size());
+        assertFalse(events[0].accepted);
+        assertEq(SftpServerDataProvider::InboundRejectMaxConcurrentUploads, events[0].reason_code);
+        assertEq("/inbound/second.dat", events[0].path);
+
+        hash<Qore::Ssh::SftpOperationResult> first_close = exchange.closeWrite(<Qore::Ssh::SftpCloseRequest>{
+            "path": "/inbound/first.dat",
+            "data": binary("first\n"),
+            "session_info": getSftpInfo(),
+            "backend_handle": first_open.backend_handle,
+        });
+        assertTrue(first_close.completed);
+
+        hash<Qore::Ssh::SftpOpenResult> second_open = exchange.openWrite(<Qore::Ssh::SftpOpenRequest>{
+            "path": "/inbound/second.dat",
+            "session_info": getSftpInfo(),
+        });
+        assertEq("/inbound/second.dat", second_open.path);
+        assertTrue(second_open.backend_handle.size() > 0);
+        hash<Qore::Ssh::SftpOperationResult> second_close = exchange.closeWrite(<Qore::Ssh::SftpCloseRequest>{
+            "path": "/inbound/second.dat",
+            "data": binary("second\n"),
+            "session_info": getSftpInfo(),
+            "backend_handle": second_open.backend_handle,
+        });
+        assertTrue(second_close.completed);
+        assertEq("second\n", exchange.getFilesystem().getFileText("/inbound/second.dat"));
+    }
+
+    testVirtualExchangeRetentionCleanup() {
+        SftpServerDataProvider::VirtualSftpExchange exchange(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "archive_dir": "/archive",
+            "claim_dir": "/claim",
+            "inbound_retention_policy": <SftpServerDataProvider::VirtualSftpRetentionPolicy>{
+                "max_age_seconds": 10,
+            },
+            "archive_retention_policy": <SftpServerDataProvider::VirtualSftpRetentionPolicy>{
+                "max_age_seconds": 20,
+            },
+            "claim_retention_policy": <SftpServerDataProvider::VirtualSftpRetentionPolicy>{
+                "max_age_seconds": 30,
+            },
+        });
+        exchange.submit(<SftpServerDataProvider::VirtualSftpSubmissionRequest>{
+            "path": "/inbound/tenant/inbound.dat",
+            "data": binary("inbound\n"),
+        });
+        exchange.addOutboundText("archive.dat", "archive\n");
+        exchange.addOutboundText("claim.dat", "claim\n");
+        exchange.archiveOutbound("archive.dat");
+        exchange.claimOutbound("claim.dat");
+
+        hash<Qore::Ssh::SftpPathInfo> inbound_stat = exchange.stat(<Qore::Ssh::SftpPathRequest>{
+            "path": "/inbound/tenant/inbound.dat",
+        });
+        hash<Qore::Ssh::SftpPathInfo> archive_stat = exchange.stat(<Qore::Ssh::SftpPathRequest>{
+            "path": "/archive/archive.dat",
+        });
+        hash<Qore::Ssh::SftpPathInfo> claim_stat = exchange.stat(<Qore::Ssh::SftpPathRequest>{
+            "path": "/claim/claim.dat",
+        });
+
+        assertEq(SftpServerDataProvider::RetentionQueueInbound, inbound_stat.metadata.retention_queue);
+        assertEq(inbound_stat.metadata.retained_at + 10, inbound_stat.metadata.expires_at);
+        assertEq(SftpServerDataProvider::RetentionQueueArchive, archive_stat.metadata.retention_queue);
+        assertEq(archive_stat.metadata.retained_at + 20, archive_stat.metadata.expires_at);
+        assertEq(SftpServerDataProvider::RetentionQueueClaim, claim_stat.metadata.retention_queue);
+        assertEq(claim_stat.metadata.retained_at + 30, claim_stat.metadata.expires_at);
+
+        hash<SftpServerDataProvider::VirtualSftpRetentionCleanupResult> inbound_cleanup
+            = exchange.cleanupExpired(<SftpServerDataProvider::VirtualSftpRetentionCleanupRequest>{
+                "queue": SftpServerDataProvider::RetentionQueueInbound,
+                "now_s": inbound_stat.metadata.expires_at,
+                "remove_empty_directories": True,
+            });
+        hash<SftpServerDataProvider::VirtualSftpRetentionCleanupResult> archive_cleanup
+            = exchange.cleanupExpired(SftpServerDataProvider::RetentionQueueArchive, archive_stat.metadata.expires_at, True);
+        hash<SftpServerDataProvider::VirtualSftpRetentionCleanupResult> claim_cleanup
+            = exchange.cleanupExpired(SftpServerDataProvider::RetentionQueueClaim, claim_stat.metadata.expires_at, True);
+
+        assertEq(1, inbound_cleanup.removed_count);
+        assertEq(("/inbound/tenant/inbound.dat",), inbound_cleanup.removed_paths);
+        assertTrue(inlist("/inbound/tenant", inbound_cleanup.removed_directories));
+        assertEq(1, archive_cleanup.removed_count);
+        assertEq(("/archive/archive.dat",), archive_cleanup.removed_paths);
+        assertEq(1, claim_cleanup.removed_count);
+        assertEq(("/claim/claim.dat",), claim_cleanup.removed_paths);
+        assertFalse(exchange.getFilesystem().exists("/inbound/tenant/inbound.dat"));
+        assertFalse(exchange.getFilesystem().exists("/archive/archive.dat"));
+        assertFalse(exchange.getFilesystem().exists("/claim/claim.dat"));
+
+        hash<Qore::Ssh::SftpSessionInfo> alpha_info = getSftpInfo();
+        alpha_info.principal = "principal:alpha";
+        alpha_info.session_info.principal = "principal:alpha";
+        hash<Qore::Ssh::SftpSessionInfo> beta_info = getSftpInfo();
+        beta_info.principal = "principal:beta";
+        beta_info.session_info.principal = "principal:beta";
+        exchange.submit(<SftpServerDataProvider::VirtualSftpSubmissionRequest>{
+            "path": "/inbound/shared/alpha.dat",
+            "data": binary("alpha\n"),
+            "session_info": alpha_info,
+        });
+        exchange.submit(<SftpServerDataProvider::VirtualSftpSubmissionRequest>{
+            "path": "/inbound/shared/beta.dat",
+            "data": binary("beta\n"),
+            "session_info": beta_info,
+        });
+        hash<Qore::Ssh::SftpPathInfo> alpha_stat = exchange.stat(<Qore::Ssh::SftpPathRequest>{
+            "path": "/inbound/shared/alpha.dat",
+        });
+        hash<Qore::Ssh::SftpPathInfo> beta_stat = exchange.stat(<Qore::Ssh::SftpPathRequest>{
+            "path": "/inbound/shared/beta.dat",
+        });
+        assertEq("principal:alpha", alpha_stat.metadata.retention_principal);
+        assertEq("principal:beta", beta_stat.metadata.retention_principal);
+
+        hash<SftpServerDataProvider::VirtualSftpRetentionCleanupResult> alpha_cleanup
+            = exchange.cleanupExpired(<SftpServerDataProvider::VirtualSftpRetentionCleanupRequest>{
+                "queue": SftpServerDataProvider::RetentionQueueInbound,
+                "now_s": alpha_stat.metadata.expires_at,
+                "principal": "principal:alpha",
+            });
+
+        assertEq("principal:alpha", alpha_cleanup.principal);
+        assertEq(1, alpha_cleanup.removed_count);
+        assertEq(("/inbound/shared/alpha.dat",), alpha_cleanup.removed_paths);
+        assertFalse(exchange.getFilesystem().exists("/inbound/shared/alpha.dat"));
+        assertTrue(exchange.getFilesystem().exists("/inbound/shared/beta.dat"));
+        assertEq("principal:beta", exchange.stat({"path": "/inbound/shared/beta.dat"}).metadata.retention_principal);
+    }
+
+    testVirtualExchangeRejectsDuplicateInboundBasenames() {
+        SftpServerDataProvider::VirtualSftpExchange exchange(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "inbound_policy": <SftpServerDataProvider::VirtualSftpInboundPolicy>{
+                "reject_duplicate_name": True,
+            },
+        });
+
+        exchange.getFilesystem().addDirectory("/inbound/existing");
+        exchange.getFilesystem().addTextFile("/inbound/existing/dup.dat", "existing\n");
+
+        assertThrows("VIRTUAL-SFTP-EXCHANGE-ERROR", sub() {
+            exchange.submit(<SftpServerDataProvider::VirtualSftpSubmissionRequest>{
+                "path": "/inbound/dup.dat",
+                "data": binary("new\n"),
+            });
+        });
+
+        hash<Qore::Ssh::SftpSessionInfo> routed_info = getSftpInfo();
+        routed_info.principal = "principal:routed";
+        SftpServerDataProvider::VirtualSftpExchange routed_exchange(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "inbound_policy": <SftpServerDataProvider::VirtualSftpInboundPolicy>{
+                "reject_duplicate_name": True,
+                "principal_routes": (
+                    <SftpServerDataProvider::VirtualSftpPrincipalRoute>{
+                        "principal": "principal:routed",
+                        "inbound_subdir": "tenant-routed",
+                    },
+                ),
+            },
+        });
+        routed_exchange.getFilesystem().addDirectory("/inbound/tenant-routed/existing");
+        routed_exchange.getFilesystem().addTextFile("/inbound/tenant-routed/existing/dup.dat", "existing\n");
+
+        assertThrows("VIRTUAL-SFTP-EXCHANGE-ERROR", sub() {
+            routed_exchange.submit(<SftpServerDataProvider::VirtualSftpSubmissionRequest>{
+                "path": "/inbound/dup.dat",
+                "session_info": routed_info,
+                "data": binary("new\n"),
+            });
+        });
+    }
+
+    testVirtualExchangeRejectsDuplicateInboundSizeAndContent() {
+        SftpServerDataProvider::VirtualSftpExchange size_exchange(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "inbound_policy": <SftpServerDataProvider::VirtualSftpInboundPolicy>{
+                "reject_duplicate_size": True,
+            },
+        });
+        list<hash<auto>> size_events = ();
+        int size_listener_id = size_exchange.registerInboundEventListener(
+            sub(hash<SftpServerDataProvider::VirtualSftpInboundEventInfo> event) {
+                size_events += (event,);
+            });
+        on_exit {
+            size_exchange.deregisterInboundEventListener(size_listener_id);
+        }
+        size_exchange.getFilesystem().addTextFile("/inbound/existing-size.dat", "alpha\n");
+        assertThrows("VIRTUAL-SFTP-EXCHANGE-ERROR", sub() {
+            size_exchange.submit(<SftpServerDataProvider::VirtualSftpSubmissionRequest>{
+                "path": "/inbound/new-size.dat",
+                "data": binary("omega\n"),
+            });
+        });
+        assertEq(1, size_events.size());
+        assertEq(SftpServerDataProvider::InboundRejectDuplicateSize, size_events[0].reason_code);
+        assertEq("/inbound/new-size.dat", size_events[0].path);
+
+        SftpServerDataProvider::VirtualSftpExchange hash_exchange(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "inbound_policy": <SftpServerDataProvider::VirtualSftpInboundPolicy>{
+                "reject_duplicate_hash": True,
+            },
+        });
+        list<hash<auto>> hash_events = ();
+        int hash_listener_id = hash_exchange.registerInboundEventListener(
+            sub(hash<SftpServerDataProvider::VirtualSftpInboundEventInfo> event) {
+                hash_events += (event,);
+            });
+        on_exit {
+            hash_exchange.deregisterInboundEventListener(hash_listener_id);
+        }
+        hash_exchange.getFilesystem().addTextFile("/inbound/existing-hash.dat", "same-content\n");
+
+        string hash_source = getTmpFile(".duplicate-hash-source.dat");
+        on_exit {
+            cleanupFile(hash_source);
+        }
+        writeTextFile(hash_source, "same-content\n");
+
+        assertThrows("VIRTUAL-SFTP-EXCHANGE-ERROR", sub() {
+            hash_exchange.submit(<SftpServerDataProvider::VirtualSftpSubmissionRequest>{
+                "path": "/inbound/new-hash.dat",
+                "source_path": hash_source,
+            });
+        });
+        assertEq(1, hash_events.size());
+        assertEq(SftpServerDataProvider::InboundRejectDuplicateHash, hash_events[0].reason_code);
+        assertEq("/inbound/new-hash.dat", hash_events[0].path);
+    }
+
+    testVirtualExchangeInboundQuotas() {
+        SftpServerDataProvider::VirtualSftpExchange count_exchange(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "inbound_policy": <SftpServerDataProvider::VirtualSftpInboundPolicy>{
+                "max_file_count": 1,
+            },
+        });
+        list<hash<auto>> count_events = ();
+        int count_listener_id = count_exchange.registerInboundEventListener(
+            sub(hash<SftpServerDataProvider::VirtualSftpInboundEventInfo> event) {
+                count_events += (event,);
+            });
+        on_exit {
+            count_exchange.deregisterInboundEventListener(count_listener_id);
+        }
+        count_exchange.getFilesystem().addTextFile("/inbound/existing-count.dat", "one\n");
+        assertThrows("VIRTUAL-SFTP-EXCHANGE-ERROR", sub() {
+            count_exchange.submit(<SftpServerDataProvider::VirtualSftpSubmissionRequest>{
+                "path": "/inbound/overflow-count.dat",
+                "data": binary("two\n"),
+            });
+        });
+        assertEq(1, count_events.size());
+        assertEq(SftpServerDataProvider::InboundRejectMaxFileCount, count_events[0].reason_code);
+        assertEq("/inbound/overflow-count.dat", count_events[0].path);
+
+        SftpServerDataProvider::VirtualSftpExchange size_exchange(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "inbound_policy": <SftpServerDataProvider::VirtualSftpInboundPolicy>{
+                "max_total_bytes": 8,
+            },
+        });
+        list<hash<auto>> size_events = ();
+        int size_listener_id = size_exchange.registerInboundEventListener(
+            sub(hash<SftpServerDataProvider::VirtualSftpInboundEventInfo> event) {
+                size_events += (event,);
+            });
+        on_exit {
+            size_exchange.deregisterInboundEventListener(size_listener_id);
+        }
+        size_exchange.getFilesystem().addTextFile("/inbound/existing-bytes.dat", "four\n");
+        assertThrows("VIRTUAL-SFTP-EXCHANGE-ERROR", sub() {
+            size_exchange.submit(<SftpServerDataProvider::VirtualSftpSubmissionRequest>{
+                "path": "/inbound/overflow-bytes.dat",
+                "data": binary("again\n"),
+            });
+        });
+        assertEq(1, size_events.size());
+        assertEq(SftpServerDataProvider::InboundRejectMaxTotalBytes, size_events[0].reason_code);
+        assertEq("/inbound/overflow-bytes.dat", size_events[0].path);
+    }
+
+    testVirtualExchangeDirectoryPoliciesAndChecksums() {
+        SftpServerDataProvider::VirtualSftpExchange exchange(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "generate_inbound_checksum": True,
+            "inbound_policy": <SftpServerDataProvider::VirtualSftpInboundPolicy>{
+                "max_size": 16,
+                "directory_policies": (
+                    <SftpServerDataProvider::VirtualSftpInboundDirectoryPolicy>{
+                        "subdir": "strict",
+                        "policy": <SftpServerDataProvider::VirtualSftpInboundPolicyRule>{
+                            "max_size": 4,
+                        },
+                    },
+                ),
+            },
+        });
+        list<hash<auto>> events = ();
+        int listener_id = exchange.registerInboundEventListener(
+            sub(hash<SftpServerDataProvider::VirtualSftpInboundEventInfo> event) {
+                events += (event,);
+            });
+        on_exit {
+            exchange.deregisterInboundEventListener(listener_id);
+        }
+
+        hash<SftpServerDataProvider::VirtualSftpOperationResult> ok_result
+            = exchange.submit(<SftpServerDataProvider::VirtualSftpSubmissionRequest>{
+                "path": "/inbound/strict/ok.dat",
+                "data": binary("ok\n"),
+            });
+        assertTrue(ok_result.completed);
+        assertEq(SftpServerDataProvider::ChecksumAlgorithmSha256, ok_result.checksum_algorithm);
+        assertTrue(ok_result.checksum.size() > 0);
+        hash<SftpServerDataProvider::VirtualSftpSnapshot> ok_snapshot
+            = exchange.getFilesystem().exportSnapshot("/inbound/strict");
+        assertEq(ok_result.checksum, ok_snapshot.files{"/inbound/strict/ok.dat"}.checksum);
+        assertEq(SftpServerDataProvider::ChecksumAlgorithmSha256,
+            ok_snapshot.files{"/inbound/strict/ok.dat"}.checksum_algorithm);
+        assertEq(ok_result.checksum, ok_snapshot.files{"/inbound/strict/ok.dat"}.metadata.checksum);
+        hash<SftpServerDataProvider::VirtualSftpRetrieveResult> ok_retrieve
+            = exchange.retrieve(<SftpServerDataProvider::VirtualSftpPathRequest>{
+                "path": "/inbound/strict/ok.dat",
+            });
+        assertEq(ok_result.checksum, ok_retrieve.checksum);
+        assertEq(SftpServerDataProvider::ChecksumAlgorithmSha256, ok_retrieve.checksum_algorithm);
+
+        assertThrows("VIRTUAL-SFTP-EXCHANGE-ERROR", sub() {
+            exchange.submit(<SftpServerDataProvider::VirtualSftpSubmissionRequest>{
+                "path": "/inbound/strict/too-large.dat",
+                "data": binary("oversized\n"),
+            });
+        });
+
+        hash<SftpServerDataProvider::VirtualSftpOperationResult> relaxed_result
+            = exchange.submit(<SftpServerDataProvider::VirtualSftpSubmissionRequest>{
+                "path": "/inbound/relaxed/allowed.dat",
+                "data": binary("oversized\n"),
+            });
+        assertTrue(relaxed_result.completed);
+        assertEq(SftpServerDataProvider::ChecksumAlgorithmSha256, relaxed_result.checksum_algorithm);
+        assertEq(3, events.size());
+        assertEq(SftpServerDataProvider::EventInboundFileAccepted, events[0].event_type);
+        assertEq(SftpServerDataProvider::ChecksumAlgorithmSha256, events[0].checksum_algorithm);
+        assertEq(ok_result.checksum, events[0].checksum);
+        assertEq(SftpServerDataProvider::EventInboundFileRejected, events[1].event_type);
+        assertEq(SftpServerDataProvider::InboundRejectMaxSize, events[1].reason_code);
+        assertEq("/inbound/strict/too-large.dat", events[1].path);
+        assertEq(SftpServerDataProvider::EventInboundFileAccepted, events[2].event_type);
+        assertEq(relaxed_result.checksum, events[2].checksum);
+    }
+
+    testVirtualExchangeContentAwareInboundPolicy() {
+        SftpServerDataProvider::VirtualSftpExchange exchange(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "inbound_policy": <SftpServerDataProvider::VirtualSftpInboundPolicy>{
+                "accept_content_prefix": binary("PK"),
+                "reject_content_prefix": binary("MZ"),
+                "accept_content_type_hints": ("application/zip",),
+                "reject_content_type_hints": ("application/x-msdownload",),
+            },
+        });
+        list<hash<auto>> events = ();
+        int listener_id = exchange.registerInboundEventListener(
+            sub(hash<SftpServerDataProvider::VirtualSftpInboundEventInfo> event) {
+                events += (event,);
+            });
+        on_exit {
+            exchange.deregisterInboundEventListener(listener_id);
+        }
+
+        hash<SftpServerDataProvider::VirtualSftpOperationResult> ok_result
+            = exchange.submit(<SftpServerDataProvider::VirtualSftpSubmissionRequest>{
+                "path": "/inbound/ok.zip",
+                "data": binary("PKzip-data\n"),
+                "metadata": {"content_type_hint": "application/zip"},
+            });
+        assertTrue(ok_result.completed);
+        assertEq("PKzip-data\n", exchange.getInboundData("ok.zip").toString("UTF-8"));
+
+        assertThrows("VIRTUAL-SFTP-EXCHANGE-ERROR", sub() {
+            exchange.submit(<SftpServerDataProvider::VirtualSftpSubmissionRequest>{
+                "path": "/inbound/rejected-prefix.exe",
+                "data": binary("MZexe-data\n"),
+                "metadata": {"content_type_hint": "application/zip"},
+            });
+        });
+
+        string source_path = getTmpFile(".content-policy.zip");
+        on_exit {
+            cleanupFile(source_path);
+        }
+        writeTextFile(source_path, "PKhint-data\n");
+        assertThrows("VIRTUAL-SFTP-EXCHANGE-ERROR", sub() {
+            exchange.submit(<SftpServerDataProvider::VirtualSftpSubmissionRequest>{
+                "path": "/inbound/rejected-hint.zip",
+                "source_path": source_path,
+                "metadata": {"content_type_hint": "application/x-msdownload"},
+            });
+        });
+
+        assertEq(3, events.size());
+        assertEq(SftpServerDataProvider::EventInboundFileAccepted, events[0].event_type);
+        assertEq(SftpServerDataProvider::EventInboundFileRejected, events[1].event_type);
+        assertEq(SftpServerDataProvider::InboundRejectContentPrefix, events[1].reason_code);
+        assertEq("/inbound/rejected-prefix.exe", events[1].path);
+        assertEq(SftpServerDataProvider::EventInboundFileRejected, events[2].event_type);
+        assertEq(SftpServerDataProvider::InboundRejectContentTypeHint, events[2].reason_code);
+        assertEq("/inbound/rejected-hint.zip", events[2].path);
+    }
+
+    testVirtualExchangeCustomInboundValidation() {
+        list<hash<auto>> requests = ();
+        SftpServerDataProvider::VirtualSftpExchange exchange(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "inbound_policy": <SftpServerDataProvider::VirtualSftpInboundPolicy>{
+                "validation_callback": hash<SftpServerDataProvider::VirtualSftpInboundValidationResult>
+                        sub(hash<SftpServerDataProvider::VirtualSftpInboundValidationRequest> req) {
+                    requests += (req,);
+                    if (req.data.toString("UTF-8").find("ALLOW") >= 0) {
+                        return <SftpServerDataProvider::VirtualSftpInboundValidationResult>{
+                            "accepted": True,
+                        };
+                    }
+                    return <SftpServerDataProvider::VirtualSftpInboundValidationResult>{
+                        "accepted": False,
+                        "reason_code": "content-schema-invalid",
+                        "reason_desc": sprintf("custom validator rejected %y", req.name),
+                    };
+                },
+            },
+        });
+        list<hash<auto>> events = ();
+        int listener_id = exchange.registerInboundEventListener(
+            sub(hash<SftpServerDataProvider::VirtualSftpInboundEventInfo> event) {
+                events += (event,);
+            });
+        on_exit {
+            exchange.deregisterInboundEventListener(listener_id);
+        }
+
+        string accepted_source_path = getTmpFile(".validator-accepted.source");
+        on_exit {
+            cleanupFile(accepted_source_path);
+        }
+        writeTextFile(accepted_source_path, "ALLOW source\n");
+
+        hash<SftpServerDataProvider::VirtualSftpOperationResult> accepted_result
+            = exchange.submit(<SftpServerDataProvider::VirtualSftpSubmissionRequest>{
+                "path": "/inbound/accepted.dat",
+                "source_path": accepted_source_path,
+                "metadata": {"kind": "accepted"},
+            });
+        assertTrue(accepted_result.completed);
+        assertEq("ALLOW source\n", exchange.getInboundData("accepted.dat").toString("UTF-8"));
+
+        assertThrows("VIRTUAL-SFTP-EXCHANGE-ERROR", sub() {
+            exchange.submit(<SftpServerDataProvider::VirtualSftpSubmissionRequest>{
+                "path": "/inbound/rejected.dat",
+                "data": binary("REJECT helper\n"),
+                "metadata": {"kind": "rejected"},
+            });
+        });
+
+        assertEq(2, requests.size());
+        assertEq("/inbound/accepted.dat", requests[0].path);
+        assertEq(accepted_source_path, requests[0].source_path);
+        assertEq("ALLOW source\n", requests[0].data.toString("UTF-8"));
+        assertEq("/inbound/rejected.dat", requests[1].path);
+        assertNothing(requests[1].source_path);
+        assertEq("REJECT helper\n", requests[1].data.toString("UTF-8"));
+
+        assertEq(2, events.size());
+        assertEq(SftpServerDataProvider::EventInboundFileAccepted, events[0].event_type);
+        assertEq(SftpServerDataProvider::EventInboundFileRejected, events[1].event_type);
+        assertEq("content-schema-invalid", events[1].reason_code);
+        assertEq("custom validator rejected \"rejected.dat\"", events[1].reason_desc);
+    }
+
+    testVirtualExchangeOutboundCompletionEvents() {
+        SftpServerDataProvider::VirtualSftpExchange exchange(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "archive_dir": "/archive",
+            "claim_dir": "/claim",
+        });
+        exchange.addOutboundText("claim.txt", "claim\n", {
+            "kind": "claim",
+            "checksum": "claim-checksum",
+            "checksum_algorithm": SftpServerDataProvider::ChecksumAlgorithmSha256,
+        });
+        exchange.addOutboundText("archive.txt", "archive\n", {
+            "kind": "archive",
+            "checksum": "archive-checksum",
+            "checksum_algorithm": SftpServerDataProvider::ChecksumAlgorithmSha256,
+        });
+        exchange.addOutboundText("delete.txt", "delete\n", {
+            "kind": "delete",
+            "checksum": "delete-checksum",
+            "checksum_algorithm": SftpServerDataProvider::ChecksumAlgorithmSha256,
+        });
+
+        list<hash<auto>> events = ();
+        int listener_id = exchange.registerOutboundEventListener(
+            sub(hash<SftpServerDataProvider::VirtualSftpOutboundEventInfo> event) {
+                events += (event,);
+            });
+        on_exit {
+            exchange.deregisterOutboundEventListener(listener_id);
+        }
+
+        hash<SftpServerDataProvider::VirtualSftpRecordInfo> claim_result
+            = exchange.claimOutbound("claim.txt", "claimed.txt", {"op": "claim"});
+        hash<SftpServerDataProvider::VirtualSftpRecordInfo> archive_result
+            = exchange.archiveOutbound("archive.txt", "archived.txt", {"op": "archive"});
+        hash<SftpServerDataProvider::VirtualSftpRecordInfo> delete_result
+            = exchange.deleteOutbound("delete.txt", {"op": "delete"});
+
+        assertTrue(claim_result.completed);
+        assertTrue(archive_result.completed);
+        assertTrue(delete_result.completed);
+        assertEq(3, events.size());
+
+        assertEq(SftpServerDataProvider::EventOutboundFileClaimed, events[0].event_type);
+        assertEq("claim.txt", events[0].name);
+        assertEq("/claim/claimed.txt", events[0].path);
+        assertEq("claimed.txt", events[0].final_name);
+        assertEq("claim", events[0].operation);
+        assertEq(6, events[0].size);
+        assertEq("helper", events[0].source);
+        assertEq("claim-checksum", claim_result.checksum);
+        assertEq(SftpServerDataProvider::ChecksumAlgorithmSha256, claim_result.checksum_algorithm);
+        assertEq("claim-checksum", events[0].checksum);
+        assertEq(SftpServerDataProvider::ChecksumAlgorithmSha256, events[0].checksum_algorithm);
+
+        assertEq(SftpServerDataProvider::EventOutboundFileArchived, events[1].event_type);
+        assertEq("archive.txt", events[1].name);
+        assertEq("/archive/archived.txt", events[1].path);
+        assertEq("archived.txt", events[1].final_name);
+        assertEq("archive", events[1].operation);
+        assertEq(8, events[1].size);
+        assertEq("helper", events[1].source);
+        assertEq("archive-checksum", archive_result.checksum);
+        assertEq(SftpServerDataProvider::ChecksumAlgorithmSha256, archive_result.checksum_algorithm);
+        assertEq("archive-checksum", events[1].checksum);
+        assertEq(SftpServerDataProvider::ChecksumAlgorithmSha256, events[1].checksum_algorithm);
+
+        assertEq(SftpServerDataProvider::EventOutboundFileDeleted, events[2].event_type);
+        assertEq("delete.txt", events[2].name);
+        assertEq("/outbound/delete.txt", events[2].path);
+        assertEq("delete.txt", events[2].final_name);
+        assertEq("delete", events[2].operation);
+        assertEq(7, events[2].size);
+        assertEq("helper", events[2].source);
+        assertEq("delete-checksum", delete_result.checksum);
+        assertEq(SftpServerDataProvider::ChecksumAlgorithmSha256, delete_result.checksum_algorithm);
+        assertEq("delete-checksum", events[2].checksum);
+        assertEq(SftpServerDataProvider::ChecksumAlgorithmSha256, events[2].checksum_algorithm);
+    }
+
+    testVirtualExchangeLoggerLevels() {
+        TestLogger logger();
+        SftpServerDataProvider::VirtualSftpExchange exchange(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "logger": logger,
+            "claim_dir": "/claim",
+        });
+        exchange.addOutboundText("claim.txt", "claim\n");
+
+        int listener_id = exchange.registerOutboundEventListener(
+            sub(hash<SftpServerDataProvider::VirtualSftpOutboundEventInfo> event) {
+                throw "TEST-LISTENER-ERROR", sprintf("listener failed for %s", event.name);
+            });
+        on_exit {
+            exchange.deregisterOutboundEventListener(listener_id);
+        }
+
+        exchange.claimOutbound("claim.txt", "claimed.txt", {"op": "claim"});
+
+        assertTrue(logger.events.size() >= 2);
+        assertEq("detail", logger.events[0].level);
+        assertEq("error", logger.events[logger.events.size() - 1].level);
+        assertTrue(logger.events[logger.events.size() - 1].message.find("virtual outbound event listener failed") >= 0);
+    }
+
+    testVirtualExchangeInboundPolicyWithSourcePath() {
+        SftpServerDataProvider::VirtualSftpExchange exchange(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "inbound_policy": <SftpServerDataProvider::VirtualSftpInboundPolicy>{
+                "accept_filename_glob": "*.dat",
+                "max_size": 4,
+            },
+        });
+
+        string ok_source = getTmpFile(".ok.dat");
+        string large_source = getTmpFile(".large.dat");
+        on_exit {
+            cleanupFile(ok_source);
+            cleanupFile(large_source);
+        }
+
+        writeTextFile(ok_source, "okay");
+        writeTextFile(large_source, "oversized");
+
+        hash<SftpServerDataProvider::VirtualSftpOperationResult> ok_result
+            = exchange.submit(<SftpServerDataProvider::VirtualSftpSubmissionRequest>{
+                "path": "sized.dat",
+                "source_path": ok_source,
+            });
+        assertTrue(ok_result.completed);
+        assertEq("okay", exchange.getInboundData("sized.dat").toString("UTF-8"));
+
+        assertThrows("VIRTUAL-SFTP-EXCHANGE-ERROR", sub() {
+            exchange.submit(<SftpServerDataProvider::VirtualSftpSubmissionRequest>{
+                "path": "too-large.dat",
+                "source_path": large_source,
+            });
+        });
+    }
+
+    testVirtualExchangeTypedRequests() {
+        SftpServerDataProvider::VirtualSftpExchange exchange();
+        hash<SftpServerDataProvider::VirtualSftpSubmissionRequest> submit_req
+            = <SftpServerDataProvider::VirtualSftpSubmissionRequest>{
+                "path": "incoming.dat",
+                "data": binary("exchange typed\n"),
+                "metadata": {"kind": "typed"},
+            };
+        hash<SftpServerDataProvider::VirtualSftpOperationResult> submit_result = exchange.submit(submit_req);
+        assertTrue(submit_result.completed);
+        assertEq("exchange typed\n", exchange.getInboundData("incoming.dat").toString("UTF-8"));
+
+        exchange.addOutboundText("ready.txt", "ready\n");
+        hash<SftpServerDataProvider::VirtualSftpPathRequest> list_req
+            = <SftpServerDataProvider::VirtualSftpPathRequest>{"path": "/"};
+        hash<SftpServerDataProvider::VirtualSftpListResult> list_result = exchange.listAvailable(list_req);
+        assertEq("/outbound", list_result.path);
+
+        hash<SftpServerDataProvider::VirtualSftpPathRequest> retrieve_req
+            = <SftpServerDataProvider::VirtualSftpPathRequest>{"path": "/ready.txt"};
+        hash<SftpServerDataProvider::VirtualSftpRetrieveResult> retrieve_result = exchange.retrieve(retrieve_req);
+        assertEq(binary("ready\n"), retrieve_result.data);
+
+        hash<SftpServerDataProvider::VirtualSftpCompletionRequest> complete_req
+            = <SftpServerDataProvider::VirtualSftpCompletionRequest>{
+                "path": "/ready.txt",
+                "completion_mode": "delete",
+            };
+        hash<SftpServerDataProvider::VirtualSftpOperationResult> complete_result = exchange.completeRetrieve(complete_req);
+        assertTrue(complete_result.completed);
+        assertFalse(exchange.getFilesystem().exists("/outbound/ready.txt"));
+    }
+
+    testVirtualExchangeTypedBackendRequests() {
+        SftpServerDataProvider::VirtualSftpExchange exchange(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "archive_dir": "/archive",
+            "claim_dir": "/claimed",
+        });
+        exchange.addOutboundText("ready.txt", "ready\n", {"kind": "ready"});
+
+        hash<Qore::Ssh::SftpPathRequest> list_req = <Qore::Ssh::SftpPathRequest>{"path": "/outbound"};
+        hash<Qore::Ssh::SftpListResult> list_result = exchange.list(list_req);
+        assertEq(1, list_result.entries.size());
+
+        hash<Qore::Ssh::SftpOpenRequest> read_req = <Qore::Ssh::SftpOpenRequest>{"path": "/outbound/ready.txt"};
+        hash<Qore::Ssh::SftpOpenResult> read_result = exchange.openRead(read_req);
+        assertEq(binary("ready\n"), read_result.data);
+        assertEq("/outbound/ready.txt", read_result.path);
+
+        hash<Qore::Ssh::SftpRenameRequest> rename_req = <Qore::Ssh::SftpRenameRequest>{
+            "path": "/outbound/ready.txt",
+            "target_path": "/outbound/moved.txt",
+        };
+        hash<Qore::Ssh::SftpOperationResult> rename_result = exchange.rename(rename_req);
+        assertTrue(rename_result.completed);
+        assertEq("ready\n", exchange.getFilesystem().getFileText("/outbound/moved.txt"));
+
+        hash<Qore::Ssh::SftpPathRequest> remove_req = <Qore::Ssh::SftpPathRequest>{"path": "/outbound/moved.txt"};
+        hash<Qore::Ssh::SftpOperationResult> remove_result = exchange.removePath(remove_req);
+        assertTrue(remove_result.completed);
+        assertFalse(exchange.getFilesystem().exists("/outbound/moved.txt"));
+    }
+
+    testVirtualExchangeInvalidTypedBackendRequests() {
+        SftpServerDataProvider::VirtualSftpExchange exchange();
+
+        assertThrows("RUNTIME-TYPE-ERROR", sub() {
+            hash<auto> raw = {"path": 1};
+            hash<Qore::Ssh::SftpOpenRequest> bad = cast<hash<Qore::Ssh::SftpOpenRequest>>(raw);
+            assertEq(NOTHING, bad);
+        });
+
+        assertThrows("RUNTIME-TYPE-ERROR", sub() {
+            hash<auto> raw = {"path": "/outbound/a", "target_path": 1};
+            hash<Qore::Ssh::SftpRenameRequest> bad = cast<hash<Qore::Ssh::SftpRenameRequest>>(raw);
+            assertEq(NOTHING, bad);
+        });
+    }
+
+    testVirtualExchangeWithSftpSession() {
+        SftpServerDataProvider::VirtualSftpExchange exchange(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "archive_dir": "/archive",
+            "claim_dir": "/claimed",
+        });
+        exchange.addOutboundText("ready.txt", "ready\n");
+
+        Qore::Ssh::SftpSession s(getSftpInfo());
+        s.setBackend(exchange);
+
+        hash<Qore::Ssh::SftpOperationResult> submit_result
+            = s.submitData("incoming.dat", binary("payload\n"), {"kind": "upload"});
+        assertTrue(submit_result.completed);
+        assertEq("payload\n", exchange.getInboundData("incoming.dat").toString("UTF-8"));
+
+        binary data = s.retrieveData("ready.txt");
+        assertEq(binary("ready\n"), data);
+
+        hash<Qore::Ssh::SftpOperationResult> claim_result
+            = s.completeRetrieveClaim("ready.txt");
+        assertTrue(claim_result.completed);
+        assertEq("ready\n", exchange.getFilesystem().getFileText("/claimed/ready.txt"));
+
+        hash<Qore::Ssh::SftpListResult> listing = s.listAvailable(<Qore::Ssh::SftpPathRequest>{
+            "path": ".",
+        });
+        assertEq(0, listing.entries.size());
+    }
+
+    testVirtualExchangeRecordStoreApi() {
+        SftpServerDataProvider::VirtualSftpExchangeRecordStore store(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "archive_dir": "/archive",
+            "claim_dir": "/claimed",
+        });
+
+        hash<SftpServerDataProvider::VirtualSftpRecordInfo> inbound
+            = store.submitInboundTextRecord("in-1.dat", "payload-1\n", {"tenant": "a"});
+        assertEq("inbound", inbound.queue);
+        assertEq("in-1.dat", inbound.name);
+        assertEq("payload-1\n", store.getExchange().getInboundData("in-1.dat").toString("UTF-8"));
+        list<hash<SftpServerDataProvider::VirtualSftpRecordInfo>> inbound_listing = store.listInboundRecords();
+        assertEq(1, inbound_listing.size());
+        assertEq("in-1.dat", inbound_listing[0].name);
+        hash<SftpServerDataProvider::VirtualSftpRecordInfo> inbound_record = store.retrieveInboundRecord("in-1.dat");
+        assertEq(binary("payload-1\n"), inbound_record.data);
+        assertEq("inbound", inbound_record.queue);
+
+        store.addOutboundTextRecord("out-1.dat", "report-1\n", {
+            "kind": "report",
+            "checksum": "out-1-checksum",
+            "checksum_algorithm": SftpServerDataProvider::ChecksumAlgorithmSha256,
+        });
+        store.addOutboundTextRecord("out-2.dat", "report-2\n", {
+            "checksum": "out-2-checksum",
+            "checksum_algorithm": SftpServerDataProvider::ChecksumAlgorithmSha256,
+        });
+
+        list<hash<SftpServerDataProvider::VirtualSftpRecordInfo>> outbound = store.listOutboundRecords();
+        assertEq(2, outbound.size());
+        assertEq("out-1.dat", outbound[0].name);
+        assertEq("out-1-checksum", outbound[0].checksum);
+        assertEq(SftpServerDataProvider::ChecksumAlgorithmSha256, outbound[0].checksum_algorithm);
+
+        hash<SftpServerDataProvider::VirtualSftpRecordInfo> retrieved = store.retrieveOutboundRecord("out-1.dat");
+        assertEq(binary("report-1\n"), retrieved.data);
+        assertEq("outbound", retrieved.queue);
+        assertEq("out-1-checksum", retrieved.checksum);
+        assertEq(SftpServerDataProvider::ChecksumAlgorithmSha256, retrieved.checksum_algorithm);
+
+        hash<SftpServerDataProvider::VirtualSftpRecordInfo> claimed = store.claimOutboundRecord("out-1.dat");
+        assertTrue(claimed.completed);
+        assertEq("claim", claimed.operation);
+        assertEq("out-1-checksum", claimed.checksum);
+        assertEq("report-1\n", store.getExchange().getFilesystem().getFileText("/claimed/out-1.dat"));
+
+        hash<SftpServerDataProvider::VirtualSftpRecordInfo> archived = store.archiveOutboundRecord("out-2.dat");
+        assertTrue(archived.completed);
+        assertEq("archive", archived.operation);
+        assertEq("out-2-checksum", archived.checksum);
+        assertEq("report-2\n", store.getExchange().getFilesystem().getFileText("/archive/out-2.dat"));
+    }
+
+    testVirtualExchangeRecordStoreTypedRequests() {
+        SftpServerDataProvider::VirtualSftpExchangeRecordStore store(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "archive_dir": "/archive",
+            "claim_dir": "/claimed",
+        });
+
+        hash<SftpServerDataProvider::VirtualSftpRecordSubmissionRequest> inbound_req
+            = <SftpServerDataProvider::VirtualSftpRecordSubmissionRequest>{
+                "name": "typed-in.dat",
+                "data": binary("typed-in\n"),
+                "metadata": {"kind": "typed-in"},
+            };
+        hash<SftpServerDataProvider::VirtualSftpRecordInfo> inbound = store.submitInboundRecord(inbound_req);
+        assertEq("typed-in.dat", inbound.name);
+        assertEq("typed-in\n", store.getExchange().getInboundData("typed-in.dat").toString("UTF-8"));
+
+        hash<SftpServerDataProvider::VirtualSftpRecordSubmissionRequest> outbound_req
+            = <SftpServerDataProvider::VirtualSftpRecordSubmissionRequest>{
+                "name": "typed-out.dat",
+                "data": binary("typed-out\n"),
+                "metadata": {"kind": "typed-out"},
+            };
+        store.addOutboundRecord(outbound_req);
+
+        hash<SftpServerDataProvider::VirtualSftpRecordRequest> retrieve_req
+            = <SftpServerDataProvider::VirtualSftpRecordRequest>{"name": "typed-out.dat"};
+        hash<SftpServerDataProvider::VirtualSftpRecordInfo> retrieved = store.retrieveOutboundRecord(retrieve_req);
+        assertEq(binary("typed-out\n"), retrieved.data);
+        assertEq("outbound", retrieved.queue);
+
+        hash<SftpServerDataProvider::VirtualSftpRecordCompletionRequest> claim_req
+            = <SftpServerDataProvider::VirtualSftpRecordCompletionRequest>{
+                "name": "typed-out.dat",
+                "final_name": "claimed-typed-out.dat",
+                "completion_mode": "claim",
+                "metadata": {"kind": "claim"},
+            };
+        hash<SftpServerDataProvider::VirtualSftpRecordInfo> claimed = store.claimOutboundRecord(claim_req);
+        assertTrue(claimed.completed);
+        assertEq("claimed-typed-out.dat", claimed.final_name);
+        assertEq("typed-out\n", store.getExchange().getFilesystem().getFileText("/claimed/claimed-typed-out.dat"));
+
+        assertThrows("RUNTIME-TYPE-ERROR", sub() {
+            hash<auto> raw = {"name": 1, "data": binary("bad")};
+            hash<SftpServerDataProvider::VirtualSftpRecordSubmissionRequest> bad
+                = cast<hash<SftpServerDataProvider::VirtualSftpRecordSubmissionRequest>>(raw);
+            assertEq(NOTHING, bad);
+        });
+    }
+
+    testVirtualExchangeRecordStoreRejectsMismatchedCompletionMode() {
+        SftpServerDataProvider::VirtualSftpExchangeRecordStore store(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "archive_dir": "/archive",
+            "claim_dir": "/claimed",
+        });
+        store.addOutboundTextRecord("out-1.dat", "report-1\n");
+
+        assertThrows("VIRTUAL-SFTP-EXCHANGE-ERROR", sub() {
+            store.claimOutboundRecord(<SftpServerDataProvider::VirtualSftpRecordCompletionRequest>{
+                "name": "out-1.dat",
+                "completion_mode": "archive",
+            });
+        });
+
+        assertThrows("VIRTUAL-SFTP-EXCHANGE-ERROR", sub() {
+            store.archiveOutboundRecord(<SftpServerDataProvider::VirtualSftpRecordCompletionRequest>{
+                "name": "out-1.dat",
+                "completion_mode": "delete",
+            });
+        });
+
+        assertThrows("VIRTUAL-SFTP-EXCHANGE-ERROR", sub() {
+            store.deleteOutboundRecord(<SftpServerDataProvider::VirtualSftpRecordCompletionRequest>{
+                "name": "out-1.dat",
+                "completion_mode": "claim",
+            });
+        });
+    }
+
+    testVirtualExchangeRecordStoreBackend() {
+        SftpServerDataProvider::VirtualSftpExchangeRecordStore store(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "archive_dir": "/archive",
+            "claim_dir": "/claimed",
+        });
+        store.addOutboundTextRecord("ready-1.dat", "ready-1\n");
+
+        Qore::Ssh::SftpSession s(getSftpInfo());
+        s.setBackend(store.getBackend());
+
+        binary data = s.retrieveData("ready-1.dat");
+        assertEq(binary("ready-1\n"), data);
+
+        hash<Qore::Ssh::SftpOperationResult> delete_result
+            = s.completeRetrieveDelete("ready-1.dat");
+        assertTrue(delete_result.completed);
+
+        list<hash<SftpServerDataProvider::VirtualSftpRecordInfo>> outbound = store.listOutboundRecords();
+        assertEq(0, outbound.size());
+    }
+}

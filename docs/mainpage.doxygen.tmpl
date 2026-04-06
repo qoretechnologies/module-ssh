@@ -1,0 +1,610 @@
+/** @mainpage Qore Ssh Module
+
+    @tableofcontents
+
+    @section sshintro Ssh Module Introduction
+
+    The Ssh module provides server-side SSH and SFTP support for Qore through
+    libssh. The module is designed for controlled command processing, auditable
+    file transfer, and integration scenarios.
+
+    The current API shape and design direction are documented in the source
+    tree in <tt>design/api-spec.md</tt>.
+
+    Current release highlights include:
+    - typed server-side SSH and SFTP contracts in
+      @ref Qore::Ssh "Qore::Ssh"
+    - live SSH command and SFTP server flows through
+      @ref Qore::Ssh::SshServer "SshServer"
+    - helper/service logger support through @c Qore::Logger::LoggerInterface
+    - strongly typed virtual SFTP helper, backend, and provider APIs
+    - generic local-server @c ConnectionProvider infrastructure
+    - generic SFTP exchange @c DataProvider infrastructure with inbound events
+    - repository-standard directory-module layout for all qlib user modules
+
+    The intended public binary-module namespace is:
+    - @ref Qore::Ssh "Qore::Ssh"
+
+    The initial public classes include:
+    - @ref Qore::Ssh::SshServer "Qore::Ssh::SshServer"
+
+    Generic user modules in this repository now include:
+    - @ref sshserverconnectionsintro "SshServerConnections"
+      - currently provides
+        @ref SshServerConnections::AbstractSshServerConnection,
+        @ref SshServerConnections::SshCommandServerConnection, and
+        @ref SshServerConnections::SftpServerConnection
+      - registers the local server connection schemes
+        @c sshsrv, @c sshserver, @c sftpsrv, and @c sftpserver
+      - returns live @ref Qore::Ssh::SshServer "Qore::Ssh::SshServer"
+        objects from the @c ConnectionProvider API and projects typed
+        @ref Qore::Ssh::SshServerConfig "Qore::Ssh::SshServerConfig" /
+        @ref Qore::Ssh::SshListenerConfig "Qore::Ssh::SshListenerConfig"
+        hashes through
+        @c getServerConfig() and @c getListenerConfig()
+      - supports grouped listener-side operational caps through
+        @c SshServerConnectionLimits, including
+        @c max_sessions
+      - supports grouped listener service controls through
+        @c SshServerConnectionServices, including @c enabled_auth_methods,
+        @c allow_command_service, and @c allow_sftp_service
+      - supports grouped typed authentication through
+        @ref sshserverauthproviderintro "SshServerAuthProvider" or explicit
+        @c auth_provider objects
+    - @ref sshserverauthproviderintro "SshServerAuthProvider"
+      - provides
+        @ref SshServerAuthProvider::AbstractSshAuthProvider and
+        @ref SshServerAuthProvider::VirtualSshAuthProvider
+      - supports config-driven and custom object-driven authentication for
+        @c none, @c password, @c publickey, @c interactive, @c hostbased,
+        and @c gssapi-mic
+    - @ref sshservercommandproviderintro "SshServerCommandProvider"
+      - provides
+        @ref SshServerCommandProvider::VirtualSshCommandService
+        for generic command virtualization through
+        @ref SshServerConnections::SshCommandServerConnection
+      - intentionally does not add a command-side @c DataProvider layer
+    - @ref sftpserverdataproviderintro "SftpServerDataProvider"
+      - now includes a config-driven observable event action
+        @c inbound-file-accepted for new inbound uploads
+      - the observable event contract now includes typed
+        @c inbound-file-accepted and @c inbound-file-rejected events
+      - also exposes typed outbound completion events
+        @c outbound-file-claimed, @c outbound-file-archived, and
+        @c outbound-file-deleted
+      - exposes a typed inbound acceptance policy for helper, provider, and
+        live-upload enforcement, including principal-aware acceptance and
+        routing plus duplicate-name, duplicate-size, duplicate-content,
+        file-count, and total-byte rejection
+
+    The current qlib convenience layer already includes:
+    - @c SshServerConnectionLimits for grouped
+      listener operational caps such as @c max_sessions
+    - @ref SshServerAuthProvider::VirtualSshAuthProvider for config-driven
+      and custom object-driven authentication
+      - accepts an optional @c LoggerInterface and logs auth attempts at
+        @c detail, accepted auth at @c info, and rejected auth at @c warn
+    - logger-aware helper/service objects that accept @c LoggerInterface:
+      @ref SshServerConnections::AbstractSshServerConnection,
+      @ref SshServerCommandProvider::VirtualSshCommandService,
+      @ref SftpServerDataProvider::VirtualSftpFilesystem, and
+      @ref SftpServerDataProvider::VirtualSftpExchange
+      - command virtualization logs accepted requests at @c info, rejected
+        requests at @c warn, and configuration changes at @c debug
+      - virtual filesystem churn logs at @c detail and event-listener callback
+        failures log at @c error
+    - @ref SftpServerDataProvider::VirtualSftpFilesystem for easy in-memory
+      virtual SFTP filesystems and atomic submit/retrieve workflows
+      - includes inspection helpers such as @c listFilePaths(),
+        @c listDirectoryPaths(), and @c exportSnapshot()
+    - @ref SftpServerDataProvider::VirtualSftpExchange for explicit inbound and
+      outbound exchange-style SFTP backends
+    - @ref SftpServerDataProvider::VirtualSftpExchangeRecordStore for
+      record-oriented queue-style exchange APIs
+    - strongly typed helper hashes for constructor options and requests:
+      @ref sftpserverdataprovider-virtualsftpfilesystemoptions "SftpServerDataProvider::VirtualSftpFilesystemOptions",
+      @ref sftpserverdataprovider-virtualsftpexchangeoptions "SftpServerDataProvider::VirtualSftpExchangeOptions",
+      @ref sftpserverdataprovider-virtualsftppathrequest "SftpServerDataProvider::VirtualSftpPathRequest",
+      @ref sftpserverdataprovider-virtualsftpsubmissionrequest "SftpServerDataProvider::VirtualSftpSubmissionRequest", and
+      @ref sftpserverdataprovider-virtualsftpcompletionrequest "SftpServerDataProvider::VirtualSftpCompletionRequest"
+    - strongly typed record-store request hashes:
+      @ref sftpserverdataprovider-virtualsftprecordrequest "SftpServerDataProvider::VirtualSftpRecordRequest",
+      @ref sftpserverdataprovider-virtualsftprecordsubmissionrequest "SftpServerDataProvider::VirtualSftpRecordSubmissionRequest", and
+      @ref sftpserverdataprovider-virtualsftprecordcompletionrequest "SftpServerDataProvider::VirtualSftpRecordCompletionRequest"
+    - strongly typed inbound policy hash:
+      @ref sftpserverdataprovider-virtualsftpinboundpolicy "SftpServerDataProvider::VirtualSftpInboundPolicy"
+    - strongly typed helper hashes for snapshots, listings, and records:
+      @ref sftpserverdataprovider-virtualsftpfilesnapshot "SftpServerDataProvider::VirtualSftpFileSnapshot",
+      @ref sftpserverdataprovider-virtualsftpsnapshot "SftpServerDataProvider::VirtualSftpSnapshot",
+      @ref sftpserverdataprovider-virtualsftpentryinfo "SftpServerDataProvider::VirtualSftpEntryInfo", and
+      @ref sftpserverdataprovider-virtualsftprecordinfo "SftpServerDataProvider::VirtualSftpRecordInfo"
+    - built-in helper-managed state is projected separately through
+      @ref sftpserverdataprovider-virtualsftpbuiltinstate "SftpServerDataProvider::VirtualSftpBuiltinState", so stable flags such
+      as archived, claimed, and exchange role do not need to be read from
+      loose metadata
+      - for delete-style completion results, @c VirtualSftpRecordInfo.path may
+        be @c NOTHING because no final path remains
+    - runnable examples in @c examples/VirtualSftpFilesystem.qtest and
+      @c examples/VirtualSftpExchangeRecordStore.qtest
+    - a low-level real server example in @c examples/VirtualSftpServer.qr
+    - a real policy-and-event server example in
+      @c examples/VirtualSftpInboundPolicyServer.qr
+
+    Recommended helper usage is to prefer the typed request hashes over loose
+    request maps for both exchange and record-store operations. The virtual
+    filesystem and exchange backends also expose typed overloads for the
+    backend verbs using @ref Qore::Ssh "Qore::Ssh" typed hashes such as
+    @ref Qore::Ssh::SftpPathRequest "SftpPathRequest",
+    @ref Qore::Ssh::SftpOpenRequest "SftpOpenRequest",
+    @ref Qore::Ssh::SftpRenameRequest "SftpRenameRequest",
+    @ref Qore::Ssh::SftpReadRequest "SftpReadRequest",
+    @ref Qore::Ssh::SftpReadResult "SftpReadResult",
+    @ref Qore::Ssh::SftpWriteRequest "SftpWriteRequest",
+    @ref Qore::Ssh::SftpCloseRequest "SftpCloseRequest",
+    @ref Qore::Ssh::SftpPathInfo "SftpPathInfo",
+    @ref Qore::Ssh::SftpListResult "SftpListResult",
+    @ref Qore::Ssh::SftpOpenResult "SftpOpenResult", and
+    @ref Qore::Ssh::SftpOperationResult "SftpOperationResult". The remaining loose backend
+    maps remain available for dynamic backends; @ref Qore::Ssh::SftpSession "SftpSession" now dispatches typed backend
+    request hashes directly for both low-level filesystem verbs and streamed
+    handle verbs.
+    The higher-level @ref Qore::Ssh::SftpSession "SftpSession" convenience helpers also support typed
+    request overloads, so callers can stay inside the typed API for
+    submit/retrieve/complete flows instead of dropping back to primitive
+    arguments plus loose metadata.
+    Retrieval completion now also uses an explicit typed
+    @c completion_mode field on
+    @ref Qore::Ssh::SftpOperationRequest "SftpOperationRequest".
+    Inbound acceptance can now also be configured through a typed
+    @ref sftpserverdataprovider-virtualsftpinboundpolicy "VirtualSftpInboundPolicy"
+    with filename glob/regex controls, size
+    bounds, overwrite control, and hidden-file policy.
+
+    The command-side typed contract is intentionally smaller:
+    - @ref Qore::Ssh::SshCommandRequest "SshCommandRequest" carries stable session
+      identity plus routing data such as @c command, @c arguments, and
+      @c metadata.request_type
+    - @ref Qore::Ssh::SshCommandResult "SshCommandResult" carries stable
+      @c accepted, @c exit_status, @c stdout, @c stderr, and @c result_data
+      fields
+    - command virtualization is intentionally connection-backed and does not
+      add a command-side @c DataProvider abstraction
+
+    The generic infrastructure in this repository is split deliberately:
+    - generic @c ConnectionProvider infrastructure for both command and SFTP
+      server virtualization
+    - generic @c DataProvider infrastructure only for the SFTP/file-exchange
+      side
+    - no command-side @c DataProvider abstraction
+    That now includes a first real
+    @ref sftpserverdataproviderintro "SftpServerDataProvider"
+    factory/app/provider layer on top of the typed virtual exchange helpers,
+    including a config-driven inbound file submission event action for local
+    SFTP servers. The focused design note for that work is in
+    <tt>design/data-provider-infrastructure.md</tt>.
+
+    @section sshtypedcontractindex Typed Contract Index
+
+    The following section summarizes the public typed hashes used by the ssh
+    module and its generic qlib helpers.
+
+    @subsection sshtypedcontractindexbinary Binary-Module Typed Hashes
+
+    The following table summarizes the public binary-module typed hashes.
+
+    <table>
+    <tr><th>Symbol</th><th>Description</th></tr>
+    <tr><td>@ref Qore::Ssh::SshListenerConfig "Qore::Ssh::SshListenerConfig"</td><td>typed listener configuration hash</td></tr>
+    <tr><td>@ref Qore::Ssh::SshServerConfig "Qore::Ssh::SshServerConfig"</td><td>typed server configuration hash</td></tr>
+    <tr><td>@ref Qore::Ssh::SshListenerStatus "Qore::Ssh::SshListenerStatus"</td><td>typed listener runtime status hash</td></tr>
+    <tr><td>@ref Qore::Ssh::SshServerStatus "Qore::Ssh::SshServerStatus"</td><td>typed server runtime status hash</td></tr>
+    <tr><td>@ref Qore::Ssh::SshSessionInfo "Qore::Ssh::SshSessionInfo"</td><td>typed SSH session metadata hash</td></tr>
+    <tr><td>@ref Qore::Ssh::SshAuthContextInfo "Qore::Ssh::SshAuthContextInfo"</td><td>typed authentication context hash</td></tr>
+    <tr><td>@ref Qore::Ssh::SshAuthDecision "Qore::Ssh::SshAuthDecision"</td><td>typed authentication decision hash</td></tr>
+    <tr><td>@ref Qore::Ssh::SshCommandRequest "Qore::Ssh::SshCommandRequest"</td><td>typed command request hash</td></tr>
+    <tr><td>@ref Qore::Ssh::SshCommandResult "Qore::Ssh::SshCommandResult"</td><td>typed command result hash</td></tr>
+    <tr><td>@ref Qore::Ssh::SftpSessionInfo "Qore::Ssh::SftpSessionInfo"</td><td>typed SFTP session metadata hash</td></tr>
+    <tr><td>@ref Qore::Ssh::SftpProtocolMessage "Qore::Ssh::SftpProtocolMessage"</td><td>typed SFTP protocol message hash</td></tr>
+    <tr><td>@ref Qore::Ssh::SftpTransferRequest "Qore::Ssh::SftpTransferRequest"</td><td>typed SFTP transfer request hash</td></tr>
+    <tr><td>@ref Qore::Ssh::SftpTransferInfo "Qore::Ssh::SftpTransferInfo"</td><td>typed SFTP transfer info hash</td></tr>
+    <tr><td>@ref Qore::Ssh::SftpTransferDecision "Qore::Ssh::SftpTransferDecision"</td><td>typed SFTP transfer decision hash</td></tr>
+    <tr><td>@ref Qore::Ssh::SftpOperationRequest "Qore::Ssh::SftpOperationRequest"</td><td>typed completion and mutation request hash</td></tr>
+    <tr><td>@ref Qore::Ssh::SftpPathRequest "Qore::Ssh::SftpPathRequest"</td><td>typed path operation request hash</td></tr>
+    <tr><td>@ref Qore::Ssh::SftpPathInfo "Qore::Ssh::SftpPathInfo"</td><td>typed stat result hash</td></tr>
+    <tr><td>@ref Qore::Ssh::SftpListResult "Qore::Ssh::SftpListResult"</td><td>typed directory listing result hash</td></tr>
+    <tr><td>@ref Qore::Ssh::SftpOpenRequest "Qore::Ssh::SftpOpenRequest"</td><td>typed open request hash</td></tr>
+    <tr><td>@ref Qore::Ssh::SftpOpenResult "Qore::Ssh::SftpOpenResult"</td><td>typed open result hash</td></tr>
+    <tr><td>@ref Qore::Ssh::SftpSubmissionRequest "Qore::Ssh::SftpSubmissionRequest"</td><td>typed submission request hash</td></tr>
+    <tr><td>@ref Qore::Ssh::SftpRenameRequest "Qore::Ssh::SftpRenameRequest"</td><td>typed rename request hash</td></tr>
+    <tr><td>@ref Qore::Ssh::SftpReadRequest "Qore::Ssh::SftpReadRequest"</td><td>typed streamed read request hash</td></tr>
+    <tr><td>@ref Qore::Ssh::SftpReadResult "Qore::Ssh::SftpReadResult"</td><td>typed streamed read result hash</td></tr>
+    <tr><td>@ref Qore::Ssh::SftpWriteRequest "Qore::Ssh::SftpWriteRequest"</td><td>typed streamed write request hash</td></tr>
+    <tr><td>@ref Qore::Ssh::SftpCloseRequest "Qore::Ssh::SftpCloseRequest"</td><td>typed close request hash</td></tr>
+    <tr><td>@ref Qore::Ssh::SftpOperationResult "Qore::Ssh::SftpOperationResult"</td><td>typed operation result hash</td></tr>
+    </table>
+
+    @subsection sshtypedcontractflags Binary-Module Restriction And Flag Targets
+
+    @anchor RET_VALUE_ONLY
+    @anchor CONSTANT
+
+    The following stable targets are used by the generated binary-module API
+    docs:
+
+    <table>
+    <tr><th>Symbol</th><th>Description</th></tr>
+    <tr><td>@ref Qore::PO_NO_NETWORK "Qore::PO_NO_NETWORK"</td><td>module operations that require network access</td></tr>
+    <tr><td>@ref Qore::PO_NO_FILESYSTEM "Qore::PO_NO_FILESYSTEM"</td><td>module operations that require filesystem access</td></tr>
+    <tr><td>@ref RET_VALUE_ONLY "RET_VALUE_ONLY"</td><td>method metadata flag used for return-value-only accessors</td></tr>
+    <tr><td>@ref CONSTANT "CONSTANT"</td><td>method metadata flag used for non-mutating accessors</td></tr>
+    </table>
+
+    @section sshtypedhelpercookbook Typed Helper Cookbook
+
+    @subsection sshtypedhelpercookbookexchange Virtual Exchange Retrieve And Archive
+    @code
+    SftpServerDataProvider::VirtualSftpExchange exchange(
+        <SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "archive_dir": "/archive",
+            "claim_dir": "/claimed",
+            "inbound_policy": <SftpServerDataProvider::VirtualSftpInboundPolicy>{
+                "accept_filename_glob": "*.dat",
+                "max_size": 1048576,
+                "allow_overwrite": False,
+            },
+        }
+    );
+    exchange.addOutboundData("hello.txt", binary("hello\n"), {"kind": "example"});
+
+    hash<SftpServerDataProvider::VirtualSftpPathRequest> retrieve_req
+        = <SftpServerDataProvider::VirtualSftpPathRequest>{"path": "/hello.txt"};
+    binary payload = exchange.retrieve(retrieve_req).data;
+
+    hash<SftpServerDataProvider::VirtualSftpCompletionRequest> archive_req
+        = <SftpServerDataProvider::VirtualSftpCompletionRequest>{
+            "path": "/hello.txt",
+            "completion_mode": "archive",
+        };
+    exchange.completeRetrieve(archive_req);
+    @endcode
+
+    @subsection sshtypedhelpercookbookrecordstore Typed Record-Store Submission And Claim
+    @code
+    SftpServerDataProvider::VirtualSftpExchangeRecordStore store(
+        <SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "archive_dir": "/archive",
+            "claim_dir": "/claimed",
+        }
+    );
+
+    store.addOutboundRecord(<SftpServerDataProvider::VirtualSftpRecordSubmissionRequest>{
+        "name": "out-1.dat",
+        "data": binary("payload\n"),
+        "metadata": {"kind": "report"},
+    });
+
+    hash<SftpServerDataProvider::VirtualSftpRecordInfo> claimed
+        = store.claimOutboundRecord(<SftpServerDataProvider::VirtualSftpRecordCompletionRequest>{
+            "name": "out-1.dat",
+            "final_name": "claimed-out-1.dat",
+            "completion_mode": "claim",
+        });
+    @endcode
+
+    @subsection sshtypedhelpercookbookbackend Typed Backend Verb Usage
+    @code
+    SftpServerDataProvider::VirtualSftpFilesystem vfs();
+    vfs.addOutboundText("report.txt", "payload\n");
+
+    hash<Qore::Ssh::SftpPathRequest> list_req
+        = <Qore::Ssh::SftpPathRequest>{"path": "/outbound"};
+    hash<Qore::Ssh::SftpListResult> listing = vfs.list(list_req);
+
+    hash<Qore::Ssh::SftpOpenRequest> open_req
+        = <Qore::Ssh::SftpOpenRequest>{"path": "/outbound/report.txt"};
+    hash<Qore::Ssh::SftpOpenResult> open_result = vfs.openRead(open_req);
+
+    hash<Qore::Ssh::SftpRenameRequest> rename_req
+        = <Qore::Ssh::SftpRenameRequest>{
+            "path": "/outbound/report.txt",
+            "target_path": "/outbound/report.done",
+        };
+    hash<Qore::Ssh::SftpOperationResult> rename_result = vfs.rename(rename_req);
+    @endcode
+
+    @subsection sshtypedhelpercookbookstreambackend Typed Stream Backend Usage
+    @code
+    class TypedStreamBackend {
+        hash<Qore::Ssh::SftpOpenResult> openRead(hash<Qore::Ssh::SftpOpenRequest> req) {
+            return {
+                "path": req.path,
+                "type": "file",
+                "size": 8,
+                "backend_handle": {"kind": "stream", "path": req.path},
+            };
+        }
+
+        hash<Qore::Ssh::SftpReadResult> read(hash<Qore::Ssh::SftpReadRequest> req) {
+            return {
+                "data": binary("payload\n"),
+                "eof": True,
+            };
+        }
+
+        hash<Qore::Ssh::SftpOperationResult> closeRead(hash<Qore::Ssh::SftpCloseRequest> req) {
+            return {
+                "success": True,
+                "path": req.path,
+            };
+        }
+    }
+    @endcode
+
+    @subsection sshtypedhelpercookbookserver Server-Side Virtual Backend Attachment
+    This example uses the raw binary-module
+    @ref Qore::Ssh::SshServerConfig "Qore::Ssh::SshServerConfig" /
+    @ref Qore::Ssh::SshListenerConfig "Qore::Ssh::SshListenerConfig" hashes
+    directly. For the grouped helper-driven configuration surface, prefer the
+    @ref sshserverconnectionsintro "SshServerConnections" examples below.
+
+    @code
+    SftpServerDataProvider::VirtualSftpExchange exchange(
+        <SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "archive_dir": "/archive",
+            "claim_dir": "/claimed",
+        }
+    );
+    exchange.addOutboundData("hello.txt", binary("hello\n"), {"kind": "example"});
+
+    hash<Qore::Ssh::SshServerConfig> config = <Qore::Ssh::SshServerConfig>{
+        "name": "virtual-example",
+        "listeners": (
+            <Qore::Ssh::SshListenerConfig>{
+                "name": "main",
+                "bind_address": "127.0.0.1",
+                "port": 0,
+                "host_keys": ("test/data/ssh_host_ed25519_key",),
+                "enabled_auth_methods": ("none",),
+                "allow_command_service": False,
+                "allow_sftp_service": True,
+            },
+        ),
+    };
+
+    config.auth_provider = new SshServerAuthProvider::VirtualSshAuthProvider(
+        <SshServerAuthProvider::VirtualSshAuthProviderOptions>{
+            "methods": ("none",),
+            "none": <SshServerAuthProvider::VirtualSshStaticAuthMethodOptions>{
+                "success_decision": <SshServerAuthProvider::VirtualSshAuthDecisionTemplate>{
+                    "principal": "principal:nobody",
+                    "command_policy": {
+                        "mode": "subsystem-only",
+                        "allowed_subsystems": ("sftp",),
+                    },
+                    "sftp_policy": {"mode": "enabled"},
+                },
+            },
+        });
+
+    config.sftp_factory_callback = hash<auto> sub(hash<Qore::Ssh::SftpSessionInfo> info) {
+        return {
+            "backend": exchange,
+            "session_data": {"source": "example", "factory": "virtual"},
+        };
+    };
+    @endcode
+
+    @subsection sshtypedhelpercookbookpolicy Policy-Driven Inbound Upload Handling
+    This example uses the grouped connection-helper surface through
+    @ref SshServerConnections::SftpServerConnection.
+
+    @code
+    SftpServerDataProvider::VirtualSftpExchange exchange(
+        <SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "inbound_policy": <SftpServerDataProvider::VirtualSftpInboundPolicy>{
+                "accept_filename_glob": "*.dat",
+                "max_size": 1048576,
+                "validation_callback": hash<SftpServerDataProvider::VirtualSftpInboundValidationResult>
+                        sub(hash<SftpServerDataProvider::VirtualSftpInboundValidationRequest> req) {
+                    if (req.data.toString("UTF-8").find("tenant=") < 0) {
+                        return <SftpServerDataProvider::VirtualSftpInboundValidationResult>{
+                            "accepted": False,
+                            "reason_code": "missing-tenant-marker",
+                            "reason_desc": sprintf("inbound file %y has no tenant marker", req.name),
+                        };
+                    }
+                    return <SftpServerDataProvider::VirtualSftpInboundValidationResult>{
+                        "accepted": True,
+                    };
+                },
+                "allow_overwrite": False,
+            },
+        }
+    );
+
+    SshServerConnections::SftpServerConnection conn({
+        "name": "policy-example",
+        "url": "sftpserver://127.0.0.1:0",
+        "opts": {
+            "host_keys": ("test/data/ssh_host_ed25519_key",),
+            "services": <SshServerConnections::SshServerConnectionServices>{
+                "enabled_auth_methods": ("none",),
+                "allow_command_service": False,
+                "allow_sftp_service": True,
+            },
+            "auth": <SshServerAuthProvider::VirtualSshAuthProviderOptions>{
+                "methods": ("none",),
+                "none": <SshServerAuthProvider::VirtualSshStaticAuthMethodOptions>{
+                    "success_decision": <SshServerAuthProvider::VirtualSshAuthDecisionTemplate>{
+                        "principal": "principal:nobody",
+                        "command_policy": {
+                            "mode": "subsystem-only",
+                            "allowed_subsystems": ("sftp",),
+                        },
+                        "sftp_policy": {"mode": "enabled"},
+                    },
+                },
+            },
+            "backend": exchange,
+        },
+    });
+
+    AbstractDataProvider provider = conn.getDataProvider();
+    AbstractDataProvider event_provider = provider.getChildProviderEx(
+        SftpServerDataProvider::EventInboundFileAccepted);
+    @endcode
+
+    @subsection sshcommandcookbook Virtual Command Server
+    This example uses the grouped connection-helper and command-service
+    configuration surfaces.
+
+    @code
+    SshServerCommandProvider::VirtualSshCommandService service(
+        <SshServerCommandProvider::VirtualSshCommandServiceOptions>{
+            "policy": <SshServerCommandProvider::VirtualSshCommandPolicy>{
+                "allow_all_commands": True,
+                "allow_all_subsystems": True,
+            },
+            "audit": <SshServerCommandProvider::VirtualSshCommandAuditOptions>{
+                "request_history_limit": 2,
+                "capture_environment": False,
+                "capture_arguments": True,
+                "capture_identity": True,
+                "captured_string_limit": 64,
+            },
+            "limits": <SshServerCommandProvider::VirtualSshCommandLimits>{
+                "max_concurrent_requests": 8,
+                "max_concurrent_requests_per_principal": 1,
+            },
+        }
+    );
+    service.setPrincipalPolicy("principal:nobody", <SshServerCommandProvider::VirtualSshCommandPrincipalPolicy>{
+        "allow_all_commands": False,
+        "allow_all_subsystems": False,
+        "allowed_commands": ("status",),
+        "allowed_subsystems": ("metrics",),
+    });
+    service.setAuditOptions(<SshServerCommandProvider::VirtualSshCommandAuditOptions>{
+        "capture_arguments": False,
+    });
+    service.addTextCommand("status", "ok\n", NOTHING, 0, True, {"kind": "example"});
+    service.addTextSubsystem("metrics", "metrics:ok\n", NOTHING, 0, True, {"kind": "subsystem"});
+
+    SshServerConnections::SshCommandServerConnection conn({
+        "name": "virtual-command-example",
+        "url": "sshserver://127.0.0.1:0",
+        "opts": {
+            "host_keys": ("test/data/ssh_host_ed25519_key",),
+            "services": <SshServerConnections::SshServerConnectionServices>{
+                "enabled_auth_methods": ("none",),
+                "allow_command_service": True,
+                "allow_sftp_service": False,
+            },
+            "limits": <SshServerConnections::SshServerConnectionLimits>{
+                "max_sessions": 8,
+            },
+            "auth": <SshServerAuthProvider::VirtualSshAuthProviderOptions>{
+                "methods": ("none",),
+                "none": <SshServerAuthProvider::VirtualSshStaticAuthMethodOptions>{
+                    "success_decision": <SshServerAuthProvider::VirtualSshAuthDecisionTemplate>{
+                        "principal": "principal:nobody",
+                        "command_policy": {"mode": "command-only"},
+                        "sftp_policy": {"mode": "disabled"},
+                    },
+                },
+            },
+            "command_backend": service,
+        },
+    });
+
+    hash<Qore::Ssh::SshServerConfig> config = conn.getServerConfig();
+    hash<Qore::Ssh::SshCommandResult> result = config.command_callback({
+        "session_id": "session-1",
+        "server_name": "virtual-command-example",
+        "listener_name": "virtual-command-example",
+        "command": "status",
+    });
+    hash<Qore::Ssh::SshCommandResult> subsystem_result = service.handle({
+        "session_id": "session-2",
+        "server_name": "virtual-command-example",
+        "listener_name": "virtual-command-example",
+        "command": "metrics",
+        "environment": {"SECRET": "redacted"},
+        "metadata": {
+            "request_type": "subsystem",
+            "subsystem": "metrics",
+        },
+    });
+    @endcode
+
+    @subsection sshcommandlivecookbook Live Virtual Command Server Example
+    See @c examples/VirtualSshCommandLiveServer.qr for a full example that:
+    - starts a local SSH server from
+      @ref SshServerConnections::SshCommandServerConnection "SshCommandServerConnection"
+    - attaches a
+      @ref SshServerCommandProvider::VirtualSshCommandService "VirtualSshCommandService"
+      through @c command_backend
+    - keeps the basic service surface simple, with advanced policy/audit
+      behavior enabled only through optional typed options and setters
+    - uses grouped
+      @ref SshServerCommandProvider::VirtualSshCommandPolicy "policy",
+      @ref SshServerCommandProvider::VirtualSshCommandAuditOptions "audit", and
+      @ref SshServerCommandProvider::VirtualSshCommandLimits "limits"
+      constructor options for advanced behavior
+    - keeps grouped runtime configuration deterministic through
+      @c setPolicy(), @c setAuditOptions(), and @c setLimits(), with matching
+      @c clear...() helpers and typed @c get...() snapshots
+    - serves a real OpenSSH exec request end to end
+    - shows direct subsystem handling on the same typed virtual service
+    - shows exact-name principal-aware allowlist policy for commands and subsystems
+    - shows optional global and per-principal concurrency caps
+    - demonstrates bounded request capture with environment redaction
+    - prints the typed @ref Qore::Ssh::SshCommandResult "SshCommandResult"
+      and captured requests
+    - can be validated locally together with the broader module sweep through
+      @c test/preflight.sh
+
+    @subsection sshtypedhelpercookbookevents Inbound Submission Event Provider
+    @code
+    SftpServerDataProvider::VirtualSftpExchange exchange();
+
+    AbstractDataProvider provider = DataProvider::getFactory("sftpserver").create({
+        "backend": exchange,
+    });
+
+    AbstractDataProvider event_provider = provider.getChildProviderEx(
+        SftpServerDataProvider::EventInboundFileAccepted);
+
+    class MyObserver inherits DataProvider::Observer {
+        update(string event_id, hash<auto> data_) {
+            printf("EVENT %s: %y\n", event_id, data_);
+        }
+    }
+
+    MyObserver observer();
+    cast<DataProvider::Observable>(event_provider).registerObserver(
+        observer, SftpServerDataProvider::EventInboundFileAccepted);
+    cast<DataProvider::Observable>(event_provider).registerObserver(
+        observer, SftpServerDataProvider::EventInboundFileRejected);
+    cast<DataProvider::DelayedObservable>(event_provider).observersReady();
+
+    # binary payloads are omitted by default; set
+    # inbound_event_payload_mode=SftpServerDataProvider::InboundEventPayloadInline
+    # on the backend/provider when observers need them.
+    # generate_inbound_checksum=True also persists the SHA-256 checksum in
+    # virtual file metadata so later stat/list/retrieve calls can surface it.
+    # live SFTP uploads also populate session_id, server_name,
+    # listener_name, and principal in the typed event payload.
+    #
+    # VirtualSftpExchangeOptions also supports typed inbound/archive/claim
+    # retention policies with max_age_seconds and deterministic cleanup
+    # through VirtualSftpExchange::cleanupExpired() or the cleanup-expired
+    # DataProvider action, including optional principal-scoped cleanup for
+    # shared inbound roots.
+    @endcode
+
+    @section sshreleasenotes Release Notes
+
+    @subsection sshv010 Ssh Module Version 0.1.0
+    - initial release of the module
+*/

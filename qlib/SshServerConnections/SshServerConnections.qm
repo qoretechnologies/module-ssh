@@ -1,0 +1,76 @@
+# -*- mode: qore; indent-tabs-mode: nil -*-
+#! @file SshServerConnections.qm generic ConnectionProvider implementations for local SSH/SFTP server instances
+
+/*  SshServerConnections.qm Copyright 2026 Qore Technologies, s.r.o.
+
+    Permission is hereby granted, free of charge, to any person obtaining a
+    copy of this software and associated documentation files (the "Software"),
+    to deal in the Software without restriction, including without limitation
+    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+    and/or sell copies of the Software, and to permit persons to whom the
+    Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+*/
+
+%requires qore >= 2.0
+%modern
+
+%requires(reexport) ssh
+%requires(reexport) Logger
+%requires(reexport) ConnectionProvider >= 1.4
+%requires(reexport) DataProvider
+%requires SshServerAuthProvider
+
+module SshServerConnections {
+    version = "0.2";
+    desc = "generic ConnectionProvider helpers for managed local SSH and SFTP server instances";
+    author = "Qore Technologies, s.r.o.";
+    url = "http://qore.org";
+    license = "MIT";
+    init = sub () {
+        ConnectionSchemeCache::registerScheme("sshsrv", SshCommandServerConnection::ConnectionScheme);
+        ConnectionSchemeCache::registerScheme("sshserver", SshCommandServerConnection::ConnectionScheme);
+        ConnectionSchemeCache::registerScheme("sftpsrv", SftpServerConnection::ConnectionScheme);
+        ConnectionSchemeCache::registerScheme("sftpserver", SftpServerConnection::ConnectionScheme);
+    };
+}
+
+/** @mainpage SshServerConnections Module
+
+    @tableofcontents
+
+    @section sshserverconnectionsintro SshServerConnections Module Introduction
+
+    The %SshServerConnections module provides generic
+    @c ConnectionProvider classes for managed local
+    @ref Qore::Ssh::SshServer "Qore::Ssh::SshServer" instances.
+
+    The scope is intentionally generic:
+    - local listener/server configuration projected from a connection URL plus
+      typed options
+    - grouped operational listener limits through
+      @c SshServerConnectionLimits
+    - grouped listener service controls through
+      @c SshServerConnectionServices
+    - managed SSH command and SFTP server connection classes
+    - strong typed projection to
+      @ref Qore::Ssh::SshServerConfig "Qore::Ssh::SshServerConfig" and
+      @ref Qore::Ssh::SshListenerConfig "Qore::Ssh::SshListenerConfig"
+    - connection-owned @c DataProvider bridging for generic SFTP exchange
+      backends
+
+    The following classes are currently provided:
+    - @ref SshServerConnections::AbstractSshServerConnection
+    - @ref SshServerConnections::SshCommandServerConnection
+    - @ref SshServerConnections::SftpServerConnection
+*/

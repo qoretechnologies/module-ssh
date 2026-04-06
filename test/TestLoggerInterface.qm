@@ -1,0 +1,200 @@
+# -*- mode: qore; indent-tabs-mode: nil -*-
+
+/*  TestLoggerInterface.qm Copyright 2026 Qore Technologies, s.r.o.
+
+    Permission is hereby granted, free of charge, to any person obtaining a
+    copy of this software and associated documentation files (the "Software"),
+    to deal in the Software without restriction, including without limitation
+    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+    and/or sell copies of the Software, and to permit persons to whom the
+    Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+*/
+
+%requires qore >= 2.0
+%requires Logger
+%modern
+
+module TestLoggerInterface {
+    version = "0.1";
+    desc = "test LoggerInterface implementation for module-ssh qtests";
+    author = "Qore Technologies, s.r.o.";
+    url = "http://qore.org";
+    license = "MIT";
+}
+
+public class RecordingLoggerInterface inherits LoggerInterface {
+    public {
+        list<hash<auto>> events = ();
+        LoggerLevel current_level = LoggerLevel::LevelAll;
+    }
+
+    constructor() : LoggerInterface() {
+    }
+
+    log(LoggerLevel level, string message, ...) {
+        logArgs(level, message, argv);
+    }
+
+    log(int level, string message, ...) {
+        logArgs(level, message, argv);
+    }
+
+    log(string level, string message, ...) {
+        logArgs(level, message, argv);
+    }
+
+    logArgs(LoggerLevel level, string message, *softlist<auto> args) {
+        record(level, message, args);
+    }
+
+    logArgs(int level, string message, *softlist<auto> args) {
+        record(LoggerLevel::getLevel(level, LoggerLevel::LevelInfo), message, args);
+    }
+
+    logArgs(string level, string message, *softlist<auto> args) {
+        record(LoggerLevel::getLevel(level, LoggerLevel::LevelInfo), message, args);
+    }
+
+    logEvent(LoggerEvent event) {
+        record(event.getLevel(), event.getMessage(), NOTHING);
+    }
+
+    trace(string message, ...) {
+        logArgs(LoggerLevel::LevelTrace, message, argv);
+    }
+
+    debug(string message, ...) {
+        logArgs(LoggerLevel::LevelDebug, message, argv);
+    }
+
+    info(string message, ...) {
+        logArgs(LoggerLevel::LevelInfo, message, argv);
+    }
+
+    warn(string message, ...) {
+        logArgs(LoggerLevel::LevelWarn, message, argv);
+    }
+
+    error(string message, ...) {
+        logArgs(LoggerLevel::LevelError, message, argv);
+    }
+
+    fatal(string message, ...) {
+        logArgs(LoggerLevel::LevelFatal, message, argv);
+    }
+
+    assertLog(bool assertion, string message, ...) {
+        if (!assertion) {
+            logArgs(LoggerLevel::LevelError, message, argv);
+        }
+    }
+
+    traceVar(string var_name, auto value) {
+        trace("%s: %y", var_name, value);
+    }
+
+    debugVar(string var_name, auto value) {
+        debug("%s: %y", var_name, value);
+    }
+
+    bool isEnabledFor(LoggerLevel level) {
+        return True;
+    }
+
+    bool isEnabledFor(int level) {
+        return True;
+    }
+
+    bool isEnabledFor(string level) {
+        return True;
+    }
+
+    bool isTraceEnabled() {
+        return True;
+    }
+
+    bool isDebugEnabled() {
+        return True;
+    }
+
+    bool isInfoEnabled() {
+        return True;
+    }
+
+    bool isWarnEnabled() {
+        return True;
+    }
+
+    bool isErrorEnabled() {
+        return True;
+    }
+
+    bool isFatalEnabled() {
+        return True;
+    }
+
+    setLevel(*LoggerLevel level) {
+        current_level = level ?? LoggerLevel::LevelAll;
+    }
+
+    setLevel(string level) {
+        current_level = LoggerLevel::getLevel(level, LoggerLevel::LevelAll);
+    }
+
+    setLevel(int level) {
+        current_level = LoggerLevel::getLevel(level, LoggerLevel::LevelAll);
+    }
+
+    *LoggerLevel decLevel() {
+        return current_level;
+    }
+
+    *LoggerLevel incLevel() {
+        return current_level;
+    }
+
+    *LoggerLevel getLevel(bool effective = True) {
+        return current_level;
+    }
+
+    private nothing record(LoggerLevel level, string message, *softlist<auto> args) {
+        string formatted = args ? vsprintf(message, args) : message;
+        events += ({
+            "level": normalizeLevelName(level.getStr()),
+            "level_code": level.getValue(),
+            "message": formatted,
+        },);
+    }
+
+    private string normalizeLevelName(string level) {
+        switch (level) {
+            case "TRACE":
+                return "trace";
+            case "DEBUG":
+                return "debug";
+            case "DETAIL":
+                return "detail";
+            case "INFO":
+                return "info";
+            case "WARN":
+                return "warn";
+            case "ERROR":
+                return "error";
+            case "FATAL":
+                return "fatal";
+            default:
+                return level;
+        }
+    }
+}

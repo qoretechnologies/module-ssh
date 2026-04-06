@@ -1,0 +1,12 @@
+module-ssh 0.1
+
+- server-side SSH and SFTP foundations based on libssh
+- typed `Qore::Ssh` server, session, command, and SFTP contracts
+- live SFTP backend dispatch with typed helper and backend request/result hashes
+- generic `SshServerConnections` `ConnectionProvider` module for local SSH/SFTP server instances
+- generic `SftpServerDataProvider` `DataProvider` module for virtual SFTP exchange workflows
+- config-driven inbound SFTP submission events through `inbound-file-accepted`
+- typed inbound SFTP acceptance policies with filename glob/regex and size controls
+- generic `VirtualSshCommandService` for SSH command virtualization without a command-side `DataProvider`
+- runnable SSH command and SFTP policy/event examples
+- directory-module layout for all qlib user modules with split internal `.qc` implementation files

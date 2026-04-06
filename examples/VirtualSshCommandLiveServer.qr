@@ -1,0 +1,163 @@
+#!/usr/bin/env qore
+
+/*  VirtualSshCommandLiveServer.qr Copyright 2026 Qore Technologies, s.r.o.
+
+    Permission is hereby granted, free of charge, to any person obtaining a
+    copy of this software and associated documentation files (the "Software"),
+    to deal in the Software without restriction, including without limitation
+    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+    and/or sell copies of the Software, and to permit persons to whom the
+    Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+*/
+
+%requires ../qlib/SshServerConnections
+%requires ../qlib/SshServerAuthProvider
+%requires ../qlib/SshServerCommandProvider
+%requires ssh
+
+string sub getTmpFile(string suffix) {
+    return "/tmp/module-ssh-command-example-" + string(getpid()) + "-" + string(now_us()) + suffix;
+}
+
+nothing sub cleanupFile(string path) {
+    if (is_readable(path)) {
+        unlink(path);
+    }
+}
+
+string sub makeSshExecClientCommand(int port, string remote_command, string stdout_path, string stderr_path) {
+    return sprintf("/usr/bin/ssh"
+        + " -o BatchMode=yes"
+        + " -o PreferredAuthentications=none"
+        + " -o PubkeyAuthentication=no"
+        + " -o PasswordAuthentication=no"
+        + " -o KbdInteractiveAuthentication=no"
+        + " -o NumberOfPasswordPrompts=0"
+        + " -o StrictHostKeyChecking=no"
+        + " -o UserKnownHostsFile=/dev/null"
+        + " -o LogLevel=ERROR"
+        + " -o ConnectTimeout=5"
+        + " -p %d"
+        + " nobody@127.0.0.1 %s"
+        + " >%s 2>%s", port, remote_command, stdout_path, stderr_path);
+}
+
+SshServerCommandProvider::VirtualSshCommandService service(
+    <SshServerCommandProvider::VirtualSshCommandServiceOptions>{
+        "policy": <SshServerCommandProvider::VirtualSshCommandPolicy>{
+            "allow_all_commands": True,
+            "allow_all_subsystems": True,
+        },
+        "audit": <SshServerCommandProvider::VirtualSshCommandAuditOptions>{
+            "request_history_limit": 2,
+            "capture_environment": False,
+        },
+        "limits": <SshServerCommandProvider::VirtualSshCommandLimits>{
+            "max_concurrent_requests": 8,
+            "max_concurrent_requests_per_principal": 1,
+        },
+    }
+);
+service.setPrincipalPolicy("principal:nobody", <SshServerCommandProvider::VirtualSshCommandPrincipalPolicy>{
+    "allow_all_commands": False,
+    "allow_all_subsystems": False,
+    "allowed_commands": ("echo",),
+    "allowed_subsystems": ("metrics",),
+});
+service.addTextCommand("status", "status:ok\n", NOTHING, 0, True, {"kind": "static"});
+service.addTextSubsystem("metrics", "metrics:ok\n", NOTHING, 0, True, {"kind": "subsystem"});
+service.addHandler("echo", hash<Qore::Ssh::SshCommandResult> sub(hash<Qore::Ssh::SshCommandRequest> req) {
+    return <Qore::Ssh::SshCommandResult>{
+        "accepted": True,
+        "exit_status": 3,
+        "stdout": binary(sprintf("echo:%s\n", req.command)),
+        "stderr": binary(sprintf("request-type:%s\n", req.metadata.request_type)),
+        "result_data": {"kind": "dynamic"},
+    };
+});
+
+SshServerConnections::SshCommandServerConnection conn({
+    "name": "virtual-command-live-example",
+    "url": "sshserver://127.0.0.1:0",
+    "opts": {
+        "host_keys": (get_script_dir() + "../test/data/ssh_host_ed25519_key",),
+        "services": <SshServerConnections::SshServerConnectionServices>{
+            "enabled_auth_methods": ("none",),
+            "allow_command_service": True,
+            "allow_sftp_service": False,
+        },
+        "auth": <SshServerAuthProvider::VirtualSshAuthProviderOptions>{
+            "methods": ("none",),
+            "none": <SshServerAuthProvider::VirtualSshStaticAuthMethodOptions>{
+                "success_decision": <SshServerAuthProvider::VirtualSshAuthDecisionTemplate>{
+                    "principal": "principal:nobody",
+                    "command_policy": {"mode": "command-only"},
+                    "sftp_policy": {"mode": "disabled"},
+                },
+            },
+        },
+        "command_backend": service,
+    },
+});
+
+hash<Qore::Ssh::SshServerConfig> config = conn.getServerConfig();
+Qore::Ssh::SshServer server(config);
+server.start();
+int port = server.getStatus().listeners[0].bound_port;
+string stdout_path = getTmpFile(".out");
+string stderr_path = getTmpFile(".err");
+
+on_exit {
+    cleanupFile(stdout_path);
+    cleanupFile(stderr_path);
+}
+
+int ssh_rc = 0;
+Counter done(1);
+background sub() {
+    try {
+        ssh_rc = system(makeSshExecClientCommand(port, "echo", stdout_path, stderr_path));
+    } catch (hash<ExceptionInfo> ex) {
+        ssh_rc = -1;
+    }
+    done.dec();
+}();
+
+Qore::Ssh::SshSession session = server.acceptSession(5000);
+hash<Qore::Ssh::SshAuthDecision> auth = server.authenticateSession(session, 15000);
+hash<Qore::Ssh::SshCommandResult> result = server.dispatchCommandSession(session, 15000);
+done.waitForZero(10s);
+session.disconnect();
+server.stop();
+
+hash<Qore::Ssh::SshCommandResult> subsystem_result = service.handle(<Qore::Ssh::SshCommandRequest>{
+    "session_id": "session-subsystem",
+    "server_name": "virtual-command-live-example",
+    "listener_name": "virtual-command-live-example",
+    "command": "metrics",
+    "environment": {"SECRET": "redacted"},
+    "metadata": {
+        "request_type": "subsystem",
+        "subsystem": "metrics",
+    },
+});
+
+printf("Authenticated: %y\n", auth.accepted);
+printf("Exit code: %d\n", ssh_rc);
+printf("Result accepted=%y exit=%y result_data=%y\n", result.accepted, result.exit_status, result.result_data);
+printf("Subsystem result accepted=%y exit=%y result_data=%y\n",
+    subsystem_result.accepted, subsystem_result.exit_status, subsystem_result.result_data);
+printf("Stdout:\n%s", ReadOnlyFile::readTextFile(stdout_path));
+printf("Stderr:\n%s", ReadOnlyFile::readTextFile(stderr_path));
+printf("Captured requests: %y\n", service.getRequests());

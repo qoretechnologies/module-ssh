@@ -1,0 +1,1165 @@
+#!/usr/bin/env qore
+# -*- mode: qore; indent-tabs-mode: nil -*-
+
+/*  SftpSession.qtest Copyright 2026 Qore Technologies, s.r.o.
+
+    Permission is hereby granted, free of charge, to any person obtaining a
+    copy of this software and associated documentation files (the "Software"),
+    to deal in the Software without restriction, including without limitation
+    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+    and/or sell copies of the Software, and to permit persons to whom the
+    Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+*/
+
+%modern
+%requires ssh
+%requires QUnit
+%requires ./TestLoggerInterface.qm
+
+%exec-class SftpSessionTest
+
+class TestLogger inherits RecordingLoggerInterface {
+}
+
+class TestSftpBackend {
+    public {
+        string name;
+        list<hash<auto>> calls;
+        list<hash<auto>> submissions;
+        binary streamed_payload;
+        binary streamed_submission;
+        hash<auto> files;
+        hash<auto> directories;
+    }
+
+    constructor(string name = "backend") {
+        self.name = name;
+        calls = ();
+        submissions = ();
+        streamed_payload = binary("streamed virtual payload\n");
+        streamed_submission = binary();
+        files = (
+            "/backend-entry.txt": binary("hello world\n"),
+            "/streamed.txt": streamed_payload,
+        );
+        directories = (
+            "/": True,
+        );
+    }
+
+    hash<auto> stat(hash<auto> req) {
+        calls += ({"method": "stat", "path": req.path, "operation": req.operation},);
+        if (directories{req.path} != NOTHING && directories{req.path}) {
+            return {"backend": name, "path": req.path, "directory": True, "permissions": 0040755};
+        }
+        if (files{req.path} != NOTHING) {
+            binary data = files{req.path};
+            return {
+                "backend": name,
+                "path": req.path,
+                "size": data.size(),
+                "permissions": 0100644,
+                "directory": False,
+            };
+        }
+        return {"backend": name, "path": req.path, "exists": False};
+    }
+
+    hash<auto> list(hash<auto> req) {
+        calls += ({"method": "list", "path": req.path, "operation": req.operation},);
+        list<hash<auto>> entries = ();
+        string prefix = req.path == "/" ? "/" : req.path + "/";
+        list<string> directory_keys = keys(directories);
+        list<string> file_keys = keys(files);
+
+        for (int i = 0; i < directory_keys.size(); ++i) {
+            string path = directory_keys[i];
+            if (path == "/" || !directories{path}) {
+                continue;
+            }
+            if (path.substr(0, prefix.size()) == prefix && path.find("/", prefix.size()) < 0) {
+                string name = path.substr(prefix.size());
+                entries += ({
+                    "filename": name,
+                    "long_name": name,
+                    "size": 0,
+                    "permissions": 0040755,
+                    "directory": True,
+                },);
+            }
+        }
+
+        for (int i = 0; i < file_keys.size(); ++i) {
+            string path = file_keys[i];
+            if (path.substr(0, prefix.size()) == prefix && path.find("/", prefix.size()) < 0) {
+                binary data = files{path};
+                string name = path.substr(prefix.size());
+                entries += ({
+                    "filename": name,
+                    "long_name": name,
+                    "size": data.size(),
+                    "permissions": 0100644,
+                    "directory": False,
+                },);
+            }
+        }
+        return {
+            "backend": name,
+            "path": req.path,
+            "entries": entries,
+        };
+    }
+
+    hash<auto> openRead(hash<auto> req) {
+        calls += ({"method": "openRead", "path": req.path, "operation": req.operation},);
+        if (req.path == "/streamed.txt") {
+            binary data = streamed_payload;
+            return {
+                "path": req.path,
+                "size": data.size(),
+                "permissions": 0100644,
+                "backend_handle": "stream:streamed.txt",
+            };
+        }
+        if (files{req.path} != NOTHING) {
+            binary data = files{req.path};
+            return {
+                "path": req.path,
+                "size": data.size(),
+                "permissions": 0100644,
+                "data": data,
+            };
+        }
+        return {"path": req.path, "exists": False};
+    }
+
+    hash<auto> openWrite(hash<auto> req) {
+        calls += ({"method": "openWrite", "path": req.path, "operation": req.operation, "pflags": req.pflags},);
+        if (req.path == "/stream-submit.txt") {
+            streamed_submission = binary();
+            return {
+                "path": req.path,
+                "permissions": 0100644,
+                "backend_handle": "write:stream-submit.txt",
+            };
+        }
+        return {"path": req.path, "permissions": 0100644};
+    }
+
+    hash<auto> read(hash<auto> req) {
+        calls += ({
+            "method": "read",
+            "path": req.path,
+            "operation": req.operation,
+            "offset": req.offset,
+            "length": req.length,
+        },);
+        if (req.backend_handle == "stream:streamed.txt") {
+            binary data = streamed_payload;
+            int offset = req.offset;
+            int length = req.length;
+            if (offset >= data.size()) {
+                return {"eof": True};
+            }
+            int remaining = data.size() - offset;
+            int chunk_size = remaining < length ? remaining : length;
+            return {
+                "data": data.substr(offset, chunk_size),
+                "eof": offset + chunk_size >= data.size(),
+            };
+        }
+        return {"eof": True};
+    }
+
+    hash<auto> write(hash<auto> req) {
+        calls += ({
+            "method": "write",
+            "path": req.path,
+            "operation": req.operation,
+            "offset": req.offset,
+            "size": req.data.size(),
+        },);
+        if (req.backend_handle == "write:stream-submit.txt") {
+            if (!req.offset) {
+                streamed_submission = binary();
+            }
+            streamed_submission += req.data;
+        }
+        return {"written": req.data.size()};
+    }
+
+    hash<auto> closeRead(hash<auto> req) {
+        calls += ({"method": "closeRead", "path": req.path, "operation": req.operation},);
+        return {"path": req.path, "completed": True};
+    }
+
+    hash<auto> closeWrite(hash<auto> req) {
+        binary data = binary();
+        if (req.data != NOTHING) {
+            data = req.data;
+        }
+        if (req.path == "/stream-submit.txt") {
+            data = streamed_submission;
+        }
+        files{req.path} = data;
+        submissions += ({"path": req.path, "data": data, "operation": req.operation},);
+        calls += ({"method": "closeWrite", "path": req.path, "operation": req.operation},);
+        return {"path": req.path, "completed": True};
+    }
+
+    hash<auto> submit(hash<auto> req) {
+        binary data = req.data;
+        calls += ({
+            "method": "submit",
+            "path": req.path,
+            "operation": req.operation,
+            "size": data.size(),
+        },);
+        files{req.path} = data;
+        return {
+            "path": req.path,
+            "completed": True,
+            "transfer_info": <Qore::Ssh::SftpTransferInfo>{
+                "operation": "submit",
+                "path": req.path,
+                "final_path": req.path,
+                "size": data.size(),
+                "atomic_publish": False,
+                "completed": True,
+            },
+        };
+    }
+
+    hash<auto> listAvailable(hash<auto> req) {
+        calls += ({"method": "listAvailable", "path": req.path, "operation": req.operation},);
+        hash<auto> result = list(req);
+        return {
+            "path": req.path,
+            "entries": result.entries,
+        };
+    }
+
+    hash<auto> retrieve(hash<auto> req) {
+        calls += ({"method": "retrieve", "path": req.path, "operation": req.operation},);
+        if (files{req.path} == NOTHING) {
+            return {"path": req.path, "exists": False};
+        }
+        binary data = files{req.path};
+        return {
+            "path": req.path,
+            "data": data,
+            "size": data.size(),
+            "permissions": 0100644,
+            "transfer_info": <Qore::Ssh::SftpTransferInfo>{
+                "operation": "retrieve",
+                "path": req.path,
+                "final_path": req.path,
+                "size": data.size(),
+                "atomic_publish": False,
+                "completed": False,
+            },
+        };
+    }
+
+    hash<auto> completeRetrieve(hash<auto> req) {
+        string mode = req.completion_mode ?? "";
+        calls += ({"method": "completeRetrieve", "path": req.path, "operation": req.operation, "mode": mode},);
+        if (files{req.path} == NOTHING) {
+            return {"path": req.path, "exists": False};
+        }
+        if (mode == "delete") {
+            delete files{req.path};
+        }
+        return {
+            "path": req.path,
+            "completed": True,
+            "transfer_info": <Qore::Ssh::SftpTransferInfo>{
+                "operation": "retrieve",
+                "path": req.path,
+                "final_path": req.path,
+                "size": 0,
+                "atomic_publish": False,
+                "completed": True,
+            },
+        };
+    }
+
+    hash<auto> removePath(hash<auto> req) {
+        calls += ({"method": "removePath", "path": req.path, "operation": req.operation},);
+        if (files{req.path} == NOTHING) {
+            return {"path": req.path, "exists": False};
+        }
+        delete files{req.path};
+        return {"path": req.path, "completed": True};
+    }
+
+    hash<auto> rename(hash<auto> req) {
+        calls += ({"method": "rename", "path": req.path, "target_path": req.target_path, "operation": req.operation},);
+        if (files{req.path} != NOTHING) {
+            binary data = files{req.path};
+            delete files{req.path};
+            files{req.target_path} = data;
+            return {"path": req.target_path, "completed": True};
+        }
+        if (directories{req.path} != NOTHING && directories{req.path}) {
+            delete directories{req.path};
+            directories{req.target_path} = True;
+            return {"path": req.target_path, "completed": True};
+        }
+        return {"path": req.path, "exists": False};
+    }
+
+    hash<auto> mkdir(hash<auto> req) {
+        calls += ({"method": "mkdir", "path": req.path, "operation": req.operation},);
+        directories{req.path} = True;
+        return {"path": req.path, "completed": True};
+    }
+
+    hash<auto> rmdir(hash<auto> req) {
+        calls += ({"method": "rmdir", "path": req.path, "operation": req.operation},);
+        if (directories{req.path} == NOTHING || !directories{req.path}) {
+            return {"path": req.path, "exists": False};
+        }
+        delete directories{req.path};
+        return {"path": req.path, "completed": True};
+    }
+}
+
+class InvalidBackend {
+    ping() {
+    }
+}
+
+class MissingDataRetrieveBackend {
+    hash<auto> stat(hash<auto> req) {
+        return {
+            "path": req.path,
+            "exists": True,
+            "directory": False,
+            "size": 0,
+            "permissions": 0100644,
+        };
+    }
+
+    hash<auto> list(hash<auto> req) {
+        return {"path": req.path, "entries": ()};
+    }
+
+    hash<auto> retrieve(hash<auto> req) {
+        return {
+            "path": req.path,
+            "exists": True,
+            "size": 0,
+            "permissions": 0100644,
+        };
+    }
+}
+
+class TypedBackend {
+    public {
+        hash<auto> files;
+        hash<Qore::Ssh::SftpSubmissionRequest> last_submit_req;
+        hash<Qore::Ssh::SftpOperationRequest> last_complete_req;
+    }
+
+    constructor() {
+        files = (
+            "/typed-backend.txt": binary("typed backend\n"),
+        );
+    }
+
+    hash<Qore::Ssh::SftpPathInfo> stat(hash<Qore::Ssh::SftpPathRequest> req) {
+        if (files{req.path} == NOTHING) {
+            return <Qore::Ssh::SftpPathInfo>{"path": req.path, "exists": False};
+        }
+        binary data = files{req.path};
+        return <Qore::Ssh::SftpPathInfo>{
+            "path": req.path,
+            "exists": True,
+            "directory": False,
+            "size": data.size(),
+            "permissions": 0100644,
+        };
+    }
+
+    hash<Qore::Ssh::SftpListResult> list(hash<Qore::Ssh::SftpPathRequest> req) {
+        list<hash<auto>> entries = ();
+        foreach string path in (keys(files)) {
+            if (req.path == "/" && path.find("/", 1) < 0) {
+                entries += ({
+                    "filename": path.substr(1),
+                    "long_name": path.substr(1),
+                    "size": files{path}.size(),
+                    "permissions": 0100644,
+                    "directory": False,
+                },);
+            }
+        }
+        return <Qore::Ssh::SftpListResult>{
+            "path": req.path,
+            "entries": entries,
+        };
+    }
+
+    hash<Qore::Ssh::SftpOpenResult> retrieve(hash<Qore::Ssh::SftpOpenRequest> req) {
+        if (files{req.path} == NOTHING) {
+            return <Qore::Ssh::SftpOpenResult>{"path": req.path, "exists": False};
+        }
+        binary data = files{req.path};
+        return <Qore::Ssh::SftpOpenResult>{
+            "path": req.path,
+            "exists": True,
+            "data": data,
+            "size": data.size(),
+            "permissions": 0100644,
+        };
+    }
+
+    hash<Qore::Ssh::SftpOperationResult> submit(hash<Qore::Ssh::SftpSubmissionRequest> req) {
+        last_submit_req = req;
+        binary data = req.data;
+        files{req.path} = data;
+        return <Qore::Ssh::SftpOperationResult>{
+            "path": req.path,
+            "completed": True,
+            "transfer_info": <Qore::Ssh::SftpTransferInfo>{
+                "operation": "submit",
+                "path": req.path,
+                "final_path": req.path,
+                "size": data.size(),
+                "atomic_publish": False,
+                "completed": True,
+            },
+        };
+    }
+
+    hash<Qore::Ssh::SftpOperationResult> completeRetrieve(hash<Qore::Ssh::SftpOperationRequest> req) {
+        last_complete_req = req;
+        if (files{req.path} == NOTHING) {
+            return <Qore::Ssh::SftpOperationResult>{"path": req.path, "exists": False};
+        }
+        string mode = req.completion_mode ?? "";
+        if (mode == "delete") {
+            delete files{req.path};
+        }
+        return <Qore::Ssh::SftpOperationResult>{
+            "path": req.path,
+            "completed": True,
+            "transfer_info": <Qore::Ssh::SftpTransferInfo>{
+                "operation": "retrieve",
+                "path": req.path,
+                "final_path": req.path,
+                "size": 0,
+                "atomic_publish": False,
+                "completed": True,
+            },
+        };
+    }
+
+    hash<Qore::Ssh::SftpListResult> listAvailable(hash<Qore::Ssh::SftpPathRequest> req) {
+        return list(req);
+    }
+}
+
+class SftpSessionTest inherits QUnit::Test {
+    constructor() : Test("SftpSessionTest", "0.1", \ARGV) {
+        addTestCase("info roundtrip", \testInfoRoundtrip());
+        addTestCase("transfer info defaults to nothing", \testTransferInfoDefault());
+        addTestCase("applyTransferInfo updates transfer state", \testApplyTransferInfo());
+        addTestCase("clearTransferInfo resets transfer state", \testClearTransferInfo());
+        addTestCase("waitProtocolMessage rejects disconnected sessions", \testWaitProtocolMessageDisconnected());
+        addTestCase("processNextRequest rejects disconnected sessions", \testProcessNextRequestDisconnected());
+        addTestCase("sendVersion rejects disconnected sessions", \testSendVersionDisconnected());
+        addTestCase("sendStatus rejects disconnected sessions", \testSendStatusDisconnected());
+        addTestCase("publishLocalFile copies staged file", \testPublishLocalFileCopy());
+        addTestCase("publishLocalFile renames staged file atomically", \testPublishLocalFileMoveAtomic());
+        addTestCase("publishLocalFile rejects missing transfer info", \testPublishLocalFileMissingTransferInfo());
+        addTestCase("retrieveLocalFile copies planned file", \testRetrieveLocalFileCopy());
+        addTestCase("retrieveLocalFile renames planned file", \testRetrieveLocalFileMove());
+        addTestCase("retrieveLocalFile rejects missing transfer info", \testRetrieveLocalFileMissingTransferInfo());
+        addTestCase("backend roundtrip", \testBackendRoundtrip());
+        addTestCase("stream backend roundtrip", \testStreamBackendRoundtrip());
+        addTestCase("stream write backend roundtrip", \testStreamWriteBackendRoundtrip());
+        addTestCase("mutation backend roundtrip", \testMutationBackendRoundtrip());
+        addTestCase("atomic exchange submit helper", \testAtomicExchangeSubmit());
+        addTestCase("atomic exchange convenience submit helpers", \testAtomicExchangeConvenienceSubmit());
+        addTestCase("atomic exchange retrieve helpers", \testAtomicExchangeRetrieve());
+        addTestCase("atomic exchange convenience retrieve helpers", \testAtomicExchangeConvenienceRetrieve());
+        addTestCase("atomic exchange completion mode helpers", \testAtomicExchangeCompletionModeHelpers());
+        addTestCase("retrieve helpers reject missing backend data", \testRetrieveHelpersRejectMissingBackendData());
+        addTestCase("atomic exchange helpers support deterministic concurrent calls", \testAtomicExchangeConcurrentHelpers());
+        addTestCase("invalid backend is rejected", \testInvalidBackendRejected());
+        addTestCase("typed backend is accepted and works through SftpSession", \testTypedBackendRoundtrip());
+        addTestCase("logger roundtrip", \testLoggerRoundtrip());
+        addTestCase("close updates connected state", \testCloseLifecycle());
+        addTestCase("copy is denied", \testCopyDenied());
+        set_return_value(main());
+    }
+
+    private hash<Qore::Ssh::SshSessionInfo> getSessionInfo() {
+        date ts = now();
+        return <Qore::Ssh::SshSessionInfo>{
+            "session_id": "sftp-1",
+            "server_name": "srv",
+            "listener_name": "lst",
+            "remote_address": "127.0.0.1",
+            "remote_port": 22,
+            "local_address": "127.0.0.1",
+            "local_port": 2222,
+            "username": "user",
+            "authenticated": True,
+            "auth_method": "none",
+            "principal": "principal:user",
+            "started": ts,
+            "last_activity": ts,
+        };
+    }
+
+    private hash<Qore::Ssh::SftpSessionInfo> getSftpInfo() {
+        return <Qore::Ssh::SftpSessionInfo>{
+            "session_info": getSessionInfo(),
+            "principal": "principal:user",
+            "root_dir": "/tmp/qorus-inbound",
+            "read_only": False,
+            "session_data": {"tenant": "test"},
+        };
+    }
+
+    private hash<Qore::Ssh::SftpTransferInfo> getTransferInfo() {
+        return <Qore::Ssh::SftpTransferInfo>{
+            "operation": "upload",
+            "path": "/inbound/file.dat",
+            "temporary_path": "/tmp/module-ssh-sftp-test/.file.dat.part",
+            "final_path": "/tmp/module-ssh-sftp-test/file.dat",
+            "size": 42,
+            "checksum": "abc123",
+            "atomic_publish": True,
+            "completed": False,
+        };
+    }
+
+    private string getTmpPath(string suffix) {
+        return sprintf("/tmp/module-ssh-sftp-test-%d-%d%s", getpid(), now_us(), suffix);
+    }
+
+    private nothing writeTestFile(string path, string data) {
+        File f();
+        f.open(path, O_WRONLY | O_CREAT | O_TRUNC, 0600);
+        f.write(data);
+        f.close();
+    }
+
+    testInfoRoundtrip() {
+        Qore::Ssh::SftpSession s(getSftpInfo());
+        hash<Qore::Ssh::SftpSessionInfo> info = s.getInfo();
+        assertEq("principal:user", info.principal);
+        assertEq("/tmp/qorus-inbound", info.root_dir);
+        assertEq("sftp-1", info.session_info.session_id);
+    }
+
+    testTransferInfoDefault() {
+        Qore::Ssh::SftpSession s(getSftpInfo());
+        assertEq(NOTHING, s.getTransferInfo());
+    }
+
+    testApplyTransferInfo() {
+        Qore::Ssh::SftpSession s(getSftpInfo());
+        s.applyTransferInfo(getTransferInfo());
+        hash<Qore::Ssh::SftpTransferInfo> info = s.getTransferInfo();
+        assertEq("upload", info.operation);
+        assertEq("/inbound/file.dat", info.path);
+        assertTrue(info.atomic_publish);
+    }
+
+    testClearTransferInfo() {
+        Qore::Ssh::SftpSession s(getSftpInfo());
+        s.applyTransferInfo(getTransferInfo());
+        assertNeq(NOTHING, s.getTransferInfo());
+        s.clearTransferInfo();
+        assertEq(NOTHING, s.getTransferInfo());
+    }
+
+    testWaitProtocolMessageDisconnected() {
+        Qore::Ssh::SftpSession s(getSftpInfo());
+        assertThrows("SFTPSESSION-STATE-ERROR", sub() { s.waitProtocolMessage(1); });
+    }
+
+    testProcessNextRequestDisconnected() {
+        Qore::Ssh::SftpSession s(getSftpInfo());
+        assertThrows("SFTPSESSION-STATE-ERROR", sub() { s.processNextRequest(1); });
+    }
+
+    testSendVersionDisconnected() {
+        Qore::Ssh::SftpSession s(getSftpInfo());
+        assertThrows("SFTPSESSION-STATE-ERROR", sub() { s.sendVersion(3); });
+    }
+
+    testSendStatusDisconnected() {
+        Qore::Ssh::SftpSession s(getSftpInfo());
+        assertThrows("SFTPSESSION-STATE-ERROR", sub() { s.sendStatus(1, 8, "unsupported", "en"); });
+    }
+
+    testPublishLocalFileCopy() {
+        string root = getTmpPath(".copy-root");
+        string source = getTmpPath(".copy-source");
+        string final_path = root + "/published/file.dat";
+        string temp_path = root + "/published/.file.dat.part";
+
+        on_exit {
+            if (is_file(source)) {
+                unlink(source);
+            }
+            if (is_file(temp_path)) {
+                unlink(temp_path);
+            }
+            if (is_file(final_path)) {
+                unlink(final_path);
+            }
+        }
+
+        writeTestFile(source, "COPY-DATA");
+        Qore::Ssh::SftpSession s(getSftpInfo());
+        s.applyTransferInfo(<Qore::Ssh::SftpTransferInfo>{
+            "operation": "upload",
+            "path": "/published/file.dat",
+            "temporary_path": temp_path,
+            "final_path": final_path,
+            "size": 9,
+            "atomic_publish": False,
+            "completed": False,
+        });
+
+        hash<Qore::Ssh::SftpTransferInfo> info = s.publishLocalFile(source, False, True);
+        assertTrue(is_file(source));
+        assertTrue(is_file(final_path));
+        assertEq("COPY-DATA", ReadOnlyFile::readTextFile(final_path));
+        assertTrue(info.completed);
+        assertEq(final_path, info.final_path);
+        assertEq(info, s.getTransferInfo());
+    }
+
+    testPublishLocalFileMoveAtomic() {
+        string root = getTmpPath(".move-root");
+        string source = getTmpPath(".move-source");
+        string final_path = root + "/archive/final.dat";
+        string temp_path = root + "/archive/.final.dat.uploading";
+
+        on_exit {
+            if (is_file(source)) {
+                unlink(source);
+            }
+            if (is_file(temp_path)) {
+                unlink(temp_path);
+            }
+            if (is_file(final_path)) {
+                unlink(final_path);
+            }
+        }
+
+        writeTestFile(source, "MOVE-DATA");
+        TestLogger logger();
+        Qore::Ssh::SftpSession s(getSftpInfo());
+        s.setLogger(logger);
+        s.applyTransferInfo(<Qore::Ssh::SftpTransferInfo>{
+            "operation": "upload",
+            "path": "/archive/final.dat",
+            "temporary_path": temp_path,
+            "final_path": final_path,
+            "size": 9,
+            "atomic_publish": True,
+            "completed": False,
+        });
+
+        hash<Qore::Ssh::SftpTransferInfo> info = s.publishLocalFile(source, True, True);
+        assertFalse(is_file(source));
+        assertFalse(is_file(temp_path));
+        assertTrue(is_file(final_path));
+        assertEq("MOVE-DATA", ReadOnlyFile::readTextFile(final_path));
+        assertTrue(info.completed);
+        assertTrue(info.atomic_publish);
+        assertEq(final_path, info.final_path);
+        assertTrue(logger.events.size() >= 2);
+        assertEq("info", logger.events[logger.events.size() - 1].level);
+        bool saw_publish_log = False;
+        for (int i = 0; i < logger.events.size(); ++i) {
+            if (logger.events[i].message.find("published local file atomically") >= 0) {
+                saw_publish_log = True;
+                break;
+            }
+        }
+        assertTrue(saw_publish_log);
+    }
+
+    testPublishLocalFileMissingTransferInfo() {
+        string source = getTmpPath(".missing-transfer-source");
+        on_exit if (is_file(source)) { unlink(source); }
+        writeTestFile(source, "MISSING");
+
+        Qore::Ssh::SftpSession s(getSftpInfo());
+        assertThrows("SFTPSESSION-TRANSFER-ERROR", sub() { s.publishLocalFile(source, False, True); });
+    }
+
+    testRetrieveLocalFileCopy() {
+        string root = getTmpPath(".retrieve-copy-root");
+        string source = root + "/outbound/source.dat";
+        string target = getTmpPath(".retrieve-copy-target");
+
+        on_exit {
+            if (is_file(source)) {
+                unlink(source);
+            }
+            if (is_file(target)) {
+                unlink(target);
+            }
+        }
+
+        mkdir(root + "/outbound", 0700, True);
+        writeTestFile(source, "RETRIEVE-COPY");
+        TestLogger logger();
+        Qore::Ssh::SftpSession s(getSftpInfo());
+        s.setLogger(logger);
+        s.applyTransferInfo(<Qore::Ssh::SftpTransferInfo>{
+            "operation": "download",
+            "path": "/outbound/source.dat",
+            "final_path": source,
+            "size": 13,
+            "atomic_publish": False,
+            "completed": False,
+        });
+
+        hash<Qore::Ssh::SftpTransferInfo> info = s.retrieveLocalFile(target, False, True);
+        assertTrue(is_file(source));
+        assertTrue(is_file(target));
+        assertEq("RETRIEVE-COPY", ReadOnlyFile::readTextFile(target));
+        assertTrue(info.completed);
+        bool saw_retrieve_log = False;
+        for (int i = 0; i < logger.events.size(); ++i) {
+            if (logger.events[i].message.find("retrieved local file") >= 0) {
+                saw_retrieve_log = True;
+                break;
+            }
+        }
+        assertTrue(saw_retrieve_log);
+        assertEq(info, s.getTransferInfo());
+    }
+
+    testRetrieveLocalFileMove() {
+        string root = getTmpPath(".retrieve-move-root");
+        string source = root + "/outbound/source.dat";
+        string target = getTmpPath(".retrieve-move-target");
+
+        on_exit {
+            if (is_file(source)) {
+                unlink(source);
+            }
+            if (is_file(target)) {
+                unlink(target);
+            }
+        }
+
+        mkdir(root + "/outbound", 0700, True);
+        writeTestFile(source, "RETRIEVE-MOVE");
+        Qore::Ssh::SftpSession s(getSftpInfo());
+        s.applyTransferInfo(<Qore::Ssh::SftpTransferInfo>{
+            "operation": "download",
+            "path": "/outbound/source.dat",
+            "final_path": source,
+            "size": 13,
+            "atomic_publish": False,
+            "completed": False,
+        });
+
+        hash<Qore::Ssh::SftpTransferInfo> info = s.retrieveLocalFile(target, True, True);
+        assertFalse(is_file(source));
+        assertTrue(is_file(target));
+        assertEq("RETRIEVE-MOVE", ReadOnlyFile::readTextFile(target));
+        assertTrue(info.completed);
+        assertEq(info, s.getTransferInfo());
+    }
+
+    testRetrieveLocalFileMissingTransferInfo() {
+        string target = getTmpPath(".missing-transfer-target");
+        on_exit if (is_file(target)) { unlink(target); }
+
+        Qore::Ssh::SftpSession s(getSftpInfo());
+        assertThrows("SFTPSESSION-TRANSFER-ERROR", sub() { s.retrieveLocalFile(target, False, True); });
+    }
+
+    testBackendRoundtrip() {
+        TestSftpBackend backend("virtual");
+        Qore::Ssh::SftpSession s(getSftpInfo());
+        assertEq(NOTHING, s.getBackend());
+        s.setBackend(backend);
+        assertEq(backend, s.getBackend());
+        s.setBackend(NOTHING);
+        assertEq(NOTHING, s.getBackend());
+    }
+
+    testStreamBackendRoundtrip() {
+        TestSftpBackend backend("virtual");
+        hash<auto> open_result = backend.openRead({"path": "/streamed.txt", "operation": "open-read"});
+        assertEq("stream:streamed.txt", open_result.backend_handle);
+        hash<auto> read_result = backend.read({
+            "path": "/streamed.txt",
+            "operation": "read",
+            "backend_handle": open_result.backend_handle,
+            "offset": 0,
+            "length": 8,
+        });
+        assertEq(binary("streamed"), read_result.data);
+        assertFalse(read_result.eof);
+        hash<auto> close_result = backend.closeRead({
+            "path": "/streamed.txt",
+            "operation": "close-read",
+            "backend_handle": open_result.backend_handle,
+        });
+        assertTrue(close_result.completed);
+    }
+
+    testStreamWriteBackendRoundtrip() {
+        TestSftpBackend backend("virtual");
+        hash<auto> open_result = backend.openWrite({
+            "path": "/stream-submit.txt",
+            "operation": "open-write",
+            "pflags": 10,
+        });
+        assertEq("write:stream-submit.txt", open_result.backend_handle);
+        hash<auto> write_result = backend.write({
+            "path": "/stream-submit.txt",
+            "operation": "write",
+            "backend_handle": open_result.backend_handle,
+            "offset": 0,
+            "data": binary("streamed upload\n"),
+        });
+        assertEq(16, write_result.written);
+        hash<auto> close_result = backend.closeWrite({
+            "path": "/stream-submit.txt",
+            "operation": "close-write",
+            "backend_handle": open_result.backend_handle,
+        });
+        assertTrue(close_result.completed);
+        assertEq(binary("streamed upload\n"), backend.submissions[0].data);
+    }
+
+    testMutationBackendRoundtrip() {
+        TestSftpBackend backend("virtual");
+        hash<auto> mkdir_result = backend.mkdir({"path": "/inbound", "operation": "mkdir"});
+        assertTrue(mkdir_result.completed);
+        assertTrue(backend.stat({"path": "/inbound", "operation": "stat"}).directory);
+
+        hash<auto> rename_result = backend.rename({
+            "path": "/backend-entry.txt",
+            "target_path": "/renamed.txt",
+            "operation": "rename",
+        });
+        assertTrue(rename_result.completed);
+        assertFalse(backend.stat({"path": "/backend-entry.txt", "operation": "stat"}).exists);
+        assertEq(12, backend.stat({"path": "/renamed.txt", "operation": "stat"}).size);
+
+        hash<auto> remove_result = backend.removePath({"path": "/renamed.txt", "operation": "remove"});
+        assertTrue(remove_result.completed);
+        assertFalse(backend.stat({"path": "/renamed.txt", "operation": "stat"}).exists);
+
+        hash<auto> rmdir_result = backend.rmdir({"path": "/inbound", "operation": "rmdir"});
+        assertTrue(rmdir_result.completed);
+        assertFalse(backend.stat({"path": "/inbound", "operation": "stat"}).exists);
+    }
+
+    testAtomicExchangeSubmit() {
+        string source = getTmpPath(".atomic-submit-source");
+        on_exit if (is_file(source)) { unlink(source); }
+
+        writeTestFile(source, "atomic submit payload\n");
+        TestSftpBackend backend("virtual");
+        Qore::Ssh::SftpSession s(getSftpInfo());
+        s.setBackend(backend);
+        hash<Qore::Ssh::SftpOperationResult> result = s.submit(<Qore::Ssh::SftpSubmissionRequest>{
+            "path": "/exchange/inbound.dat",
+            "source_path": source,
+            "metadata": {"kind": "inbound"},
+        });
+
+        assertTrue(result.completed);
+        assertEq("/exchange/inbound.dat", result.path);
+        assertEq(binary("atomic submit payload\n"), backend.files{"/exchange/inbound.dat"});
+        assertEq("submit", s.getTransferInfo().operation);
+        assertTrue(s.getTransferInfo().completed);
+    }
+
+    testAtomicExchangeConvenienceSubmit() {
+        string source = getTmpPath(".atomic-submit-convenience-source");
+        on_exit if (is_file(source)) { unlink(source); }
+
+        writeTestFile(source, "convenience submit payload\n");
+        TestSftpBackend backend("virtual");
+        Qore::Ssh::SftpSession s(getSftpInfo());
+        s.setBackend(backend);
+
+        hash<Qore::Ssh::SftpOperationResult> data_result
+            = s.submitData("/exchange/data.dat", binary("inline payload\n"), {"kind": "inline"});
+        assertTrue(data_result.completed);
+        assertEq(binary("inline payload\n"), backend.files{"/exchange/data.dat"});
+
+        hash<Qore::Ssh::SftpOperationResult> typed_data_result = s.submitData(
+            <Qore::Ssh::SftpSubmissionRequest>{
+                "path": "/exchange/typed-data.dat",
+                "data": binary("typed inline payload\n"),
+                "metadata": {"kind": "typed-inline"},
+            }
+        );
+        assertTrue(typed_data_result.completed);
+        assertEq(binary("typed inline payload\n"), backend.files{"/exchange/typed-data.dat"});
+
+        hash<Qore::Ssh::SftpOperationResult> file_result
+            = s.submitLocalFile("/exchange/file.dat", source, False, True, {"kind": "local"});
+        assertTrue(file_result.completed);
+        assertEq(binary("convenience submit payload\n"), backend.files{"/exchange/file.dat"});
+
+        hash<Qore::Ssh::SftpOperationResult> typed_file_result = s.submitLocalFile(
+            <Qore::Ssh::SftpSubmissionRequest>{
+                "path": "/exchange/typed-file.dat",
+                "source_path": source,
+                "metadata": {"kind": "typed-local"},
+            }
+        );
+        assertTrue(typed_file_result.completed);
+        assertEq(binary("convenience submit payload\n"), backend.files{"/exchange/typed-file.dat"});
+        assertEq("submit", s.getTransferInfo().operation);
+        assertTrue(s.getTransferInfo().completed);
+    }
+
+    testAtomicExchangeRetrieve() {
+        TestSftpBackend backend("virtual");
+        backend.files{"/outbound/report.dat"} = binary("atomic retrieve payload\n");
+        Qore::Ssh::SftpSession s(getSftpInfo());
+        s.setBackend(backend);
+
+        hash<Qore::Ssh::SftpListResult> listing = s.listAvailable(<Qore::Ssh::SftpPathRequest>{
+            "path": "/",
+        });
+        assertTrue(listing.entries.size() > 0);
+
+        hash<Qore::Ssh::SftpOpenResult> open_result = s.retrieve(<Qore::Ssh::SftpOpenRequest>{
+            "path": "/outbound/report.dat",
+        });
+        assertEq(binary("atomic retrieve payload\n"), open_result.data);
+        assertEq("retrieve", s.getTransferInfo().operation);
+        assertFalse(s.getTransferInfo().completed);
+
+        hash<Qore::Ssh::SftpOperationResult> complete = s.completeRetrieve(<Qore::Ssh::SftpOperationRequest>{
+            "path": "/outbound/report.dat",
+            "completion_mode": "delete",
+        });
+        assertTrue(complete.completed);
+        assertEq(NOTHING, backend.files{"/outbound/report.dat"});
+        assertTrue(s.getTransferInfo().completed);
+    }
+
+    testAtomicExchangeConvenienceRetrieve() {
+        string target = getTmpPath(".atomic-retrieve-convenience-target");
+        on_exit if (is_file(target)) { unlink(target); }
+
+        TestSftpBackend backend("virtual");
+        backend.files{"/outbound/simple.dat"} = binary("simple retrieve payload\n");
+        backend.files{"/outbound/delete.dat"} = binary("delete retrieve payload\n");
+        Qore::Ssh::SftpSession s(getSftpInfo());
+        s.setBackend(backend);
+
+        binary data = s.retrieveData("/outbound/simple.dat", {"kind": "simple"});
+        assertEq(binary("simple retrieve payload\n"), data);
+
+        binary typed_data = s.retrieveData(<Qore::Ssh::SftpOpenRequest>{
+            "path": "/outbound/simple.dat",
+            "metadata": {"kind": "typed-simple"},
+        });
+        assertEq(binary("simple retrieve payload\n"), typed_data);
+
+        hash<Qore::Ssh::SftpOperationResult> result
+            = s.retrieveToLocalFile("/outbound/delete.dat", target, "delete");
+        assertTrue(result.completed);
+        assertEq("delete retrieve payload\n", ReadOnlyFile::readTextFile(target));
+        assertEq(NOTHING, backend.files{"/outbound/delete.dat"});
+        assertEq("retrieve", s.getTransferInfo().operation);
+        assertTrue(s.getTransferInfo().completed);
+
+        backend.files{"/outbound/delete-typed.dat"} = binary("typed delete retrieve payload\n");
+        string typed_target = getTmpPath(".atomic-retrieve-convenience-typed-target");
+        on_exit if (is_file(typed_target)) { unlink(typed_target); }
+        hash<Qore::Ssh::SftpOperationResult> typed_result = s.retrieveToLocalFile(
+            <Qore::Ssh::SftpOpenRequest>{
+                "path": "/outbound/delete-typed.dat",
+                "metadata": {"kind": "typed-delete"},
+            },
+            typed_target,
+            "delete"
+        );
+        assertTrue(typed_result.completed);
+        assertEq("typed delete retrieve payload\n", ReadOnlyFile::readTextFile(typed_target));
+        assertEq(NOTHING, backend.files{"/outbound/delete-typed.dat"});
+    }
+
+    testAtomicExchangeCompletionModeHelpers() {
+        TestSftpBackend backend("virtual");
+        backend.files{"/outbound/delete.dat"} = binary("delete\n");
+        backend.files{"/outbound/claim.dat"} = binary("claim\n");
+        backend.files{"/outbound/archive.dat"} = binary("archive\n");
+        backend.files{"/outbound/delete-typed.dat"} = binary("delete typed\n");
+        backend.files{"/outbound/claim-typed.dat"} = binary("claim typed\n");
+        backend.files{"/outbound/archive-typed.dat"} = binary("archive typed\n");
+        Qore::Ssh::SftpSession s(getSftpInfo());
+        s.setBackend(backend);
+
+        hash<Qore::Ssh::SftpOperationResult> delete_result
+            = s.completeRetrieveDelete("/outbound/delete.dat");
+        hash<Qore::Ssh::SftpOperationResult> claim_result
+            = s.completeRetrieveClaim("/outbound/claim.dat", NOTHING, {"ticket": "123"});
+        hash<Qore::Ssh::SftpOperationResult> archive_result
+            = s.completeRetrieveArchive("/outbound/archive.dat");
+        hash<Qore::Ssh::SftpOperationResult> typed_delete_result = s.completeRetrieveDelete(
+            <Qore::Ssh::SftpOperationRequest>{
+                "path": "/outbound/delete-typed.dat",
+            }
+        );
+        hash<Qore::Ssh::SftpOperationResult> typed_claim_result = s.completeRetrieveClaim(
+            <Qore::Ssh::SftpOperationRequest>{
+                "path": "/outbound/claim-typed.dat",
+                "metadata": {"ticket": "typed-123"},
+            }
+        );
+        hash<Qore::Ssh::SftpOperationResult> typed_archive_result = s.completeRetrieveArchive(
+            <Qore::Ssh::SftpOperationRequest>{
+                "path": "/outbound/archive-typed.dat",
+            }
+        );
+
+        assertTrue(delete_result.completed);
+        assertTrue(claim_result.completed);
+        assertTrue(archive_result.completed);
+        assertTrue(typed_delete_result.completed);
+        assertTrue(typed_claim_result.completed);
+        assertTrue(typed_archive_result.completed);
+        assertEq(NOTHING, backend.files{"/outbound/delete.dat"});
+        assertEq(NOTHING, backend.files{"/outbound/delete-typed.dat"});
+
+        int claim_calls = 0;
+        int archive_calls = 0;
+        for (int i = 0; i < backend.calls.size(); ++i) {
+            if (backend.calls[i].method == "completeRetrieve" && backend.calls[i].path == "/outbound/claim.dat"
+                    && backend.calls[i].mode == "claim") {
+                ++claim_calls;
+            } else if (backend.calls[i].method == "completeRetrieve"
+                    && backend.calls[i].path == "/outbound/archive.dat"
+                    && backend.calls[i].mode == "archive") {
+                ++archive_calls;
+            }
+        }
+        assertEq(1, claim_calls);
+        assertEq(1, archive_calls);
+    }
+
+    testRetrieveHelpersRejectMissingBackendData() {
+        string target = getTmpPath(".missing-backend-data-target");
+        on_exit if (is_file(target)) { unlink(target); }
+
+        MissingDataRetrieveBackend backend();
+        Qore::Ssh::SftpSession s(getSftpInfo());
+        s.setBackend(backend);
+
+        assertThrows("SFTPSESSION-BACKEND-ERROR", sub() { s.retrieveData("/outbound/missing.dat"); });
+        assertThrows("SFTPSESSION-BACKEND-ERROR", sub() {
+            s.retrieveToLocalFile("/outbound/missing.dat", target);
+        });
+    }
+
+    testAtomicExchangeConcurrentHelpers() {
+        TestSftpBackend backend("virtual");
+        Qore::Ssh::SftpSession s(getSftpInfo());
+        s.setBackend(backend);
+
+        int workers = 4;
+        Counter start(1);
+        Counter done(workers);
+        for (int i = 0; i < workers; ++i) {
+            int idx = i;
+            background sub() {
+                start.waitForZero(5s);
+                string path = sprintf("/exchange/concurrent-%d.dat", idx);
+                string payload = sprintf("payload-%d\n", idx);
+                s.submitData(path, binary(payload), {"worker": idx});
+                binary data = s.retrieveData(path);
+                assertEq(binary(payload), data);
+                hash<Qore::Ssh::SftpOperationResult> result = s.completeRetrieveDelete(path);
+                assertTrue(result.completed);
+                done.dec();
+            }();
+        }
+
+        start.dec();
+        done.waitForZero(10s);
+        for (int i = 0; i < workers; ++i) {
+            assertEq(NOTHING, backend.files{sprintf("/exchange/concurrent-%d.dat", i)});
+        }
+    }
+
+    testInvalidBackendRejected() {
+        InvalidBackend backend();
+        Qore::Ssh::SftpSession s(getSftpInfo());
+        assertThrows("SFTPSESSION-BACKEND-ERROR", sub() { s.setBackend(backend); });
+    }
+
+    testTypedBackendRoundtrip() {
+        TypedBackend backend();
+        Qore::Ssh::SftpSession s(getSftpInfo());
+        s.setBackend(backend);
+        assertEq(backend, s.getBackend());
+
+        hash<Qore::Ssh::SftpListResult> listing = s.listAvailable(<Qore::Ssh::SftpPathRequest>{
+            "path": "/",
+        });
+        assertEq(1, listing.entries.size());
+
+        hash<Qore::Ssh::SftpOpenResult> open_result = s.retrieve(<Qore::Ssh::SftpOpenRequest>{
+            "path": "/typed-backend.txt",
+        });
+        assertEq(binary("typed backend\n"), open_result.data);
+
+        hash<Qore::Ssh::SftpOperationResult> submit_result = s.submitData("/submitted.txt", binary("submitted\n"));
+        assertTrue(submit_result.completed);
+        assertEq(binary("submitted\n"), backend.files{"/submitted.txt"});
+
+        hash<Qore::Ssh::SftpOperationResult> complete_result = s.completeRetrieveDelete("/typed-backend.txt");
+        assertTrue(complete_result.completed);
+        assertEq(NOTHING, backend.files{"/typed-backend.txt"});
+    }
+
+    testLoggerRoundtrip() {
+        TestLogger logger();
+        Qore::Ssh::SftpSession s(getSftpInfo());
+        assertEq(NOTHING, s.getLogger());
+        s.setLogger(logger);
+        assertEq(logger, s.getLogger());
+    }
+
+    testCloseLifecycle() {
+        Qore::Ssh::SftpSession s(getSftpInfo());
+        assertFalse(s.connected());
+        s.close();
+        assertFalse(s.connected());
+    }
+
+    testCopyDenied() {
+        Qore::Ssh::SftpSession s(getSftpInfo());
+        assertThrows("SFTPSESSION-COPY-ERROR", sub() { s.copy(); });
+    }
+}

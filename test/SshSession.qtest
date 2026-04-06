@@ -1,0 +1,178 @@
+#!/usr/bin/env qore
+# -*- mode: qore; indent-tabs-mode: nil -*-
+
+/*  SshSession.qtest Copyright 2026 Qore Technologies, s.r.o.
+
+    Permission is hereby granted, free of charge, to any person obtaining a
+    copy of this software and associated documentation files (the "Software"),
+    to deal in the Software without restriction, including without limitation
+    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+    and/or sell copies of the Software, and to permit persons to whom the
+    Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+*/
+
+%modern
+%requires ssh
+%requires QUnit
+%requires ./TestLoggerInterface.qm
+
+%exec-class SshSessionTest
+
+class TestLogger inherits RecordingLoggerInterface {
+}
+
+class SshSessionTest inherits QUnit::Test {
+    constructor() : Test("SshSessionTest", "0.1", \ARGV) {
+        addTestCase("auth context info roundtrip", \testAuthContextInfo());
+        addTestCase("auth context pending-state methods reject local-only objects", \testAuthContextStateMethods());
+        addTestCase("auth context logger roundtrip", \testAuthContextLogger());
+        addTestCase("session auth decision updates session state", \testSessionAuthDecision());
+        addTestCase("session info roundtrip", \testSessionInfo());
+        addTestCase("session auth context roundtrip", \testSessionAuthContext());
+        addTestCase("session logger roundtrip", \testSessionLogger());
+        addTestCase("session disconnect lifecycle", \testSessionDisconnect());
+        addTestCase("copy is denied", \testCopyDenied());
+        set_return_value(main());
+    }
+
+    private hash<Qore::Ssh::SshAuthContextInfo> getAuthInfo() {
+        return <Qore::Ssh::SshAuthContextInfo>{
+            "session_id": "s-1",
+            "server_name": "srv",
+            "listener_name": "lst",
+            "remote_address": "127.0.0.1",
+            "remote_port": 22,
+            "username": "user",
+            "auth_method": "password",
+            "service": "ssh-connection",
+        };
+    }
+
+    private hash<Qore::Ssh::SshSessionInfo> getSessionInfo() {
+        date ts = now();
+        return <Qore::Ssh::SshSessionInfo>{
+            "session_id": "s-1",
+            "server_name": "srv",
+            "listener_name": "lst",
+            "remote_address": "127.0.0.1",
+            "remote_port": 22,
+            "local_address": "127.0.0.1",
+            "local_port": 2222,
+            "username": "user",
+            "authenticated": True,
+            "auth_method": "password",
+            "principal": "user",
+            "started": ts,
+            "last_activity": ts,
+        };
+    }
+
+    private hash<Qore::Ssh::SshAuthDecision> getAuthDecision(bool accepted = True) {
+        return <Qore::Ssh::SshAuthDecision>{
+            "accepted": accepted,
+            "principal": accepted ? "principal-user" : NOTHING,
+            "allowed_auth_methods": accepted ? NOTHING : ("password", "publickey"),
+            "command_policy": accepted ? {"mode": "command-only"} : NOTHING,
+            "sftp_policy": accepted ? {"mode": "read-only"} : NOTHING,
+            "session_data": accepted ? {"tenant": "test"} : NOTHING,
+        };
+    }
+
+    testAuthContextInfo() {
+        Qore::Ssh::SshAuthContext cx(getAuthInfo());
+        hash<Qore::Ssh::SshAuthContextInfo> info = cx.getInfo();
+        assertEq("s-1", info.session_id);
+        assertEq("user", info.username);
+    }
+
+    testAuthContextStateMethods() {
+        Qore::Ssh::SshAuthContext cx(getAuthInfo());
+        assertThrows("SSHAUTHCONTEXT-STATE-ERROR", sub() { cx.accept(); });
+        assertThrows("SSHAUTHCONTEXT-STATE-ERROR", sub() { cx.reject(("password",)); });
+    }
+
+    testAuthContextLogger() {
+        TestLogger logger();
+        Qore::Ssh::SshAuthContext cx(getAuthInfo());
+        assertEq(NOTHING, cx.getLogger());
+        cx.setLogger(logger);
+        assertEq(logger, cx.getLogger());
+    }
+
+    testSessionAuthDecision() {
+        date ts = now();
+        hash<Qore::Ssh::SshSessionInfo> info = <Qore::Ssh::SshSessionInfo>{
+            "session_id": "s-2",
+            "server_name": "srv",
+            "listener_name": "lst",
+            "remote_address": "127.0.0.1",
+            "remote_port": 22,
+            "local_address": "127.0.0.1",
+            "local_port": 2222,
+            "authenticated": False,
+            "started": ts,
+            "last_activity": ts,
+        };
+
+        Qore::Ssh::SshSession s(info, NOTHING);
+        s.applyAuthDecision(getAuthInfo(), getAuthDecision());
+        hash<Qore::Ssh::SshSessionInfo> updated = s.getInfo();
+        hash<Qore::Ssh::SshAuthContextInfo> auth_info = s.getAuthContextInfo();
+        assertTrue(updated.authenticated);
+        assertEq("user", updated.username);
+        assertEq("password", updated.auth_method);
+        assertEq("principal-user", updated.principal);
+        assertEq("test", updated.session_data.tenant);
+        assertEq("command-only", updated.command_policy.mode);
+        assertEq("read-only", updated.sftp_policy.mode);
+        assertEq("password", auth_info.auth_method);
+    }
+
+    testSessionInfo() {
+        Qore::Ssh::SshSession s(getSessionInfo(), getAuthInfo());
+        hash<Qore::Ssh::SshSessionInfo> info = s.getInfo();
+        assertEq("s-1", info.session_id);
+        assertEq("srv", info.server_name);
+        assertTrue(info.authenticated);
+    }
+
+    testSessionAuthContext() {
+        Qore::Ssh::SshSession s(getSessionInfo(), getAuthInfo());
+        hash<Qore::Ssh::SshAuthContextInfo> info = s.getAuthContextInfo();
+        assertEq("password", info.auth_method);
+        assertEq("ssh-connection", info.service);
+    }
+
+    testSessionLogger() {
+        TestLogger logger();
+        Qore::Ssh::SshSession s(getSessionInfo(), getAuthInfo());
+        assertEq(NOTHING, s.getLogger());
+        s.setLogger(logger);
+        assertEq(logger, s.getLogger());
+    }
+
+    testSessionDisconnect() {
+        Qore::Ssh::SshSession s(getSessionInfo(), getAuthInfo());
+        assertTrue(s.connected());
+        s.disconnect();
+        assertFalse(s.connected());
+    }
+
+    testCopyDenied() {
+        Qore::Ssh::SshSession s(getSessionInfo(), getAuthInfo());
+        assertThrows("SSHSESSION-COPY-ERROR", sub() { s.copy(); });
+        Qore::Ssh::SshAuthContext cx(getAuthInfo());
+        assertThrows("SSHAUTHCONTEXT-COPY-ERROR", sub() { cx.copy(); });
+    }
+}

@@ -1,0 +1,225 @@
+#!/usr/bin/env qore
+# -*- mode: qore; indent-tabs-mode: nil -*-
+
+/*  SshServerAuthProvider.qtest Copyright 2026 Qore Technologies, s.r.o.
+
+    Permission is hereby granted, free of charge, to any person obtaining a
+    copy of this software and associated documentation files (the "Software"),
+    to deal in the Software without restriction, including without limitation
+    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+    and/or sell copies of the Software, and to permit persons to whom the
+    Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+*/
+
+%modern
+%requires QUnit
+%requires ../qlib/SshServerAuthProvider
+%requires ./TestLoggerInterface.qm
+
+%exec-class SshServerAuthProviderTest
+
+class CustomAuthProvider inherits SshServerAuthProvider::AbstractSshAuthProvider {
+    hash<Qore::Ssh::SshAuthDecision> authenticate(hash<Qore::Ssh::SshAuthContextInfo> ctx) {
+        return <Qore::Ssh::SshAuthDecision>{
+            "accepted": True,
+            "principal": sprintf("custom:%s", ctx.username),
+            "session_data": {
+                "provider": "custom",
+            },
+        };
+    }
+}
+
+class SshServerAuthProviderTest inherits QUnit::Test {
+    constructor() : Test("SshServerAuthProviderTest", "0.1", \ARGV) {
+        addTestCase("virtual auth provider supports static none auth", \testStaticNoneAuth());
+        addTestCase("virtual auth provider supports static password auth", \testStaticPasswordAuth());
+        addTestCase("virtual auth provider supports static public-key auth", \testStaticPublicKeyAuth());
+        addTestCase("virtual auth provider supports validator-backed generic methods", \testGenericMethodValidators());
+        addTestCase("virtual auth provider accepts LoggerInterface and logs auth outcomes", \testLoggerSupport());
+        addTestCase("custom auth providers implement the same interface", \testCustomAuthProvider());
+        set_return_value(main());
+    }
+
+    private hash<Qore::Ssh::SshAuthContextInfo> getAuthContext(string method, string username = "user") {
+        return <Qore::Ssh::SshAuthContextInfo>{
+            "session_id": "session-1",
+            "server_name": "server-1",
+            "listener_name": "listener-1",
+            "remote_address": "127.0.0.1",
+            "remote_port": 2222,
+            "username": username,
+            "auth_method": method,
+        };
+    }
+
+    testStaticNoneAuth() {
+        SshServerAuthProvider::VirtualSshAuthProvider provider(<SshServerAuthProvider::VirtualSshAuthProviderOptions>{
+            "methods": ("none",),
+            "none": <SshServerAuthProvider::VirtualSshStaticAuthMethodOptions>{
+                "allowed_usernames": ("user",),
+                "success_decision": <SshServerAuthProvider::VirtualSshAuthDecisionTemplate>{
+                    "session_data": {
+                        "mode": "none",
+                    },
+                },
+            },
+        });
+
+        hash<Qore::Ssh::SshAuthDecision> accepted = provider.authenticate(getAuthContext("none"));
+        assertEq(True, accepted.accepted);
+        assertEq("user", accepted.principal);
+        assertEq("none", accepted.session_data.mode);
+
+        hash<Qore::Ssh::SshAuthDecision> denied = provider.authenticate(getAuthContext("none", "other"));
+        assertEq(False, denied.accepted);
+        assertEq(("none",), denied.allowed_auth_methods);
+    }
+
+    testStaticPasswordAuth() {
+        SshServerAuthProvider::VirtualSshAuthProvider provider(<SshServerAuthProvider::VirtualSshAuthProviderOptions>{
+            "methods": ("password",),
+            "password": <SshServerAuthProvider::VirtualSshPasswordAuthOptions>{
+                "users": (
+                    <SshServerAuthProvider::VirtualSshPasswordUserInfo>{
+                        "username": "alice",
+                        "password": "secret",
+                        "decision": <SshServerAuthProvider::VirtualSshAuthDecisionTemplate>{
+                            "principal": "principal:alice",
+                        },
+                    },
+                ),
+            },
+        });
+
+        hash<Qore::Ssh::SshAuthContextInfo> ctx = getAuthContext("password", "alice");
+        ctx.password = "secret";
+        hash<Qore::Ssh::SshAuthDecision> accepted = provider.authenticate(ctx);
+        assertEq(True, accepted.accepted);
+        assertEq("principal:alice", accepted.principal);
+
+        ctx.password = "wrong";
+        hash<Qore::Ssh::SshAuthDecision> denied = provider.authenticate(ctx);
+        assertEq(False, denied.accepted);
+        assertEq(("password",), denied.allowed_auth_methods);
+    }
+
+    testStaticPublicKeyAuth() {
+        binary key_data = binary("ssh-ed25519:test-key");
+        SshServerAuthProvider::VirtualSshAuthProvider provider(<SshServerAuthProvider::VirtualSshAuthProviderOptions>{
+            "methods": ("publickey",),
+            "publickey": <SshServerAuthProvider::VirtualSshPublicKeyAuthOptions>{
+                "authorized_keys": (
+                    <SshServerAuthProvider::VirtualSshAuthorizedKeyInfo>{
+                        "username": "bob",
+                        "public_key": key_data,
+                        "public_key_type": "ssh-ed25519",
+                        "decision": <SshServerAuthProvider::VirtualSshAuthDecisionTemplate>{
+                            "principal": "principal:bob",
+                        },
+                    },
+                ),
+            },
+        });
+
+        hash<Qore::Ssh::SshAuthContextInfo> ctx = getAuthContext("publickey", "bob");
+        ctx.public_key = key_data;
+        ctx.public_key_type = "ssh-ed25519";
+        hash<Qore::Ssh::SshAuthDecision> accepted = provider.authenticate(ctx);
+        assertEq(True, accepted.accepted);
+        assertEq("principal:bob", accepted.principal);
+
+        ctx.public_key = binary("other-key");
+        hash<Qore::Ssh::SshAuthDecision> denied = provider.authenticate(ctx);
+        assertEq(False, denied.accepted);
+        assertEq(("publickey",), denied.allowed_auth_methods);
+    }
+
+    testGenericMethodValidators() {
+        list<string> seen = ();
+        SshServerAuthProvider::VirtualSshAuthProvider provider(<SshServerAuthProvider::VirtualSshAuthProviderOptions>{
+            "methods": ("interactive", "hostbased", "gssapi-mic"),
+            "interactive": <SshServerAuthProvider::VirtualSshStaticAuthMethodOptions>{
+                "validator": hash<Qore::Ssh::SshAuthDecision> sub(hash<Qore::Ssh::SshAuthContextInfo> ctx) {
+                    seen += (ctx.auth_method,);
+                    return <Qore::Ssh::SshAuthDecision>{
+                        "accepted": True,
+                        "principal": sprintf("interactive:%s", ctx.username),
+                    };
+                },
+            },
+            "hostbased": <SshServerAuthProvider::VirtualSshStaticAuthMethodOptions>{
+                "validator": hash<Qore::Ssh::SshAuthDecision> sub(hash<Qore::Ssh::SshAuthContextInfo> ctx) {
+                    seen += (ctx.auth_method,);
+                    return <Qore::Ssh::SshAuthDecision>{
+                        "accepted": True,
+                        "principal": sprintf("hostbased:%s", ctx.username),
+                    };
+                },
+            },
+            "gssapi_mic": <SshServerAuthProvider::VirtualSshStaticAuthMethodOptions>{
+                "validator": hash<Qore::Ssh::SshAuthDecision> sub(hash<Qore::Ssh::SshAuthContextInfo> ctx) {
+                    seen += (ctx.auth_method,);
+                    return <Qore::Ssh::SshAuthDecision>{
+                        "accepted": True,
+                        "principal": sprintf("gssapi:%s", ctx.username),
+                    };
+                },
+            },
+        });
+
+        assertEq("interactive:user", provider.authenticate(getAuthContext("interactive")).principal);
+        assertEq("hostbased:user", provider.authenticate(getAuthContext("hostbased")).principal);
+        assertEq("gssapi:user", provider.authenticate(getAuthContext("gssapi-mic")).principal);
+        assertEq(("interactive", "hostbased", "gssapi-mic"), seen);
+    }
+
+    testLoggerSupport() {
+        RecordingLoggerInterface logger();
+        SshServerAuthProvider::VirtualSshAuthProvider provider(<SshServerAuthProvider::VirtualSshAuthProviderOptions>{
+            "methods": ("password",),
+            "logger": logger,
+            "password": <SshServerAuthProvider::VirtualSshPasswordAuthOptions>{
+                "users": (
+                    <SshServerAuthProvider::VirtualSshPasswordUserInfo>{
+                        "username": "alice",
+                        "password": "secret",
+                    },
+                ),
+            },
+        });
+
+        hash<Qore::Ssh::SshAuthContextInfo> ctx = getAuthContext("password", "alice");
+        ctx.password = "secret";
+        assertTrue(provider.authenticate(ctx).accepted);
+
+        ctx.password = "wrong";
+        assertFalse(provider.authenticate(ctx).accepted);
+
+        assertEq(logger, provider.getLogger());
+        assertTrue(logger.events.size() >= 4);
+        assertEq("detail", logger.events[0].level);
+        assertEq("info", logger.events[1].level);
+        assertEq("detail", logger.events[2].level);
+        assertEq("warn", logger.events[3].level);
+    }
+
+    testCustomAuthProvider() {
+        CustomAuthProvider provider();
+        hash<Qore::Ssh::SshAuthDecision> decision = provider.authenticate(getAuthContext("none", "carol"));
+        assertEq(True, decision.accepted);
+        assertEq("custom:carol", decision.principal);
+        assertEq("custom", decision.session_data.provider);
+    }
+}

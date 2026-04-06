@@ -1,0 +1,3853 @@
+/* -*- mode: c++; indent-tabs-mode: nil -*- */
+/*
+    QC_SftpSession.qpp
+
+    Qore Programming Language
+
+    Copyright (C) 2026 Qore Technologies, s.r.o.
+
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; either
+    version 2.1 of the License, or (at your option) any later version.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+*/
+
+#include "ssh-module.h"
+
+#include <cerrno>
+#include <fcntl.h>
+#include <qore/QoreSandboxManager.h>
+#include <libssh/server.h>
+#include <libssh/sftp.h>
+#include <map>
+#include <mutex>
+#include <sstream>
+#include <string.h>
+#include <string>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <vector>
+
+static void ssh_sftp_validate_logger(const QoreObject* logger, const char* err, ExceptionSink* xsink) {
+    if (!logger) {
+        return;
+    }
+
+    const QoreClass* cls = logger->getClass();
+    if (!cls || !cls->findMethod("info") || !cls->findMethod("warn") || !cls->findMethod("error")
+            || !cls->findMethod("debug")) {
+        xsink->raiseException(err,
+            "logger objects must implement info(), warn(), error(), and debug() methods");
+    }
+}
+
+static void ssh_sftp_validate_backend(const QoreObject* backend, const char* err, ExceptionSink* xsink) {
+    if (!backend) {
+        return;
+    }
+
+    const QoreClass* cls = backend->getClass();
+    if (!cls) {
+        xsink->raiseException(err, "backend objects must expose a runtime class");
+        return;
+    }
+
+    if (!cls->findMethod("stat") || !cls->findMethod("list")) {
+        xsink->raiseException(err,
+            "backend objects must implement at least stat() and list() methods");
+    }
+
+    bool has_open_write = cls->findMethod("openWrite");
+    bool has_close_write = cls->findMethod("closeWrite");
+    if (has_open_write != has_close_write) {
+        xsink->raiseException(err,
+            "backend objects implementing openWrite() must also implement closeWrite(), and vice versa");
+    }
+
+    bool has_read = cls->findMethod("read");
+    bool has_close_read = cls->findMethod("closeRead");
+    if (has_read != has_close_read) {
+        xsink->raiseException(err,
+            "backend objects implementing read() must also implement closeRead(), and vice versa");
+    }
+
+    bool has_write = cls->findMethod("write");
+    if (has_write && (!has_open_write || !has_close_write)) {
+        xsink->raiseException(err,
+            "backend objects implementing write() must also implement openWrite() and closeWrite()");
+    }
+}
+
+static void ssh_sftp_log_message(QoreObject* logger, const char* method, const std::string& msg) {
+    if (!logger || !method) {
+        return;
+    }
+
+    ExceptionSink xsink;
+    ReferenceHolder<QoreListNode> args(new QoreListNode(autoTypeInfo), &xsink);
+    args->push(new QoreStringNode(msg.c_str()), &xsink);
+    if (xsink) {
+        return;
+    }
+
+    ValueHolder rv(logger->evalMethod(method, *args, &xsink), &xsink);
+}
+
+static int ssh_sftp_check_fs_access(const std::string& path, int mode, ExceptionSink* xsink) {
+    if (path.empty()) {
+        return 0;
+    }
+
+    QoreSandboxManagerHelper smh;
+    if (smh && !smh->checkFilesystemAccess(path.c_str(), mode, xsink)) {
+        return -1;
+    }
+
+    return 0;
+}
+
+static int ssh_sftp_ensure_parent_dirs(const std::string& path, ExceptionSink* xsink) {
+    std::string::size_type pos = path.rfind('/');
+    if (pos == std::string::npos || !pos) {
+        return 0;
+    }
+    std::string parent = path.substr(0, pos);
+    if (parent.empty()) {
+        return 0;
+    }
+
+    if (ssh_sftp_check_fs_access(parent, QSEC_WRITE, xsink)) {
+        return -1;
+    }
+
+    struct stat st;
+    if (!::stat(parent.c_str(), &st)) {
+        return 0;
+    }
+    if (errno != ENOENT) {
+        xsink->raiseErrnoException("SFTPSESSION-FILESYSTEM-ERROR", errno, "cannot stat parent directory '%s'",
+            parent.c_str());
+        return -1;
+    }
+
+    std::string current;
+    if (parent[0] == '/') {
+        current = "/";
+    }
+    size_t start = parent[0] == '/' ? 1 : 0;
+    while (start <= parent.size()) {
+        size_t slash = parent.find('/', start);
+        std::string part = slash == std::string::npos ? parent.substr(start) : parent.substr(start, slash - start);
+        if (!part.empty()) {
+            if (current.size() > 1 && current[current.size() - 1] != '/') {
+                current += "/";
+            }
+            current += part;
+            if (::mkdir(current.c_str(), 0700) && errno != EEXIST) {
+                xsink->raiseErrnoException("SFTPSESSION-FILESYSTEM-ERROR", errno,
+                    "cannot create parent directory '%s'", current.c_str());
+                return -1;
+            }
+        }
+        if (slash == std::string::npos) {
+            break;
+        }
+        start = slash + 1;
+    }
+
+    return 0;
+}
+
+static int ssh_sftp_copy_file(const std::string& source_path, const std::string& target_path, ExceptionSink* xsink) {
+    if (ssh_sftp_check_fs_access(source_path, QSEC_READ, xsink)
+            || ssh_sftp_check_fs_access(target_path, QSEC_WRITE, xsink)) {
+        return -1;
+    }
+
+    int in_fd = ::open(source_path.c_str(), O_RDONLY);
+    if (in_fd < 0) {
+        xsink->raiseErrnoException("SFTPSESSION-FILESYSTEM-ERROR", errno, "cannot open source file '%s' for read",
+            source_path.c_str());
+        return -1;
+    }
+    ON_BLOCK_EXIT([in_fd]() {
+        if (in_fd >= 0) {
+            ::close(in_fd);
+        }
+    });
+
+    int out_fd = ::open(target_path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0600);
+    if (out_fd < 0) {
+        xsink->raiseErrnoException("SFTPSESSION-FILESYSTEM-ERROR", errno, "cannot open target file '%s' for write",
+            target_path.c_str());
+        return -1;
+    }
+    ON_BLOCK_EXIT([out_fd]() {
+        if (out_fd >= 0) {
+            ::close(out_fd);
+        }
+    });
+
+    char buf[65536];
+    while (true) {
+        if (qore_check_cancel(xsink, "sftp file copy")) {
+            return -1;
+        }
+
+        ssize_t rc = ::read(in_fd, buf, sizeof(buf));
+        if (rc < 0) {
+            if (errno == EINTR) {
+                continue;
+            }
+            xsink->raiseErrnoException("SFTPSESSION-FILESYSTEM-ERROR", errno,
+                "cannot read source file '%s'", source_path.c_str());
+            return -1;
+        }
+        if (!rc) {
+            break;
+        }
+
+        ssize_t offset = 0;
+        while (offset < rc) {
+            if (qore_check_cancel(xsink, "sftp file copy")) {
+                return -1;
+            }
+
+            ssize_t wc = ::write(out_fd, buf + offset, rc - offset);
+            if (wc < 0) {
+                if (errno == EINTR) {
+                    continue;
+                }
+                xsink->raiseErrnoException("SFTPSESSION-FILESYSTEM-ERROR", errno,
+                    "cannot write target file '%s'", target_path.c_str());
+                return -1;
+            }
+            offset += wc;
+        }
+    }
+
+    if (::fsync(out_fd)) {
+        xsink->raiseErrnoException("SFTPSESSION-FILESYSTEM-ERROR", errno, "cannot fsync target file '%s'",
+            target_path.c_str());
+        return -1;
+    }
+
+    return 0;
+}
+
+static BinaryNode* ssh_sftp_read_binary_file(const std::string& source_path, ExceptionSink* xsink) {
+    int fd = ::open(source_path.c_str(), O_RDONLY);
+    if (fd < 0) {
+        xsink->raiseErrnoException("SFTPSESSION-FILESYSTEM-ERROR", errno, "cannot open local file '%s' for reading",
+            source_path.c_str());
+        return nullptr;
+    }
+
+    SimpleRefHolder<BinaryNode> data(new BinaryNode());
+    ON_BLOCK_EXIT([fd]() {
+        if (fd >= 0) {
+            ::close(fd);
+        }
+    });
+
+    char buf[8192];
+    while (true) {
+        if (qore_check_cancel(xsink, "reading local submission file")) {
+            return nullptr;
+        }
+
+        ssize_t rc = ::read(fd, buf, sizeof(buf));
+        if (rc < 0) {
+            if (errno == EINTR) {
+                continue;
+            }
+            xsink->raiseErrnoException("SFTPSESSION-FILESYSTEM-ERROR", errno,
+                "cannot read local file '%s'", source_path.c_str());
+            return nullptr;
+        }
+        if (!rc) {
+            break;
+        }
+
+        data->append(buf, static_cast<size_t>(rc));
+    }
+
+    return data.release();
+}
+
+static int ssh_sftp_write_binary_file(const std::string& target_path, const BinaryNode& data, bool create_parents,
+        ExceptionSink* xsink) {
+    if (ssh_sftp_check_fs_access(target_path, QSEC_WRITE, xsink)) {
+        return -1;
+    }
+
+    if (create_parents && ssh_sftp_ensure_parent_dirs(target_path, xsink)) {
+        return -1;
+    }
+
+    int fd = ::open(target_path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    if (fd < 0) {
+        xsink->raiseException("SFTPSESSION-FILESYSTEM-ERROR", "cannot open local target file '%s' for writing",
+            target_path.c_str());
+        return -1;
+    }
+
+    int rc = 0;
+    ON_BLOCK_EXIT([&fd, &rc]() {
+        if (fd >= 0) {
+            int close_rc = ::close(fd);
+            if (!rc && close_rc) {
+                rc = -1;
+            }
+            fd = -1;
+        }
+    });
+
+    const char* ptr = reinterpret_cast<const char*>(data.getPtr());
+    size_t remaining = data.size();
+    while (remaining) {
+        if (qore_check_cancel(xsink, "sftp file write")) {
+            return -1;
+        }
+        ssize_t wrote = ::write(fd, ptr, remaining);
+        if (wrote < 0) {
+            if (errno == EINTR) {
+                continue;
+            }
+            xsink->raiseException("SFTPSESSION-FILESYSTEM-ERROR", "cannot write local target file '%s'",
+                target_path.c_str());
+            return -1;
+        }
+        ptr += wrote;
+        remaining -= wrote;
+    }
+
+    return rc;
+}
+
+
+static uint32_t ssh_sftp_read_u32_be(const unsigned char* ptr) {
+    return (static_cast<uint32_t>(ptr[0]) << 24) | (static_cast<uint32_t>(ptr[1]) << 16)
+        | (static_cast<uint32_t>(ptr[2]) << 8) | static_cast<uint32_t>(ptr[3]);
+}
+
+static uint64_t ssh_sftp_read_u64_be(const unsigned char* ptr) {
+    return (static_cast<uint64_t>(ssh_sftp_read_u32_be(ptr)) << 32)
+        | static_cast<uint64_t>(ssh_sftp_read_u32_be(ptr + 4));
+}
+
+static void ssh_sftp_write_u32_be(std::string& out, uint32_t value) {
+    out.push_back(static_cast<char>((value >> 24) & 0xff));
+    out.push_back(static_cast<char>((value >> 16) & 0xff));
+    out.push_back(static_cast<char>((value >> 8) & 0xff));
+    out.push_back(static_cast<char>(value & 0xff));
+}
+
+static const char* ssh_sftp_packet_type_name(uint8_t type) {
+    switch (type) {
+        case SSH_FXP_INIT:
+            return "init";
+        case SSH_FXP_VERSION:
+            return "version";
+        case SSH_FXP_OPEN:
+            return "open";
+        case SSH_FXP_CLOSE:
+            return "close";
+        case SSH_FXP_READ:
+            return "read";
+        case SSH_FXP_WRITE:
+            return "write";
+        case SSH_FXP_LSTAT:
+            return "lstat";
+        case SSH_FXP_FSTAT:
+            return "fstat";
+        case SSH_FXP_SETSTAT:
+            return "setstat";
+        case SSH_FXP_FSETSTAT:
+            return "fsetstat";
+        case SSH_FXP_OPENDIR:
+            return "opendir";
+        case SSH_FXP_READDIR:
+            return "readdir";
+        case SSH_FXP_REMOVE:
+            return "remove";
+        case SSH_FXP_MKDIR:
+            return "mkdir";
+        case SSH_FXP_RMDIR:
+            return "rmdir";
+        case SSH_FXP_REALPATH:
+            return "realpath";
+        case SSH_FXP_STAT:
+            return "stat";
+        case SSH_FXP_RENAME:
+            return "rename";
+        case SSH_FXP_READLINK:
+            return "readlink";
+        case SSH_FXP_SYMLINK:
+            return "symlink";
+        case SSH_FXP_STATUS:
+            return "status";
+        case SSH_FXP_HANDLE:
+            return "handle";
+        case SSH_FXP_DATA:
+            return "data";
+        case SSH_FXP_NAME:
+            return "name";
+        case SSH_FXP_ATTRS:
+            return "attrs";
+        case SSH_FXP_EXTENDED:
+            return "extended";
+        case SSH_FXP_EXTENDED_REPLY:
+            return "extended-reply";
+        default:
+            return "unknown";
+    }
+}
+
+static bool ssh_sftp_normalize_virtual_path(const std::string& raw_path, std::string& normalized_path) {
+    if (raw_path.empty()) {
+        return false;
+    }
+
+    std::vector<std::string> components;
+    size_t pos = 0;
+    while (pos <= raw_path.size()) {
+        size_t slash = raw_path.find('/', pos);
+        std::string part = slash == std::string::npos ? raw_path.substr(pos) : raw_path.substr(pos, slash - pos);
+        if (!part.empty() && part != ".") {
+            if (part == "..") {
+                if (components.empty()) {
+                    return false;
+                }
+                components.pop_back();
+            } else {
+                components.push_back(part);
+            }
+        }
+
+        if (slash == std::string::npos) {
+            break;
+        }
+        pos = slash + 1;
+    }
+
+    normalized_path = "/";
+    for (size_t i = 0; i < components.size(); ++i) {
+        if (i) {
+            normalized_path += "/";
+        }
+        normalized_path += components[i];
+    }
+
+    return true;
+}
+
+static bool ssh_sftp_read_string_field(const char* ptr, size_t size, size_t& offset, std::string& value) {
+    if (offset + 4 > size) {
+        return false;
+    }
+
+    uint32_t len = ssh_sftp_read_u32_be(reinterpret_cast<const unsigned char*>(ptr + offset));
+    offset += 4;
+    if (offset + len > size) {
+        return false;
+    }
+
+    value.assign(ptr + offset, len);
+    offset += len;
+    return true;
+}
+
+static bool ssh_sftp_get_real_path(const QoreHashNode* info, const std::string& raw_path, std::string& normalized_path,
+        std::string& real_path) {
+    if (!info) {
+        return false;
+    }
+
+    if (!ssh_sftp_normalize_virtual_path(raw_path, normalized_path)) {
+        return false;
+    }
+
+    const QoreStringNode* root_dir_node = info->getKeyValue("root_dir").get<QoreStringNode>();
+    if (!root_dir_node || !root_dir_node->strlen()) {
+        return false;
+    }
+
+    real_path = root_dir_node->c_str();
+    if (real_path.empty()) {
+        return false;
+    }
+
+    if (normalized_path != "/") {
+        if (real_path.size() > 1 && real_path[real_path.size() - 1] == '/') {
+            real_path.pop_back();
+        }
+        real_path += normalized_path;
+    }
+
+    return true;
+}
+
+static int64_t ssh_sftp_get_hash_bigint(const QoreHashNode* h, const char* key, int64_t default_value, ExceptionSink* xsink) {
+    const QoreValue v = h->getKeyValue(key);
+    if (v.getType() == NT_NOTHING) {
+        return default_value;
+    }
+
+    int64_t rv = v.getAsBigInt();
+    if (*xsink) {
+        return default_value;
+    }
+    return rv;
+}
+
+static bool ssh_sftp_get_hash_bool(const QoreHashNode* h, const char* key, bool default_value, ExceptionSink* xsink) {
+    const QoreValue v = h->getKeyValue(key);
+    if (v.getType() == NT_NOTHING) {
+        return default_value;
+    }
+
+    bool rv = v.getAsBool();
+    if (*xsink) {
+        return default_value;
+    }
+    return rv;
+}
+
+class SftpSessionPriv : public AbstractPrivateData {
+public:
+    struct DirectoryHandleState {
+        QoreListNode* entries;
+        size_t offset;
+
+        explicit DirectoryHandleState(QoreListNode* n_entries = nullptr) : entries(n_entries), offset(0) {
+        }
+
+        ~DirectoryHandleState() {
+            if (entries) {
+                entries->deref(nullptr);
+            }
+        }
+    };
+
+    struct FileHandleState {
+        std::string data;
+        QoreHashNode* metadata;
+        std::string path;
+        bool write_mode;
+        bool stream_read;
+        bool stream_write;
+
+        explicit FileHandleState(const std::string& n_data = std::string(), QoreHashNode* n_metadata = nullptr,
+                const std::string& n_path = std::string(), bool n_write_mode = false, bool n_stream_read = false,
+                bool n_stream_write = false)
+                : data(n_data), metadata(n_metadata), path(n_path), write_mode(n_write_mode), stream_read(n_stream_read),
+                  stream_write(n_stream_write) {
+        }
+
+        ~FileHandleState() {
+            if (metadata) {
+                metadata->deref(nullptr);
+            }
+        }
+    };
+
+    explicit SftpSessionPriv(const QoreHashNode* info)
+            : info(info ? info->copy() : nullptr), transfer_info(nullptr), logger(nullptr), backend(nullptr),
+              channel(nullptr), next_dir_handle_id(1), next_file_handle_id(1) {
+    }
+
+    SftpSessionPriv(QoreHashNode* info, QoreHashNode* transfer_info, QoreObject* logger, QoreObject* backend,
+            ssh_channel channel) : info(info), transfer_info(transfer_info), logger(logger), backend(backend),
+            channel(channel), next_dir_handle_id(1), next_file_handle_id(1) {
+    }
+
+    ~SftpSessionPriv() {
+        closeIntern();
+        if (info) {
+            info->deref(nullptr);
+        }
+        if (transfer_info) {
+            transfer_info->deref(nullptr);
+        }
+        if (logger) {
+            logger->deref(nullptr);
+        }
+        if (backend) {
+            backend->deref(nullptr);
+        }
+    }
+
+    QoreHashNode* getInfo(ExceptionSink* xsink) const {
+        return info ? reinterpret_cast<QoreHashNode*>(hashdeclSftpSessionInfo->doRuntimeCast(info, xsink))
+                    : new QoreHashNode(hashdeclSftpSessionInfo, xsink);
+    }
+
+    QoreHashNode* getTransferInfo(ExceptionSink* xsink) const {
+        return transfer_info ? reinterpret_cast<QoreHashNode*>(hashdeclSftpTransferInfo->doRuntimeCast(transfer_info, xsink))
+                             : nullptr;
+    }
+
+    void setLogger(QoreObject* q_logger, ExceptionSink* xsink) {
+        ssh_sftp_validate_logger(q_logger, "SFTPSESSION-LOGGER-ERROR", xsink);
+        if (*xsink) {
+            return;
+        }
+
+        QoreObject* old_logger = nullptr;
+        {
+            std::lock_guard<std::mutex> lock(m);
+            old_logger = logger;
+            logger = q_logger ? q_logger->objectRefSelf() : nullptr;
+        }
+        if (old_logger) {
+            old_logger->deref(xsink);
+        }
+    }
+
+    QoreObject* getLogger() const {
+        std::lock_guard<std::mutex> lock(m);
+        return logger ? logger->objectRefSelf() : nullptr;
+    }
+
+    void setBackend(QoreObject* q_backend, ExceptionSink* xsink) {
+        ssh_sftp_validate_backend(q_backend, "SFTPSESSION-BACKEND-ERROR", xsink);
+        if (*xsink) {
+            return;
+        }
+
+        QoreObject* old_backend = nullptr;
+        {
+            std::lock_guard<std::mutex> lock(m);
+            old_backend = backend;
+            backend = q_backend ? q_backend->objectRefSelf() : nullptr;
+        }
+        if (old_backend) {
+            old_backend->deref(xsink);
+        }
+    }
+
+    QoreObject* getBackend() const {
+        std::lock_guard<std::mutex> lock(m);
+        return backend ? backend->objectRefSelf() : nullptr;
+    }
+
+    bool isConnected() const {
+        std::lock_guard<std::mutex> lock(m);
+        return channel != nullptr;
+    }
+
+    QoreHashNode* waitProtocolMessage(int timeout_ms, ExceptionSink* xsink) {
+        ssh_channel current_channel = nullptr;
+        {
+            std::lock_guard<std::mutex> lock(m);
+            current_channel = channel;
+        }
+        if (!current_channel) {
+            xsink->raiseException("SFTPSESSION-STATE-ERROR", "cannot read protocol messages from a closed SFTP session");
+            return nullptr;
+        }
+
+        unsigned char header[4];
+        if (readChannelExact(current_channel, header, sizeof(header), timeout_ms, xsink, "SFTP packet header")) {
+            return nullptr;
+        }
+
+        uint32_t packet_size = ssh_sftp_read_u32_be(header);
+        if (!packet_size) {
+            xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR", "received an empty SFTP packet");
+            return nullptr;
+        }
+        if (packet_size > 16 * 1024 * 1024) {
+            xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR", "received an oversized SFTP packet of %u bytes",
+                packet_size);
+            return nullptr;
+        }
+
+        std::string payload(packet_size, '\0');
+        if (readChannelExact(current_channel, &payload[0], packet_size, timeout_ms, xsink, "SFTP packet payload")) {
+            return nullptr;
+        }
+
+        uint8_t type = static_cast<uint8_t>(payload[0]);
+        const char* type_name = ssh_sftp_packet_type_name(type);
+        ReferenceHolder<QoreHashNode> msg(new QoreHashNode(hashdeclSftpProtocolMessage, xsink), xsink);
+        msg->setKeyValue("type", static_cast<int64>(type), xsink);
+        msg->setKeyValue("name", new QoreStringNode(type_name), xsink);
+        msg->setKeyValue("payload_size", static_cast<int64>(packet_size - 1), xsink);
+        if (*xsink) {
+            return nullptr;
+        }
+
+        if (packet_size > 1) {
+            SimpleRefHolder<BinaryNode> payload_bin(new BinaryNode());
+            payload_bin->append(payload.data() + 1, packet_size - 1);
+            msg->setKeyValue("payload", payload_bin.release(), xsink);
+            if (*xsink) {
+                return nullptr;
+            }
+        }
+
+        if (type == SSH_FXP_INIT) {
+            if (packet_size < 5) {
+                xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR",
+                    "received a truncated SSH_FXP_INIT packet");
+                return nullptr;
+            }
+            msg->setKeyValue("version", static_cast<int64>(ssh_sftp_read_u32_be(
+                reinterpret_cast<const unsigned char*>(payload.data() + 1))), xsink);
+        } else if (type != SSH_FXP_VERSION) {
+            if (packet_size < 5) {
+                xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR",
+                    "received a truncated SFTP request packet of type %d", static_cast<int>(type));
+                return nullptr;
+            }
+            msg->setKeyValue("request_id", static_cast<int64>(ssh_sftp_read_u32_be(
+                reinterpret_cast<const unsigned char*>(payload.data() + 1))), xsink);
+        }
+        if (*xsink) {
+            return nullptr;
+        }
+
+        std::ostringstream os;
+        os << "SftpSession received protocol message type=" << static_cast<int>(type)
+           << " name=" << type_name;
+        log("debug", os.str().c_str());
+        return msg.release();
+    }
+
+    int sendVersion(int version, ExceptionSink* xsink) {
+        if (version < 0) {
+            xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR", "the SFTP version must be >= 0");
+            return -1;
+        }
+
+        std::string packet;
+        packet.reserve(9);
+        ssh_sftp_write_u32_be(packet, 5);
+        packet.push_back(static_cast<char>(SSH_FXP_VERSION));
+        ssh_sftp_write_u32_be(packet, static_cast<uint32_t>(version));
+        if (writeChannelAll(packet, xsink, "SSH_FXP_VERSION")) {
+            return -1;
+        }
+
+        std::ostringstream os;
+        os << "SftpSession sent version=" << version;
+        log("info", os.str().c_str());
+        return 0;
+    }
+
+    int sendStatus(int request_id, int status_code, const std::string& message, const std::string& language,
+            ExceptionSink* xsink) {
+        if (request_id < 0) {
+            xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR", "the SFTP request id must be >= 0");
+            return -1;
+        }
+        if (status_code < 0) {
+            xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR", "the SFTP status code must be >= 0");
+            return -1;
+        }
+        if (message.size() > UINT32_MAX || language.size() > UINT32_MAX) {
+            xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR", "the SFTP status message is too large");
+            return -1;
+        }
+
+        std::string body;
+        body.reserve(1 + 4 + 4 + 4 + message.size() + 4 + language.size());
+        body.push_back(static_cast<char>(SSH_FXP_STATUS));
+        ssh_sftp_write_u32_be(body, static_cast<uint32_t>(request_id));
+        ssh_sftp_write_u32_be(body, static_cast<uint32_t>(status_code));
+        ssh_sftp_write_u32_be(body, static_cast<uint32_t>(message.size()));
+        body.append(message);
+        ssh_sftp_write_u32_be(body, static_cast<uint32_t>(language.size()));
+        body.append(language);
+
+        std::string packet;
+        packet.reserve(4 + body.size());
+        ssh_sftp_write_u32_be(packet, static_cast<uint32_t>(body.size()));
+        packet.append(body);
+        if (writeChannelAll(packet, xsink, "SSH_FXP_STATUS")) {
+            return -1;
+        }
+
+        std::ostringstream os;
+        os << "SftpSession sent status request_id=" << request_id << " code=" << status_code;
+        log("info", os.str().c_str());
+        return 0;
+    }
+
+    int sendName(int request_id, const std::string& name, const std::string& long_name, ExceptionSink* xsink) {
+        if (request_id < 0) {
+            xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR", "the SFTP request id must be >= 0");
+            return -1;
+        }
+        if (name.size() > UINT32_MAX || long_name.size() > UINT32_MAX) {
+            xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR", "the SFTP name payload is too large");
+            return -1;
+        }
+
+        std::string body;
+        body.reserve(1 + 4 + 4 + 4 + name.size() + 4 + long_name.size() + 4);
+        body.push_back(static_cast<char>(SSH_FXP_NAME));
+        ssh_sftp_write_u32_be(body, static_cast<uint32_t>(request_id));
+        ssh_sftp_write_u32_be(body, 1);
+        ssh_sftp_write_u32_be(body, static_cast<uint32_t>(name.size()));
+        body.append(name);
+        ssh_sftp_write_u32_be(body, static_cast<uint32_t>(long_name.size()));
+        body.append(long_name);
+        ssh_sftp_write_u32_be(body, 0);
+
+        std::string packet;
+        packet.reserve(4 + body.size());
+        ssh_sftp_write_u32_be(packet, static_cast<uint32_t>(body.size()));
+        packet.append(body);
+        if (writeChannelAll(packet, xsink, "SSH_FXP_NAME")) {
+            return -1;
+        }
+
+        std::ostringstream os;
+        os << "SftpSession sent name request_id=" << request_id << " path=" << name;
+        log("info", os.str().c_str());
+        return 0;
+    }
+
+    int sendHandle(int request_id, const std::string& handle, ExceptionSink* xsink) {
+        if (request_id < 0) {
+            xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR", "the SFTP request id must be >= 0");
+            return -1;
+        }
+        if (handle.size() > UINT32_MAX) {
+            xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR", "the SFTP handle payload is too large");
+            return -1;
+        }
+
+        std::string body;
+        body.reserve(1 + 4 + 4 + handle.size());
+        body.push_back(static_cast<char>(SSH_FXP_HANDLE));
+        ssh_sftp_write_u32_be(body, static_cast<uint32_t>(request_id));
+        ssh_sftp_write_u32_be(body, static_cast<uint32_t>(handle.size()));
+        body.append(handle);
+
+        std::string packet;
+        packet.reserve(4 + body.size());
+        ssh_sftp_write_u32_be(packet, static_cast<uint32_t>(body.size()));
+        packet.append(body);
+        return writeChannelAll(packet, xsink, "SSH_FXP_HANDLE");
+    }
+
+    int sendData(int request_id, const void* ptr, size_t size, ExceptionSink* xsink) {
+        if (request_id < 0) {
+            xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR", "the SFTP request id must be >= 0");
+            return -1;
+        }
+        if (size > UINT32_MAX) {
+            xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR", "the SFTP data payload is too large");
+            return -1;
+        }
+
+        std::string body;
+        body.reserve(1 + 4 + 4 + size);
+        body.push_back(static_cast<char>(SSH_FXP_DATA));
+        ssh_sftp_write_u32_be(body, static_cast<uint32_t>(request_id));
+        ssh_sftp_write_u32_be(body, static_cast<uint32_t>(size));
+        if (size) {
+            body.append(reinterpret_cast<const char*>(ptr), size);
+        }
+
+        std::string packet;
+        packet.reserve(4 + body.size());
+        ssh_sftp_write_u32_be(packet, static_cast<uint32_t>(body.size()));
+        packet.append(body);
+        return writeChannelAll(packet, xsink, "SSH_FXP_DATA");
+    }
+
+    int sendNames(int request_id, const QoreListNode* entries, size_t offset, size_t max_entries, ExceptionSink* xsink) {
+        if (request_id < 0) {
+            xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR", "the SFTP request id must be >= 0");
+            return -1;
+        }
+        if (!entries) {
+            xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR", "directory entries are missing");
+            return -1;
+        }
+        if (offset >= entries->size()) {
+            return sendStatus(request_id, SSH_FX_EOF, "end of directory", "en", xsink);
+        }
+
+        size_t end = std::min(entries->size(), offset + max_entries);
+        std::string body;
+        body.push_back(static_cast<char>(SSH_FXP_NAME));
+        ssh_sftp_write_u32_be(body, static_cast<uint32_t>(request_id));
+        ssh_sftp_write_u32_be(body, static_cast<uint32_t>(end - offset));
+        for (size_t i = offset; i < end; ++i) {
+            const QoreHashNode* entry = entries->retrieveEntry(i).get<QoreHashNode>();
+            if (!entry) {
+                xsink->raiseException("SFTPSESSION-BACKEND-ERROR", "directory entry %zu is not a hash", i);
+                return -1;
+            }
+
+            const QoreStringNode* filename = entry->getKeyValue("filename").get<QoreStringNode>();
+            const QoreStringNode* long_name = entry->getKeyValue("long_name").get<QoreStringNode>();
+            if (!filename || !filename->strlen()) {
+                xsink->raiseException("SFTPSESSION-BACKEND-ERROR",
+                    "directory entry %zu must contain a non-empty filename", i);
+                return -1;
+            }
+
+            bool is_directory = ssh_sftp_get_hash_bool(entry, "directory", false, xsink);
+            int64_t size = ssh_sftp_get_hash_bigint(entry, "size", 0, xsink);
+            int64_t permissions = ssh_sftp_get_hash_bigint(entry, "permissions",
+                is_directory ? (S_IFDIR | 0755) : (S_IFREG | 0644), xsink);
+            int64_t atime = ssh_sftp_get_hash_bigint(entry, "atime", 0, xsink);
+            int64_t mtime = ssh_sftp_get_hash_bigint(entry, "mtime", 0, xsink);
+            if (*xsink) {
+                return -1;
+            }
+
+            std::string name_value = filename->c_str();
+            std::string long_name_value = long_name && long_name->strlen() ? long_name->c_str() : name_value;
+            ssh_sftp_write_u32_be(body, static_cast<uint32_t>(name_value.size()));
+            body.append(name_value);
+            ssh_sftp_write_u32_be(body, static_cast<uint32_t>(long_name_value.size()));
+            body.append(long_name_value);
+            uint32_t flags = SSH_FILEXFER_ATTR_SIZE | SSH_FILEXFER_ATTR_PERMISSIONS | SSH_FILEXFER_ATTR_ACMODTIME;
+            ssh_sftp_write_u32_be(body, flags);
+            ssh_sftp_write_u32_be(body, static_cast<uint32_t>((static_cast<uint64_t>(size) >> 32) & 0xffffffff));
+            ssh_sftp_write_u32_be(body, static_cast<uint32_t>(static_cast<uint64_t>(size) & 0xffffffff));
+            ssh_sftp_write_u32_be(body, static_cast<uint32_t>(permissions));
+            ssh_sftp_write_u32_be(body, static_cast<uint32_t>(atime));
+            ssh_sftp_write_u32_be(body, static_cast<uint32_t>(mtime));
+        }
+
+        std::string packet;
+        packet.reserve(4 + body.size());
+        ssh_sftp_write_u32_be(packet, static_cast<uint32_t>(body.size()));
+        packet.append(body);
+        return writeChannelAll(packet, xsink, "SSH_FXP_NAME");
+    }
+
+    int sendAttrs(int request_id, const struct stat& st, ExceptionSink* xsink) {
+        if (request_id < 0) {
+            xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR", "the SFTP request id must be >= 0");
+            return -1;
+        }
+
+        uint32_t flags = SSH_FILEXFER_ATTR_SIZE | SSH_FILEXFER_ATTR_PERMISSIONS | SSH_FILEXFER_ATTR_ACMODTIME;
+
+        std::string body;
+        body.reserve(1 + 4 + 4 + 8 + 4 + 4 + 4);
+        body.push_back(static_cast<char>(SSH_FXP_ATTRS));
+        ssh_sftp_write_u32_be(body, static_cast<uint32_t>(request_id));
+        ssh_sftp_write_u32_be(body, flags);
+        ssh_sftp_write_u32_be(body, static_cast<uint32_t>((static_cast<uint64_t>(st.st_size) >> 32) & 0xffffffff));
+        ssh_sftp_write_u32_be(body, static_cast<uint32_t>(static_cast<uint64_t>(st.st_size) & 0xffffffff));
+        ssh_sftp_write_u32_be(body, static_cast<uint32_t>(st.st_mode));
+        ssh_sftp_write_u32_be(body, static_cast<uint32_t>(st.st_atime));
+        ssh_sftp_write_u32_be(body, static_cast<uint32_t>(st.st_mtime));
+
+        std::string packet;
+        packet.reserve(4 + body.size());
+        ssh_sftp_write_u32_be(packet, static_cast<uint32_t>(body.size()));
+        packet.append(body);
+        if (writeChannelAll(packet, xsink, "SSH_FXP_ATTRS")) {
+            return -1;
+        }
+
+        std::ostringstream os;
+        os << "SftpSession sent attrs request_id=" << request_id << " mode=" << st.st_mode
+           << " size=" << static_cast<long long>(st.st_size);
+        log("info", os.str().c_str());
+        return 0;
+    }
+
+    QoreHashNode* buildBackendPathRequest(const std::string& normalized_path, bool follow_symlinks, const char* operation,
+            ExceptionSink* xsink) const {
+        ReferenceHolder<QoreHashNode> req(new QoreHashNode(autoTypeInfo), xsink);
+        ReferenceHolder<QoreHashNode> current_info(getInfo(xsink), xsink);
+        if (*xsink) {
+            return nullptr;
+        }
+
+        req->setKeyValue("path", new QoreStringNode(normalized_path.c_str()), xsink);
+        req->setKeyValue("follow_symlinks", follow_symlinks, xsink);
+        req->setKeyValue("operation", operation ? new QoreStringNode(operation) : QoreValue(), xsink);
+        req->setKeyValue("session_info", current_info.release(), xsink);
+        if (*xsink) {
+            return nullptr;
+        }
+        return req.release();
+    }
+
+    QoreHashNode* buildBackendRenameRequest(const std::string& normalized_path, const std::string& target_path,
+            const char* operation, ExceptionSink* xsink) const {
+        ReferenceHolder<QoreHashNode> req(buildBackendPathRequest(normalized_path, true, operation, xsink), xsink);
+        if (*xsink) {
+            return nullptr;
+        }
+
+        req->setKeyValue("target_path", new QoreStringNode(target_path.c_str()), xsink);
+        if (*xsink) {
+            return nullptr;
+        }
+        return req.release();
+    }
+
+    QoreHashNode* callBackendMethod(const char* method, const QoreHashNode* req, int request_id, ExceptionSink* xsink) {
+        ReferenceHolder<QoreObject> backend_holder(getBackend(), xsink);
+        if (*xsink || !backend_holder) {
+            return nullptr;
+        }
+
+        ExceptionSink bxsink;
+        ReferenceHolder<QoreListNode> args(new QoreListNode(autoTypeInfo), &bxsink);
+        args->push(req ? req->refSelf() : QoreValue(), &bxsink);
+        if (bxsink) {
+            bxsink.clear();
+            xsink->raiseException("SFTPSESSION-BACKEND-ERROR", "cannot build backend arguments for %s()", method);
+            return nullptr;
+        }
+
+        ValueHolder rv((*backend_holder)->evalMethod(method, *args, &bxsink), &bxsink);
+        if (bxsink) {
+            sendStatus(request_id, SSH_FX_FAILURE, "backend operation failed", "en", xsink);
+            bxsink.clear();
+            return nullptr;
+        }
+
+        const QoreHashNode* result = rv->get<QoreHashNode>();
+        if (!result) {
+            sendStatus(request_id, SSH_FX_FAILURE, "backend operation returned an invalid result", "en", xsink);
+            return nullptr;
+        }
+
+        return result->copy();
+    }
+
+    QoreHashNode* callBackendMethodDirect(const char* method, const QoreHashNode* req, ExceptionSink* xsink) {
+        ReferenceHolder<QoreObject> backend_holder(getBackend(), xsink);
+        if (*xsink || !backend_holder) {
+            return nullptr;
+        }
+
+        ReferenceHolder<QoreListNode> args(new QoreListNode(autoTypeInfo), xsink);
+        args->push(req ? req->refSelf() : QoreValue(), xsink);
+        if (*xsink) {
+            return nullptr;
+        }
+
+        ValueHolder rv((*backend_holder)->evalMethod(method, *args, xsink), xsink);
+        if (*xsink) {
+            return nullptr;
+        }
+
+        const QoreHashNode* result = rv->get<QoreHashNode>();
+        if (!result) {
+            xsink->raiseException("SFTPSESSION-BACKEND-ERROR",
+                "backend method %s() returned an invalid result", method);
+            return nullptr;
+        }
+
+        return result->copy();
+    }
+
+    QoreHashNode* callBackendMethodDirectTyped(const char* method, const QoreHashNode* req, ExceptionSink* xsink) {
+        ReferenceHolder<QoreObject> backend_holder(getBackend(), xsink);
+        if (*xsink || !backend_holder) {
+            return nullptr;
+        }
+
+        ReferenceHolder<QoreListNode> args(new QoreListNode(autoTypeInfo), xsink);
+        args->push(req ? req->refSelf() : QoreValue(), xsink);
+        if (*xsink) {
+            return nullptr;
+        }
+
+        ValueHolder rv((*backend_holder)->evalMethod(method, *args, xsink), xsink);
+        if (*xsink) {
+            return nullptr;
+        }
+
+        const QoreHashNode* result = rv->get<QoreHashNode>();
+        if (!result) {
+            xsink->raiseException("SFTPSESSION-BACKEND-ERROR",
+                "backend method %s() returned an invalid result", method);
+            return nullptr;
+        }
+
+        return result->copy();
+    }
+
+    int sendBackendAttrs(int request_id, const QoreHashNode* backend_result, ExceptionSink* xsink) {
+        struct stat st;
+        memset(&st, 0, sizeof(st));
+
+        bool is_directory = ssh_sftp_get_hash_bool(backend_result, "directory", false, xsink);
+        if (*xsink) {
+            xsink->clear();
+            sendStatus(request_id, SSH_FX_FAILURE, "backend metadata is invalid", "en", xsink);
+            return -1;
+        }
+
+        int64_t size = ssh_sftp_get_hash_bigint(backend_result, "size", 0, xsink);
+        int64_t permissions = ssh_sftp_get_hash_bigint(backend_result, "permissions",
+            is_directory ? (S_IFDIR | 0755) : (S_IFREG | 0644), xsink);
+        int64_t atime = ssh_sftp_get_hash_bigint(backend_result, "atime", 0, xsink);
+        int64_t mtime = ssh_sftp_get_hash_bigint(backend_result, "mtime", 0, xsink);
+        if (*xsink) {
+            xsink->clear();
+            sendStatus(request_id, SSH_FX_FAILURE, "backend metadata is invalid", "en", xsink);
+            return -1;
+        }
+
+        st.st_size = static_cast<off_t>(size);
+        st.st_mode = static_cast<mode_t>(permissions);
+        st.st_atime = static_cast<time_t>(atime);
+        st.st_mtime = static_cast<time_t>(mtime);
+        return sendAttrs(request_id, st, xsink);
+    }
+
+    int sendBackendOperationStatus(int request_id, const QoreHashNode* backend_result, const char* success_message,
+            bool path_not_found, ExceptionSink* xsink) {
+        bool exists = ssh_sftp_get_hash_bool(backend_result, "exists", true, xsink);
+        bool completed = ssh_sftp_get_hash_bool(backend_result, "completed", true, xsink);
+        if (*xsink) {
+            xsink->clear();
+            return sendStatus(request_id, SSH_FX_FAILURE, "backend operation result is invalid", "en", xsink);
+        }
+
+        if (!exists) {
+            return sendStatus(request_id, path_not_found ? SSH_FX_NO_SUCH_PATH : SSH_FX_NO_SUCH_FILE, "not found", "en",
+                xsink);
+        }
+
+        if (!completed) {
+            return sendStatus(request_id, SSH_FX_FAILURE, "backend operation did not complete", "en", xsink);
+        }
+
+        return sendStatus(request_id, SSH_FX_OK, success_message, "en", xsink);
+    }
+
+    bool backendHasMethod(const char* method) const {
+        if (!method) {
+            return false;
+        }
+
+        std::lock_guard<std::mutex> lock(m);
+        const QoreClass* cls = backend ? backend->getClass() : nullptr;
+        return cls && cls->findMethod(method);
+    }
+
+    int handleBackendOpenDir(int request_id, const std::string& normalized_path, ExceptionSink* xsink) {
+        ReferenceHolder<QoreHashNode> typed_backend_req(new QoreHashNode(hashdeclSftpPathRequest, xsink), xsink);
+        typed_backend_req->setKeyValue("session_info", getInfo(xsink), xsink);
+        typed_backend_req->setKeyValue("path", new QoreStringNode(normalized_path.c_str()), xsink);
+        typed_backend_req->setKeyValue("follow_symlinks", true, xsink);
+        typed_backend_req->setKeyValue("operation", new QoreStringNode("opendir"), xsink);
+        if (*xsink) {
+            return -1;
+        }
+
+        ReferenceHolder<QoreHashNode> backend_result(callBackendMethodDirectTyped("list", *typed_backend_req, xsink),
+            xsink);
+        if (*xsink) {
+            sendStatus(request_id, SSH_FX_FAILURE, "backend operation failed", "en", xsink);
+            xsink->clear();
+            return -1;
+        }
+        if (!backend_result) {
+            return 0;
+        }
+
+        const QoreListNode* entries = backend_result->getKeyValue("entries").get<QoreListNode>();
+        if (!entries) {
+            return sendStatus(request_id, SSH_FX_FAILURE, "backend list result is missing entries", "en", xsink);
+        }
+
+        std::string handle;
+        {
+            std::lock_guard<std::mutex> lock(m);
+            handle = "dir-" + std::to_string(next_dir_handle_id++);
+            dir_handles.emplace(handle, std::unique_ptr<DirectoryHandleState>(new DirectoryHandleState(entries->copy())));
+        }
+
+        return sendHandle(request_id, handle, xsink);
+    }
+
+    int handleBackendReadDir(int request_id, const std::string& handle, ExceptionSink* xsink) {
+        QoreListNode* copied_entries = nullptr;
+        size_t offset = 0;
+        {
+            std::lock_guard<std::mutex> lock(m);
+            auto i = dir_handles.find(handle);
+            if (i == dir_handles.end()) {
+                offset = static_cast<size_t>(-1);
+            } else if (!i->second || !i->second->entries) {
+                offset = static_cast<size_t>(-1);
+            } else {
+                copied_entries = i->second->entries->copy();
+                offset = i->second->offset;
+                i->second->offset = i->second->entries->size();
+            }
+        }
+        ReferenceHolder<QoreListNode> entries(copied_entries, xsink);
+
+        if (offset == static_cast<size_t>(-1) || !entries) {
+            return sendStatus(request_id, SSH_FX_INVALID_HANDLE, "invalid directory handle", "en", xsink);
+        }
+
+        if (sendNames(request_id, *entries, offset, 64, xsink)) {
+            return -1;
+        }
+        return 0;
+    }
+
+    int handleBackendOpenRead(int request_id, const std::string& normalized_path, uint32_t pflags, ExceptionSink* xsink) {
+        if (!(pflags & SSH_FXF_READ) || (pflags & (SSH_FXF_WRITE | SSH_FXF_APPEND | SSH_FXF_CREAT | SSH_FXF_TRUNC
+                | SSH_FXF_EXCL))) {
+            return sendStatus(request_id, SSH_FX_PERMISSION_DENIED, "write access is not supported", "en", xsink);
+        }
+
+        ReferenceHolder<QoreHashNode> typed_backend_req(new QoreHashNode(hashdeclSftpOpenRequest, xsink), xsink);
+        typed_backend_req->setKeyValue("session_info", getInfo(xsink), xsink);
+        typed_backend_req->setKeyValue("path", new QoreStringNode(normalized_path.c_str()), xsink);
+        typed_backend_req->setKeyValue("operation", new QoreStringNode("open-read"), xsink);
+        typed_backend_req->setKeyValue("pflags", static_cast<int64>(pflags), xsink);
+        if (*xsink) {
+            return -1;
+        }
+
+        ReferenceHolder<QoreHashNode> backend_result(callBackendMethodDirectTyped("openRead", *typed_backend_req,
+            xsink), xsink);
+        if (*xsink) {
+            sendStatus(request_id, SSH_FX_FAILURE, "backend operation failed", "en", xsink);
+            xsink->clear();
+            return -1;
+        }
+        if (!backend_result) {
+            return 0;
+        }
+
+        if (!ssh_sftp_get_hash_bool(*backend_result, "exists", true, xsink)) {
+            if (*xsink) {
+                xsink->clear();
+                return sendStatus(request_id, SSH_FX_FAILURE, "backend result is invalid", "en", xsink);
+            }
+            return sendStatus(request_id, SSH_FX_NO_SUCH_FILE, "not found", "en", xsink);
+        }
+
+        const QoreValue data_v = backend_result->getKeyValue("data");
+        std::string data;
+        bool stream_read = false;
+        if (const BinaryNode* binary = data_v.get<BinaryNode>()) {
+            if (binary->size()) {
+                data.assign(reinterpret_cast<const char*>(binary->getPtr()), binary->size());
+            }
+        } else if (const QoreStringNode* str = data_v.get<QoreStringNode>()) {
+            if (str->strlen()) {
+                data.assign(str->c_str(), str->size());
+            }
+        } else if (data_v.getType() == NT_NOTHING) {
+            if (!backendHasMethod("read") || !backendHasMethod("closeRead")) {
+                return sendStatus(request_id, SSH_FX_FAILURE,
+                    "backend openRead result is missing binary data and no read()/closeRead() stream contract is available",
+                    "en", xsink);
+            }
+            if (backend_result->getKeyValue("backend_handle").getType() == NT_NOTHING) {
+                return sendStatus(request_id, SSH_FX_FAILURE,
+                    "backend openRead stream result is missing backend_handle", "en", xsink);
+            }
+            stream_read = true;
+        }
+
+        if (data_v.getType() != NT_BINARY && data_v.getType() != NT_STRING && !stream_read) {
+            return sendStatus(request_id, SSH_FX_FAILURE, "backend openRead result is missing binary data", "en", xsink);
+        }
+
+        std::string handle;
+        {
+            std::lock_guard<std::mutex> lock(m);
+            handle = "file-" + std::to_string(next_file_handle_id++);
+            file_handles.emplace(handle,
+                std::unique_ptr<FileHandleState>(new FileHandleState(data, backend_result->copy(), normalized_path, false,
+                    stream_read)));
+        }
+
+        return sendHandle(request_id, handle, xsink);
+    }
+
+    int handleBackendOpenWrite(int request_id, const std::string& normalized_path, uint32_t pflags, ExceptionSink* xsink) {
+        if (!(pflags & SSH_FXF_WRITE)) {
+            return sendStatus(request_id, SSH_FX_PERMISSION_DENIED, "write access was requested without write flags", "en",
+                xsink);
+        }
+        if (!backendHasMethod("openWrite") || !backendHasMethod("closeWrite")) {
+            return sendStatus(request_id, SSH_FX_OP_UNSUPPORTED, "write access is not supported", "en", xsink);
+        }
+
+        ReferenceHolder<QoreHashNode> typed_backend_req(new QoreHashNode(hashdeclSftpOpenRequest, xsink), xsink);
+        typed_backend_req->setKeyValue("session_info", getInfo(xsink), xsink);
+        typed_backend_req->setKeyValue("path", new QoreStringNode(normalized_path.c_str()), xsink);
+        typed_backend_req->setKeyValue("operation", new QoreStringNode("open-write"), xsink);
+        typed_backend_req->setKeyValue("pflags", static_cast<int64>(pflags), xsink);
+        if (*xsink) {
+            return -1;
+        }
+
+        ReferenceHolder<QoreHashNode> backend_result(callBackendMethodDirectTyped("openWrite", *typed_backend_req,
+            xsink), xsink);
+        if (*xsink) {
+            sendStatus(request_id, SSH_FX_FAILURE, "backend operation failed", "en", xsink);
+            xsink->clear();
+            return -1;
+        }
+        if (!backend_result) {
+            return 0;
+        }
+
+        bool stream_write = backendHasMethod("write")
+            && backend_result->getKeyValue("backend_handle").getType() != NT_NOTHING;
+
+        std::string handle;
+        {
+            std::lock_guard<std::mutex> lock(m);
+            handle = "file-" + std::to_string(next_file_handle_id++);
+            file_handles.emplace(handle,
+                std::unique_ptr<FileHandleState>(new FileHandleState(std::string(), backend_result->copy(),
+                    normalized_path, true, false, stream_write)));
+        }
+
+        return sendHandle(request_id, handle, xsink);
+    }
+
+    int handleBackendRead(int request_id, const std::string& handle, uint64_t offset, uint32_t length, ExceptionSink* xsink) {
+        std::string chunk;
+        bool eof = false;
+        bool invalid = false;
+        QoreHashNode* metadata = nullptr;
+        std::string path;
+        bool stream_read = false;
+        {
+            std::lock_guard<std::mutex> lock(m);
+            auto i = file_handles.find(handle);
+            if (i == file_handles.end()) {
+                invalid = true;
+            } else {
+                FileHandleState* state = i->second.get();
+                if (!state || state->write_mode) {
+                    invalid = true;
+                } else {
+                    stream_read = state->stream_read;
+                    if (stream_read) {
+                        metadata = state->metadata ? state->metadata->copy() : nullptr;
+                        path = state->path;
+                    } else {
+                        size_t data_size = state->data.size();
+                        if (offset >= data_size) {
+                            eof = true;
+                        } else {
+                            size_t chunk_size = std::min(static_cast<size_t>(length), data_size - static_cast<size_t>(offset));
+                            chunk.assign(state->data.data() + static_cast<size_t>(offset), chunk_size);
+                        }
+                    }
+                }
+            }
+        }
+        ReferenceHolder<QoreHashNode> open_result(metadata, xsink);
+
+        if (invalid) {
+            return sendStatus(request_id, SSH_FX_INVALID_HANDLE, "invalid file handle", "en", xsink);
+        }
+        if (stream_read) {
+            ReferenceHolder<QoreHashNode> req(new QoreHashNode(hashdeclSftpReadRequest, xsink), xsink);
+            req->setKeyValue("session_info", getInfo(xsink), xsink);
+            req->setKeyValue("path", new QoreStringNode(path.c_str()), xsink);
+            req->setKeyValue("operation", new QoreStringNode("read"), xsink);
+            if (*xsink) {
+                return -1;
+            }
+            req->setKeyValue("offset", static_cast<int64>(offset), xsink);
+            req->setKeyValue("length", static_cast<int64>(length), xsink);
+            if (open_result) {
+                ReferenceHolder<QoreHashNode> typed_open_result(reinterpret_cast<QoreHashNode*>(
+                    hashdeclSftpOpenResult->doRuntimeCast(*open_result, xsink)), xsink);
+                if (*xsink) {
+                    return -1;
+                }
+                req->setKeyValue("open_result", typed_open_result.release(), xsink);
+                const QoreValue backend_handle = open_result->getKeyValue("backend_handle");
+                if (backend_handle.getType() != NT_NOTHING) {
+                    req->setKeyValue("backend_handle", backend_handle.refSelf(), xsink);
+                }
+            }
+            if (*xsink) {
+                return -1;
+            }
+
+            ReferenceHolder<QoreHashNode> backend_result(callBackendMethodDirectTyped("read", *req, xsink), xsink);
+            if (*xsink) {
+                sendStatus(request_id, SSH_FX_FAILURE, "backend operation failed", "en", xsink);
+                xsink->clear();
+                return -1;
+            }
+            if (!backend_result) {
+                return 0;
+            }
+
+            ReferenceHolder<QoreHashNode> typed_result(reinterpret_cast<QoreHashNode*>(
+                hashdeclSftpReadResult->doRuntimeCast(*backend_result, xsink)), xsink);
+            if (*xsink) {
+                xsink->clear();
+                return sendStatus(request_id, SSH_FX_FAILURE, "backend read result is invalid", "en", xsink);
+            }
+
+            const QoreValue data_v = typed_result->getKeyValue("data");
+            if (const BinaryNode* binary = data_v.get<BinaryNode>()) {
+                if (binary->size()) {
+                    chunk.assign(reinterpret_cast<const char*>(binary->getPtr()), binary->size());
+                }
+            } else if (data_v.getType() != NT_NOTHING) {
+                return sendStatus(request_id, SSH_FX_FAILURE, "backend read result is invalid", "en", xsink);
+            }
+
+            eof = ssh_sftp_get_hash_bool(*typed_result, "eof", false, xsink);
+            if (*xsink) {
+                xsink->clear();
+                return sendStatus(request_id, SSH_FX_FAILURE, "backend read result is invalid", "en", xsink);
+            }
+        }
+        if (eof && chunk.empty()) {
+            return sendStatus(request_id, SSH_FX_EOF, "end of file", "en", xsink);
+        }
+        return sendData(request_id, chunk.data(), chunk.size(), xsink);
+    }
+
+    int handleBackendWrite(int request_id, const std::string& handle, uint64_t offset, const std::string& data,
+            ExceptionSink* xsink) {
+        bool invalid = false;
+        bool stream_write = false;
+        QoreHashNode* metadata = nullptr;
+        std::string path;
+        {
+            std::lock_guard<std::mutex> lock(m);
+            auto i = file_handles.find(handle);
+            if (i == file_handles.end() || !i->second || !i->second->write_mode) {
+                invalid = true;
+            } else {
+                FileHandleState* state = i->second.get();
+                stream_write = state->stream_write;
+                if (stream_write) {
+                    metadata = state->metadata ? state->metadata->copy() : nullptr;
+                    path = state->path;
+                } else {
+                    if (offset > state->data.size()) {
+                        state->data.resize(static_cast<size_t>(offset), '\0');
+                    }
+
+                    size_t required_size = static_cast<size_t>(offset) + data.size();
+                    if (required_size > state->data.size()) {
+                        state->data.resize(required_size);
+                    }
+                    if (!data.empty()) {
+                        memcpy(&state->data[static_cast<size_t>(offset)], data.data(), data.size());
+                    }
+                }
+            }
+        }
+        ReferenceHolder<QoreHashNode> open_result(metadata, xsink);
+
+        if (invalid) {
+            return sendStatus(request_id, SSH_FX_INVALID_HANDLE, "invalid file handle", "en", xsink);
+        }
+        if (stream_write) {
+            ReferenceHolder<QoreHashNode> req(new QoreHashNode(hashdeclSftpWriteRequest, xsink), xsink);
+            req->setKeyValue("session_info", getInfo(xsink), xsink);
+            req->setKeyValue("path", new QoreStringNode(path.c_str()), xsink);
+            req->setKeyValue("operation", new QoreStringNode("write"), xsink);
+            if (*xsink) {
+                return -1;
+            }
+            req->setKeyValue("offset", static_cast<int64>(offset), xsink);
+            SimpleRefHolder<BinaryNode> data_bin(new BinaryNode());
+            if (!data.empty()) {
+                data_bin->append(data.data(), data.size());
+            }
+            req->setKeyValue("data", data_bin.release(), xsink);
+            if (open_result) {
+                ReferenceHolder<QoreHashNode> typed_open_result(reinterpret_cast<QoreHashNode*>(
+                    hashdeclSftpOpenResult->doRuntimeCast(*open_result, xsink)), xsink);
+                if (*xsink) {
+                    return -1;
+                }
+                req->setKeyValue("open_result", typed_open_result.release(), xsink);
+                const QoreValue backend_handle = open_result->getKeyValue("backend_handle");
+                if (backend_handle.getType() != NT_NOTHING) {
+                    req->setKeyValue("backend_handle", backend_handle.refSelf(), xsink);
+                }
+            }
+            if (*xsink) {
+                return -1;
+            }
+
+            ReferenceHolder<QoreHashNode> backend_result(callBackendMethodDirectTyped("write", *req, xsink), xsink);
+            if (*xsink) {
+                sendStatus(request_id, SSH_FX_FAILURE, "backend operation failed", "en", xsink);
+                xsink->clear();
+                return -1;
+            }
+            if (!backend_result) {
+                return 0;
+            }
+        }
+        return sendStatus(request_id, SSH_FX_OK, "written", "en", xsink);
+    }
+
+    int finalizeBackendFileState(FileHandleState& file_state, bool send_backend_errors, int request_id,
+            ExceptionSink* xsink) {
+        if (file_state.write_mode) {
+            ReferenceHolder<QoreHashNode> req(new QoreHashNode(hashdeclSftpCloseRequest, xsink), xsink);
+            req->setKeyValue("session_info", getInfo(xsink), xsink);
+            req->setKeyValue("path", new QoreStringNode(file_state.path.c_str()), xsink);
+            req->setKeyValue("operation", new QoreStringNode("close-write"), xsink);
+            if (*xsink) {
+                return -1;
+            }
+            if (file_state.metadata) {
+                ReferenceHolder<QoreHashNode> typed_open_result(reinterpret_cast<QoreHashNode*>(
+                    hashdeclSftpOpenResult->doRuntimeCast(file_state.metadata, xsink)), xsink);
+                if (*xsink) {
+                    return -1;
+                }
+                req->setKeyValue("open_result", typed_open_result.release(), xsink);
+                const QoreValue backend_handle = file_state.metadata->getKeyValue("backend_handle");
+                if (backend_handle.getType() != NT_NOTHING) {
+                    req->setKeyValue("backend_handle", backend_handle.refSelf(), xsink);
+                }
+            }
+            if (!file_state.stream_write) {
+                SimpleRefHolder<BinaryNode> data(new BinaryNode());
+                if (!file_state.data.empty()) {
+                    data->append(file_state.data.data(), file_state.data.size());
+                }
+                req->setKeyValue("data", data.release(), xsink);
+            }
+            if (*xsink) {
+                return -1;
+            }
+            ReferenceHolder<QoreHashNode> backend_result(callBackendMethodDirectTyped("closeWrite", *req, xsink), xsink);
+            if (*xsink) {
+                if (send_backend_errors) {
+                    sendStatus(request_id, SSH_FX_FAILURE, "backend operation failed", "en", xsink);
+                    xsink->clear();
+                }
+                return -1;
+            }
+            if (!backend_result) {
+                return 0;
+            }
+        } else if (file_state.stream_read && backendHasMethod("closeRead")) {
+            ReferenceHolder<QoreHashNode> req(new QoreHashNode(hashdeclSftpCloseRequest, xsink), xsink);
+            req->setKeyValue("session_info", getInfo(xsink), xsink);
+            req->setKeyValue("path", new QoreStringNode(file_state.path.c_str()), xsink);
+            req->setKeyValue("operation", new QoreStringNode("close-read"), xsink);
+            if (*xsink) {
+                return -1;
+            }
+            if (file_state.metadata) {
+                ReferenceHolder<QoreHashNode> typed_open_result(reinterpret_cast<QoreHashNode*>(
+                    hashdeclSftpOpenResult->doRuntimeCast(file_state.metadata, xsink)), xsink);
+                if (*xsink) {
+                    return -1;
+                }
+                req->setKeyValue("open_result", typed_open_result.release(), xsink);
+                const QoreValue backend_handle = file_state.metadata->getKeyValue("backend_handle");
+                if (backend_handle.getType() != NT_NOTHING) {
+                    req->setKeyValue("backend_handle", backend_handle.refSelf(), xsink);
+                }
+            }
+            if (*xsink) {
+                return -1;
+            }
+            ReferenceHolder<QoreHashNode> backend_result(callBackendMethodDirectTyped("closeRead", *req, xsink), xsink);
+            if (*xsink) {
+                if (send_backend_errors) {
+                    sendStatus(request_id, SSH_FX_FAILURE, "backend operation failed", "en", xsink);
+                    xsink->clear();
+                }
+                return -1;
+            }
+            if (!backend_result) {
+                return 0;
+            }
+        }
+
+        return 0;
+    }
+
+    int handleClose(int request_id, const std::string& handle, ExceptionSink* xsink) {
+        std::unique_ptr<FileHandleState> file_state;
+        bool erased = false;
+        {
+            std::lock_guard<std::mutex> lock(m);
+            erased = dir_handles.erase(handle) > 0;
+            if (!erased) {
+                auto i = file_handles.find(handle);
+                if (i != file_handles.end()) {
+                    file_state = std::move(i->second);
+                    file_handles.erase(i);
+                    erased = true;
+                }
+            }
+        }
+        if (file_state) {
+            if (finalizeBackendFileState(*file_state, true, request_id, xsink)) {
+                if (*xsink) {
+                    return -1;
+                }
+                return 0;
+            }
+        }
+        return sendStatus(request_id, erased ? SSH_FX_OK : SSH_FX_INVALID_HANDLE,
+            erased ? "closed" : "invalid handle", "en", xsink);
+    }
+
+    int handleBackendFstat(int request_id, const std::string& handle, ExceptionSink* xsink) {
+        QoreHashNode* copied_metadata = nullptr;
+        bool invalid = false;
+        {
+            std::lock_guard<std::mutex> lock(m);
+            auto i = file_handles.find(handle);
+            if (i == file_handles.end()) {
+                invalid = true;
+            } else if (!i->second || !i->second->metadata) {
+                invalid = true;
+            } else {
+                copied_metadata = i->second->metadata->copy();
+            }
+        }
+        ReferenceHolder<QoreHashNode> metadata(copied_metadata, xsink);
+
+        if (invalid || !metadata) {
+            return sendStatus(request_id, SSH_FX_INVALID_HANDLE, "invalid file handle", "en", xsink);
+        }
+        return sendBackendAttrs(request_id, *metadata, xsink);
+    }
+
+    int handleBackendFsetstat(int request_id, const std::string& handle, ExceptionSink* xsink) {
+        bool invalid = false;
+        {
+            std::lock_guard<std::mutex> lock(m);
+            auto i = file_handles.find(handle);
+            if (i == file_handles.end()) {
+                invalid = true;
+            } else if (!i->second) {
+                invalid = true;
+            }
+        }
+
+        if (invalid) {
+            return sendStatus(request_id, SSH_FX_INVALID_HANDLE, "invalid file handle", "en", xsink);
+        }
+
+        return sendStatus(request_id, SSH_FX_OK, "attributes updated", "en", xsink);
+    }
+
+    int handleBackendSetstat(int request_id, const std::string& normalized_path, ExceptionSink* xsink) {
+        ReferenceHolder<QoreObject> backend_holder(getBackend(), xsink);
+        if (*xsink) {
+            return -1;
+        }
+        if (!backend_holder) {
+            return sendStatus(request_id, SSH_FX_OP_UNSUPPORTED, "setstat is not supported", "en", xsink);
+        }
+
+        return sendStatus(request_id, SSH_FX_OK, "attributes updated", "en", xsink);
+    }
+
+    int handleBackendPathOperation(const char* method, int request_id, const std::string& normalized_path,
+            const char* operation, const char* unsupported_message, const char* success_message, bool path_not_found,
+            ExceptionSink* xsink) {
+        if (!backendHasMethod(method)) {
+            return sendStatus(request_id, SSH_FX_OP_UNSUPPORTED, unsupported_message, "en", xsink);
+        }
+
+        ReferenceHolder<QoreHashNode> typed_backend_req(new QoreHashNode(hashdeclSftpPathRequest, xsink), xsink);
+        typed_backend_req->setKeyValue("session_info", getInfo(xsink), xsink);
+        typed_backend_req->setKeyValue("path", new QoreStringNode(normalized_path.c_str()), xsink);
+        typed_backend_req->setKeyValue("follow_symlinks", true, xsink);
+        typed_backend_req->setKeyValue("operation", new QoreStringNode(operation), xsink);
+        if (*xsink) {
+            return -1;
+        }
+
+        ReferenceHolder<QoreHashNode> backend_result(callBackendMethodDirectTyped(method, *typed_backend_req, xsink),
+            xsink);
+        if (*xsink) {
+            sendStatus(request_id, SSH_FX_FAILURE, "backend operation failed", "en", xsink);
+            xsink->clear();
+            return -1;
+        }
+        if (!backend_result) {
+            return 0;
+        }
+
+        return sendBackendOperationStatus(request_id, *backend_result, success_message, path_not_found, xsink);
+    }
+
+    int handleBackendRename(int request_id, const std::string& normalized_path, const std::string& target_path,
+            ExceptionSink* xsink) {
+        if (!backendHasMethod("rename")) {
+            return sendStatus(request_id, SSH_FX_OP_UNSUPPORTED, "rename is not supported", "en", xsink);
+        }
+
+        ReferenceHolder<QoreHashNode> typed_backend_req(new QoreHashNode(hashdeclSftpRenameRequest, xsink), xsink);
+        typed_backend_req->setKeyValue("session_info", getInfo(xsink), xsink);
+        typed_backend_req->setKeyValue("path", new QoreStringNode(normalized_path.c_str()), xsink);
+        typed_backend_req->setKeyValue("target_path", new QoreStringNode(target_path.c_str()), xsink);
+        typed_backend_req->setKeyValue("operation", new QoreStringNode("rename"), xsink);
+        if (*xsink) {
+            return -1;
+        }
+
+        ReferenceHolder<QoreHashNode> backend_result(callBackendMethodDirectTyped("rename", *typed_backend_req, xsink),
+            xsink);
+        if (*xsink) {
+            sendStatus(request_id, SSH_FX_FAILURE, "backend operation failed", "en", xsink);
+            xsink->clear();
+            return -1;
+        }
+        if (!backend_result) {
+            return 0;
+        }
+
+        return sendBackendOperationStatus(request_id, *backend_result, "renamed", false, xsink);
+    }
+
+    QoreHashNode* processNextRequest(int timeout_ms, ExceptionSink* xsink) {
+        ReferenceHolder<QoreHashNode> msg(waitProtocolMessage(timeout_ms, xsink), xsink);
+        if (*xsink || !msg) {
+            return nullptr;
+        }
+
+        int64 type = msg->getKeyValue("type").getAsBigInt();
+        if (*xsink) {
+            xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR",
+                "the decoded SFTP protocol message is missing a valid type");
+            return nullptr;
+        }
+
+        if (type == SSH_FXP_INIT) {
+            const QoreValue version_v = msg->getKeyValue("version");
+            int version = version_v.getType() == NT_NOTHING ? 3 : static_cast<int>(version_v.getAsBigInt());
+            if (*xsink) {
+                xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR",
+                    "the decoded SFTP init message is missing a valid version");
+                return nullptr;
+            }
+            if (sendVersion(version > 0 ? version : 3, xsink)) {
+                return nullptr;
+            }
+            return msg.release();
+        }
+
+        const QoreValue request_id_v = msg->getKeyValue("request_id");
+        if (request_id_v.getType() == NT_NOTHING) {
+            xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR",
+                "cannot process an SFTP request without a request id");
+            return nullptr;
+        }
+        int request_id = static_cast<int>(request_id_v.getAsBigInt());
+        if (*xsink) {
+            xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR",
+                "the decoded SFTP protocol message is missing a valid request id");
+            return nullptr;
+        }
+
+        if (type == SSH_FXP_REALPATH) {
+            const BinaryNode* payload = msg->getKeyValue("payload").get<BinaryNode>();
+            if (!payload || payload->size() < 4) {
+                xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR",
+                    "received a malformed SSH_FXP_REALPATH payload");
+                return nullptr;
+            }
+
+            size_t offset = 4;
+            std::string raw_path;
+            if (!ssh_sftp_read_string_field(reinterpret_cast<const char*>(payload->getPtr()), payload->size(),
+                    offset, raw_path)) {
+                xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR",
+                    "received a malformed SSH_FXP_REALPATH path field");
+                return nullptr;
+            }
+
+            std::string normalized_path;
+            if (!ssh_sftp_normalize_virtual_path(raw_path, normalized_path)) {
+                if (sendStatus(request_id, SSH_FX_NO_SUCH_PATH, "path escapes the configured SFTP root", "en", xsink)) {
+                    return nullptr;
+                }
+                return msg.release();
+            }
+
+            ReferenceHolder<QoreObject> backend_holder(getBackend(), xsink);
+            if (*xsink) {
+                return nullptr;
+            }
+            if (backend_holder) {
+                ReferenceHolder<QoreHashNode> typed_backend_req(new QoreHashNode(hashdeclSftpPathRequest, xsink), xsink);
+                typed_backend_req->setKeyValue("session_info", getInfo(xsink), xsink);
+                typed_backend_req->setKeyValue("path", new QoreStringNode(normalized_path.c_str()), xsink);
+                typed_backend_req->setKeyValue("follow_symlinks", true, xsink);
+                typed_backend_req->setKeyValue("operation", new QoreStringNode("realpath"), xsink);
+                if (*xsink) {
+                    return nullptr;
+                }
+
+                ReferenceHolder<QoreHashNode> backend_result(callBackendMethodDirectTyped("stat", *typed_backend_req,
+                    xsink), xsink);
+                if (*xsink) {
+                    sendStatus(request_id, SSH_FX_FAILURE, "backend operation failed", "en", xsink);
+                    xsink->clear();
+                    return nullptr;
+                }
+                if (!backend_result) {
+                    return msg.release();
+                }
+
+                if (!ssh_sftp_get_hash_bool(*backend_result, "exists", true, xsink)) {
+                    if (*xsink) {
+                        xsink->clear();
+                        if (sendStatus(request_id, SSH_FX_FAILURE, "backend result is invalid", "en", xsink)) {
+                            return nullptr;
+                        }
+                        return msg.release();
+                    }
+                    if (sendStatus(request_id, SSH_FX_NO_SUCH_PATH, "not found", "en", xsink)) {
+                        return nullptr;
+                    }
+                    return msg.release();
+                }
+
+                const QoreStringNode* backend_path = (*backend_result)->getKeyValue("path").get<QoreStringNode>();
+                const std::string final_path = backend_path && backend_path->strlen() ? backend_path->c_str()
+                    : normalized_path;
+                if (sendName(request_id, final_path, final_path, xsink)) {
+                    return nullptr;
+                }
+                return msg.release();
+            }
+
+            if (sendName(request_id, normalized_path, normalized_path, xsink)) {
+                return nullptr;
+            }
+            return msg.release();
+        }
+
+        if (type == SSH_FXP_STAT || type == SSH_FXP_LSTAT) {
+            const BinaryNode* payload = msg->getKeyValue("payload").get<BinaryNode>();
+            if (!payload || payload->size() < 4) {
+                xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR",
+                    "received a malformed SSH_FXP_%s payload", type == SSH_FXP_STAT ? "STAT" : "LSTAT");
+                return nullptr;
+            }
+
+            size_t offset = 4;
+            std::string raw_path;
+            if (!ssh_sftp_read_string_field(reinterpret_cast<const char*>(payload->getPtr()), payload->size(),
+                    offset, raw_path)) {
+                xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR",
+                    "received a malformed SSH_FXP_%s path field", type == SSH_FXP_STAT ? "STAT" : "LSTAT");
+                return nullptr;
+            }
+
+            ReferenceHolder<QoreHashNode> current_info(getInfo(xsink), xsink);
+            if (*xsink) {
+                return nullptr;
+            }
+
+            std::string normalized_path;
+            std::string real_path;
+            if (!ssh_sftp_normalize_virtual_path(raw_path, normalized_path)) {
+                if (sendStatus(request_id, SSH_FX_NO_SUCH_PATH, "path escapes the configured SFTP root", "en", xsink)) {
+                    return nullptr;
+                }
+                return msg.release();
+            }
+
+            ReferenceHolder<QoreObject> backend_holder(getBackend(), xsink);
+            if (*xsink) {
+                return nullptr;
+            }
+            if (backend_holder) {
+                ReferenceHolder<QoreHashNode> typed_backend_req(new QoreHashNode(hashdeclSftpPathRequest, xsink), xsink);
+                typed_backend_req->setKeyValue("session_info", getInfo(xsink), xsink);
+                typed_backend_req->setKeyValue("path", new QoreStringNode(normalized_path.c_str()), xsink);
+                typed_backend_req->setKeyValue("follow_symlinks", type == SSH_FXP_STAT, xsink);
+                typed_backend_req->setKeyValue("operation",
+                    new QoreStringNode(type == SSH_FXP_STAT ? "stat" : "lstat"), xsink);
+                if (*xsink) {
+                    return nullptr;
+                }
+
+                ReferenceHolder<QoreHashNode> backend_result(callBackendMethodDirectTyped("stat", *typed_backend_req,
+                    xsink), xsink);
+                if (*xsink) {
+                    sendStatus(request_id, SSH_FX_FAILURE, "backend operation failed", "en", xsink);
+                    xsink->clear();
+                    return nullptr;
+                }
+                if (!backend_result) {
+                    return msg.release();
+                }
+
+                if (!ssh_sftp_get_hash_bool(*backend_result, "exists", true, xsink)) {
+                    if (*xsink) {
+                        xsink->clear();
+                        if (sendStatus(request_id, SSH_FX_FAILURE, "backend result is invalid", "en", xsink)) {
+                            return nullptr;
+                        }
+                        return msg.release();
+                    }
+                    if (sendStatus(request_id, SSH_FX_NO_SUCH_FILE, "not found", "en", xsink)) {
+                        return nullptr;
+                    }
+                    return msg.release();
+                }
+
+                if (sendBackendAttrs(request_id, *backend_result, xsink)) {
+                    return nullptr;
+                }
+                return msg.release();
+            }
+
+            if (!ssh_sftp_get_real_path(*current_info, raw_path, normalized_path, real_path)) {
+                if (sendStatus(request_id, SSH_FX_NO_SUCH_PATH, "path escapes the configured SFTP root", "en", xsink)) {
+                    return nullptr;
+                }
+                return msg.release();
+            }
+
+            if (ssh_sftp_check_fs_access(real_path, QSEC_READ, xsink)) {
+                return nullptr;
+            }
+
+            struct stat st;
+            int rc = type == SSH_FXP_LSTAT ? ::lstat(real_path.c_str(), &st) : ::stat(real_path.c_str(), &st);
+            if (rc) {
+                int sftp_status = errno == ENOENT || errno == ENOTDIR ? SSH_FX_NO_SUCH_FILE : SSH_FX_FAILURE;
+                if (sendStatus(request_id, sftp_status, strerror(errno), "en", xsink)) {
+                    return nullptr;
+                }
+                return msg.release();
+            }
+
+            if (sendAttrs(request_id, st, xsink)) {
+                return nullptr;
+            }
+            return msg.release();
+        }
+
+        if (type == SSH_FXP_OPENDIR) {
+            const BinaryNode* payload = msg->getKeyValue("payload").get<BinaryNode>();
+            if (!payload || payload->size() < 4) {
+                xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR",
+                    "received a malformed SSH_FXP_OPENDIR payload");
+                return nullptr;
+            }
+
+            size_t offset = 4;
+            std::string raw_path;
+            if (!ssh_sftp_read_string_field(reinterpret_cast<const char*>(payload->getPtr()), payload->size(),
+                    offset, raw_path)) {
+                xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR",
+                    "received a malformed SSH_FXP_OPENDIR path field");
+                return nullptr;
+            }
+
+            std::string normalized_path;
+            if (!ssh_sftp_normalize_virtual_path(raw_path, normalized_path)) {
+                if (sendStatus(request_id, SSH_FX_NO_SUCH_PATH, "path escapes the configured SFTP root", "en", xsink)) {
+                    return nullptr;
+                }
+                return msg.release();
+            }
+
+            ReferenceHolder<QoreObject> backend_holder(getBackend(), xsink);
+            if (*xsink) {
+                return nullptr;
+            }
+            if (backend_holder) {
+                if (handleBackendOpenDir(request_id, normalized_path, xsink)) {
+                    return nullptr;
+                }
+                return msg.release();
+            }
+        }
+
+        if (type == SSH_FXP_OPEN) {
+            const BinaryNode* payload = msg->getKeyValue("payload").get<BinaryNode>();
+            if (!payload || payload->size() < 8) {
+                xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR",
+                    "received a malformed SSH_FXP_OPEN payload");
+                return nullptr;
+            }
+
+            size_t offset = 4;
+            std::string raw_path;
+            if (!ssh_sftp_read_string_field(reinterpret_cast<const char*>(payload->getPtr()), payload->size(),
+                    offset, raw_path)) {
+                xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR",
+                    "received a malformed SSH_FXP_OPEN path field");
+                return nullptr;
+            }
+            if (offset + 4 > payload->size()) {
+                xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR",
+                    "received a truncated SSH_FXP_OPEN pflags field");
+                return nullptr;
+            }
+
+            const unsigned char* payload_ptr = reinterpret_cast<const unsigned char*>(payload->getPtr());
+            uint32_t pflags = ssh_sftp_read_u32_be(payload_ptr + offset);
+            std::string normalized_path;
+            if (!ssh_sftp_normalize_virtual_path(raw_path, normalized_path)) {
+                if (sendStatus(request_id, SSH_FX_NO_SUCH_PATH, "path escapes the configured SFTP root", "en", xsink)) {
+                    return nullptr;
+                }
+                return msg.release();
+            }
+
+            ReferenceHolder<QoreObject> backend_holder(getBackend(), xsink);
+            if (*xsink) {
+                return nullptr;
+            }
+            if (backend_holder) {
+                if ((pflags & SSH_FXF_WRITE) ? handleBackendOpenWrite(request_id, normalized_path, pflags, xsink)
+                        : handleBackendOpenRead(request_id, normalized_path, pflags, xsink)) {
+                    return nullptr;
+                }
+                return msg.release();
+            }
+        }
+
+        if (type == SSH_FXP_READ) {
+            const BinaryNode* payload = msg->getKeyValue("payload").get<BinaryNode>();
+            if (!payload || payload->size() < 20) {
+                xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR",
+                    "received a malformed SSH_FXP_READ payload");
+                return nullptr;
+            }
+
+            size_t offset = 4;
+            std::string handle;
+            if (!ssh_sftp_read_string_field(reinterpret_cast<const char*>(payload->getPtr()), payload->size(),
+                    offset, handle)) {
+                xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR",
+                    "received a malformed SSH_FXP_READ handle field");
+                return nullptr;
+            }
+            if (offset + 12 > payload->size()) {
+                xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR",
+                    "received a truncated SSH_FXP_READ offset/length field");
+                return nullptr;
+            }
+
+            const unsigned char* payload_ptr = reinterpret_cast<const unsigned char*>(payload->getPtr());
+            uint64_t read_offset = ssh_sftp_read_u64_be(payload_ptr + offset);
+            offset += 8;
+            uint32_t length = ssh_sftp_read_u32_be(payload_ptr + offset);
+            if (handleBackendRead(request_id, handle, read_offset, length, xsink)) {
+                return nullptr;
+            }
+            return msg.release();
+        }
+
+        if (type == SSH_FXP_WRITE) {
+            const BinaryNode* payload = msg->getKeyValue("payload").get<BinaryNode>();
+            if (!payload || payload->size() < 20) {
+                xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR",
+                    "received a malformed SSH_FXP_WRITE payload");
+                return nullptr;
+            }
+
+            size_t offset = 4;
+            std::string handle;
+            if (!ssh_sftp_read_string_field(reinterpret_cast<const char*>(payload->getPtr()), payload->size(),
+                    offset, handle)) {
+                xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR",
+                    "received a malformed SSH_FXP_WRITE handle field");
+                return nullptr;
+            }
+            if (offset + 12 > payload->size()) {
+                xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR",
+                    "received a truncated SSH_FXP_WRITE offset/data field");
+                return nullptr;
+            }
+
+            const unsigned char* payload_ptr = reinterpret_cast<const unsigned char*>(payload->getPtr());
+            uint64_t write_offset = ssh_sftp_read_u64_be(payload_ptr + offset);
+            offset += 8;
+            std::string write_data;
+            if (!ssh_sftp_read_string_field(reinterpret_cast<const char*>(payload->getPtr()), payload->size(),
+                    offset, write_data)) {
+                xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR",
+                    "received a malformed SSH_FXP_WRITE data field");
+                return nullptr;
+            }
+
+            if (handleBackendWrite(request_id, handle, write_offset, write_data, xsink)) {
+                return nullptr;
+            }
+            return msg.release();
+        }
+
+        if (type == SSH_FXP_FSTAT) {
+            const BinaryNode* payload = msg->getKeyValue("payload").get<BinaryNode>();
+            if (!payload || payload->size() < 8) {
+                xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR",
+                    "received a malformed SSH_FXP_FSTAT payload");
+                return nullptr;
+            }
+
+            size_t offset = 4;
+            std::string handle;
+            if (!ssh_sftp_read_string_field(reinterpret_cast<const char*>(payload->getPtr()), payload->size(),
+                    offset, handle)) {
+                xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR",
+                    "received a malformed SSH_FXP_FSTAT handle field");
+                return nullptr;
+            }
+
+            if (handleBackendFstat(request_id, handle, xsink)) {
+                return nullptr;
+            }
+            return msg.release();
+        }
+
+        if (type == SSH_FXP_FSETSTAT) {
+            const BinaryNode* payload = msg->getKeyValue("payload").get<BinaryNode>();
+            if (!payload || payload->size() < 8) {
+                xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR",
+                    "received a malformed SSH_FXP_FSETSTAT payload");
+                return nullptr;
+            }
+
+            size_t offset = 4;
+            std::string handle;
+            if (!ssh_sftp_read_string_field(reinterpret_cast<const char*>(payload->getPtr()), payload->size(),
+                    offset, handle)) {
+                xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR",
+                    "received a malformed SSH_FXP_FSETSTAT handle field");
+                return nullptr;
+            }
+
+            if (handleBackendFsetstat(request_id, handle, xsink)) {
+                return nullptr;
+            }
+            return msg.release();
+        }
+
+        if (type == SSH_FXP_SETSTAT) {
+            const BinaryNode* payload = msg->getKeyValue("payload").get<BinaryNode>();
+            if (!payload || payload->size() < 8) {
+                xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR",
+                    "received a malformed SSH_FXP_SETSTAT payload");
+                return nullptr;
+            }
+
+            size_t offset = 4;
+            std::string raw_path;
+            if (!ssh_sftp_read_string_field(reinterpret_cast<const char*>(payload->getPtr()), payload->size(),
+                    offset, raw_path)) {
+                xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR",
+                    "received a malformed SSH_FXP_SETSTAT path field");
+                return nullptr;
+            }
+
+            std::string normalized_path;
+            if (!ssh_sftp_normalize_virtual_path(raw_path, normalized_path)) {
+                if (sendStatus(request_id, SSH_FX_NO_SUCH_PATH, "path escapes the configured SFTP root", "en", xsink)) {
+                    return nullptr;
+                }
+                return msg.release();
+            }
+
+            if (handleBackendSetstat(request_id, normalized_path, xsink)) {
+                return nullptr;
+            }
+            return msg.release();
+        }
+
+        if (type == SSH_FXP_READDIR || type == SSH_FXP_CLOSE) {
+            const BinaryNode* payload = msg->getKeyValue("payload").get<BinaryNode>();
+            if (!payload || payload->size() < 8) {
+                xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR",
+                    "received a malformed SSH_FXP_%s payload", type == SSH_FXP_READDIR ? "READDIR" : "CLOSE");
+                return nullptr;
+            }
+
+            size_t offset = 4;
+            std::string handle;
+            if (!ssh_sftp_read_string_field(reinterpret_cast<const char*>(payload->getPtr()), payload->size(),
+                    offset, handle)) {
+                xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR",
+                    "received a malformed SSH_FXP_%s handle field", type == SSH_FXP_READDIR ? "READDIR" : "CLOSE");
+                return nullptr;
+            }
+
+            if (type == SSH_FXP_READDIR) {
+                if (handleBackendReadDir(request_id, handle, xsink)) {
+                    return nullptr;
+                }
+            } else {
+                if (handleClose(request_id, handle, xsink)) {
+                    return nullptr;
+                }
+            }
+            return msg.release();
+        }
+
+        if (type == SSH_FXP_REMOVE || type == SSH_FXP_MKDIR || type == SSH_FXP_RMDIR) {
+            const BinaryNode* payload = msg->getKeyValue("payload").get<BinaryNode>();
+            if (!payload || payload->size() < 8) {
+                xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR",
+                    "received a malformed SSH_FXP_%s payload", type == SSH_FXP_REMOVE ? "REMOVE"
+                        : (type == SSH_FXP_MKDIR ? "MKDIR" : "RMDIR"));
+                return nullptr;
+            }
+
+            size_t offset = 4;
+            std::string raw_path;
+            if (!ssh_sftp_read_string_field(reinterpret_cast<const char*>(payload->getPtr()), payload->size(),
+                    offset, raw_path)) {
+                xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR",
+                    "received a malformed SSH_FXP_%s path field", type == SSH_FXP_REMOVE ? "REMOVE"
+                        : (type == SSH_FXP_MKDIR ? "MKDIR" : "RMDIR"));
+                return nullptr;
+            }
+
+            std::string normalized_path;
+            if (!ssh_sftp_normalize_virtual_path(raw_path, normalized_path)) {
+                if (sendStatus(request_id, SSH_FX_NO_SUCH_PATH, "path escapes the configured SFTP root", "en", xsink)) {
+                    return nullptr;
+                }
+                return msg.release();
+            }
+
+            ReferenceHolder<QoreObject> backend_holder(getBackend(), xsink);
+            if (*xsink) {
+                return nullptr;
+            }
+            if (backend_holder) {
+                int rc = 0;
+                if (type == SSH_FXP_REMOVE) {
+                    rc = handleBackendPathOperation("removePath", request_id, normalized_path, "remove",
+                        "remove is not supported", "removed", false, xsink);
+                } else if (type == SSH_FXP_MKDIR) {
+                    rc = handleBackendPathOperation("mkdir", request_id, normalized_path, "mkdir",
+                        "mkdir is not supported", "directory created", true, xsink);
+                } else {
+                    rc = handleBackendPathOperation("rmdir", request_id, normalized_path, "rmdir",
+                        "rmdir is not supported", "directory removed", true, xsink);
+                }
+
+                if (rc) {
+                    return nullptr;
+                }
+                return msg.release();
+            }
+        }
+
+        if (type == SSH_FXP_RENAME) {
+            const BinaryNode* payload = msg->getKeyValue("payload").get<BinaryNode>();
+            if (!payload || payload->size() < 12) {
+                xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR",
+                    "received a malformed SSH_FXP_RENAME payload");
+                return nullptr;
+            }
+
+            size_t offset = 4;
+            std::string raw_path;
+            std::string raw_target_path;
+            if (!ssh_sftp_read_string_field(reinterpret_cast<const char*>(payload->getPtr()), payload->size(),
+                    offset, raw_path)) {
+                xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR",
+                    "received a malformed SSH_FXP_RENAME source path field");
+                return nullptr;
+            }
+            if (!ssh_sftp_read_string_field(reinterpret_cast<const char*>(payload->getPtr()), payload->size(),
+                    offset, raw_target_path)) {
+                xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR",
+                    "received a malformed SSH_FXP_RENAME target path field");
+                return nullptr;
+            }
+
+            std::string normalized_path;
+            std::string normalized_target_path;
+            if (!ssh_sftp_normalize_virtual_path(raw_path, normalized_path)
+                    || !ssh_sftp_normalize_virtual_path(raw_target_path, normalized_target_path)) {
+                if (sendStatus(request_id, SSH_FX_NO_SUCH_PATH, "path escapes the configured SFTP root", "en", xsink)) {
+                    return nullptr;
+                }
+                return msg.release();
+            }
+
+            ReferenceHolder<QoreObject> backend_holder(getBackend(), xsink);
+            if (*xsink) {
+                return nullptr;
+            }
+            if (backend_holder) {
+                if (handleBackendRename(request_id, normalized_path, normalized_target_path, xsink)) {
+                    return nullptr;
+                }
+                return msg.release();
+            }
+        }
+
+        if (sendStatus(request_id, SSH_FX_OP_UNSUPPORTED, "unsupported", "en", xsink)) {
+            return nullptr;
+        }
+        return msg.release();
+    }
+
+    QoreHashNode* listAvailable(const QoreHashNode* q_req, ExceptionSink* xsink) {
+        if (!backendHasMethod("listAvailable")) {
+            xsink->raiseException("SFTPSESSION-BACKEND-ERROR",
+                "backend objects must implement listAvailable() for atomic retrieval helpers");
+            return nullptr;
+        }
+
+        ReferenceHolder<QoreHashNode> typed_req(reinterpret_cast<QoreHashNode*>(
+            hashdeclSftpPathRequest->doRuntimeCast(q_req, xsink)), xsink);
+        if (*xsink) {
+            return nullptr;
+        }
+
+        const QoreStringNode* path_node = typed_req->getKeyValue("path").get<QoreStringNode>();
+        if (!path_node || !path_node->strlen()) {
+            xsink->raiseException("SFTPSESSION-BACKEND-ERROR",
+                "listAvailable() requires a non-empty request path");
+            return nullptr;
+        }
+
+        std::string normalized_path;
+        if (!ssh_sftp_normalize_virtual_path(path_node->c_str(), normalized_path)) {
+            xsink->raiseException("SFTPSESSION-BACKEND-ERROR",
+                "listAvailable() path '%s' escapes the virtual root", path_node ? path_node->c_str() : "");
+            return nullptr;
+        }
+
+        ReferenceHolder<QoreHashNode> backend_req(buildBackendPathRequest(normalized_path, true, "list-available", xsink),
+            xsink);
+        if (*xsink) {
+            return nullptr;
+        }
+
+        backend_req->setKeyValue("path", new QoreStringNode(normalized_path.c_str()), xsink);
+        backend_req->setKeyValue("session_info", getInfo(xsink), xsink);
+        if (typed_req->existsKey("metadata")) {
+            backend_req->setKeyValue("metadata", typed_req->getKeyValue("metadata").refSelf(), xsink);
+        }
+        if (*xsink) {
+            return nullptr;
+        }
+
+        ReferenceHolder<QoreHashNode> typed_backend_req(new QoreHashNode(hashdeclSftpPathRequest, xsink), xsink);
+        typed_backend_req->setKeyValue("path", new QoreStringNode(normalized_path.c_str()), xsink);
+        typed_backend_req->setKeyValue("session_info", getInfo(xsink), xsink);
+        if (typed_req->existsKey("metadata")) {
+            typed_backend_req->setKeyValue("metadata", typed_req->getKeyValue("metadata").refSelf(), xsink);
+        }
+        if (*xsink) {
+            return nullptr;
+        }
+
+        ReferenceHolder<QoreHashNode> backend_result(callBackendMethodDirectTyped("listAvailable", *typed_backend_req,
+            xsink), xsink);
+        if (*xsink) {
+            return nullptr;
+        }
+
+        return reinterpret_cast<QoreHashNode*>(hashdeclSftpListResult->doRuntimeCast(*backend_result, xsink));
+    }
+
+    QoreHashNode* submit(const QoreHashNode* q_req, ExceptionSink* xsink) {
+        if (!backendHasMethod("submit")) {
+            xsink->raiseException("SFTPSESSION-BACKEND-ERROR",
+                "backend objects must implement submit() for atomic submission helpers");
+            return nullptr;
+        }
+
+        ReferenceHolder<QoreHashNode> typed_req(reinterpret_cast<QoreHashNode*>(
+            hashdeclSftpSubmissionRequest->doRuntimeCast(q_req, xsink)), xsink);
+        if (*xsink) {
+            return nullptr;
+        }
+
+        const QoreStringNode* path_node = typed_req->getKeyValue("path").get<QoreStringNode>();
+        if (!path_node || !path_node->strlen()) {
+            xsink->raiseException("SFTPSESSION-BACKEND-ERROR",
+                "submit() requires a non-empty request path");
+            return nullptr;
+        }
+
+        std::string normalized_path;
+        if (!ssh_sftp_normalize_virtual_path(path_node->c_str(), normalized_path)) {
+            xsink->raiseException("SFTPSESSION-BACKEND-ERROR",
+                "submit() path '%s' escapes the virtual root", path_node ? path_node->c_str() : "");
+            return nullptr;
+        }
+
+        ReferenceHolder<QoreHashNode> backend_req(buildBackendPathRequest(normalized_path, true, "submit", xsink), xsink);
+        if (*xsink) {
+            return nullptr;
+        }
+
+        backend_req->setKeyValue("path", new QoreStringNode(normalized_path.c_str()), xsink);
+        backend_req->setKeyValue("session_info", getInfo(xsink), xsink);
+        if (*xsink) {
+            return nullptr;
+        }
+
+        const BinaryNode* data_node = typed_req->getKeyValue("data").get<BinaryNode>();
+        const QoreStringNode* source_path_node = typed_req->getKeyValue("source_path").get<QoreStringNode>();
+        if (data_node) {
+            backend_req->setKeyValue("data", data_node->refSelf(), xsink);
+            backend_req->setKeyValue("size", static_cast<int64>(data_node->size()), xsink);
+        } else if (source_path_node && source_path_node->strlen()) {
+            std::string source_path = source_path_node->c_str();
+            if (ssh_sftp_check_fs_access(source_path, QSEC_READ, xsink)) {
+                return nullptr;
+            }
+            ReferenceHolder<BinaryNode> source_data(ssh_sftp_read_binary_file(source_path, xsink), xsink);
+            if (*xsink) {
+                return nullptr;
+            }
+            int64 source_size = static_cast<int64>(source_data->size());
+            backend_req->setKeyValue("source_path", new QoreStringNode(source_path.c_str()), xsink);
+            backend_req->setKeyValue("data", source_data.release(), xsink);
+            backend_req->setKeyValue("size", source_size, xsink);
+        } else {
+            xsink->raiseException("SFTPSESSION-BACKEND-ERROR",
+                "submit() requires either binary data or a local source_path");
+            return nullptr;
+        }
+
+        if (typed_req->existsKey("metadata")) {
+            backend_req->setKeyValue("metadata", typed_req->getKeyValue("metadata").refSelf(), xsink);
+        }
+        if (typed_req->existsKey("checksum")) {
+            backend_req->setKeyValue("checksum", typed_req->getKeyValue("checksum").refSelf(), xsink);
+        }
+        if (typed_req->existsKey("move")) {
+            backend_req->setKeyValue("move", typed_req->getKeyValue("move").refSelf(), xsink);
+        }
+        if (typed_req->existsKey("create_parents")) {
+            backend_req->setKeyValue("create_parents", typed_req->getKeyValue("create_parents").refSelf(), xsink);
+        }
+        if (*xsink) {
+            return nullptr;
+        }
+
+        ReferenceHolder<QoreHashNode> typed_backend_req(new QoreHashNode(hashdeclSftpSubmissionRequest, xsink), xsink);
+        typed_backend_req->setKeyValue("path", new QoreStringNode(normalized_path.c_str()), xsink);
+        typed_backend_req->setKeyValue("session_info", getInfo(xsink), xsink);
+        if (data_node) {
+            typed_backend_req->setKeyValue("data", data_node->refSelf(), xsink);
+        } else if (source_path_node && source_path_node->strlen()) {
+            typed_backend_req->setKeyValue("source_path", new QoreStringNode(source_path_node->c_str()), xsink);
+            typed_backend_req->setKeyValue("data", backend_req->getKeyValue("data").refSelf(), xsink);
+        }
+        if (typed_req->existsKey("metadata")) {
+            typed_backend_req->setKeyValue("metadata", typed_req->getKeyValue("metadata").refSelf(), xsink);
+        }
+        if (typed_req->existsKey("checksum")) {
+            typed_backend_req->setKeyValue("checksum", typed_req->getKeyValue("checksum").refSelf(), xsink);
+        }
+        if (typed_req->existsKey("move")) {
+            typed_backend_req->setKeyValue("move", typed_req->getKeyValue("move").refSelf(), xsink);
+        }
+        if (typed_req->existsKey("create_parents")) {
+            typed_backend_req->setKeyValue("create_parents", typed_req->getKeyValue("create_parents").refSelf(), xsink);
+        }
+        if (*xsink) {
+            return nullptr;
+        }
+
+        ReferenceHolder<QoreHashNode> backend_result(callBackendMethodDirectTyped("submit", *typed_backend_req,
+            xsink), xsink);
+        if (*xsink) {
+            return nullptr;
+        }
+
+        const QoreHashNode* transfer_info = backend_result->getKeyValue("transfer_info").get<QoreHashNode>();
+        if (transfer_info) {
+            if (applyTransferInfo(transfer_info, xsink)) {
+                return nullptr;
+            }
+        }
+
+        {
+            std::ostringstream os;
+            os << "SftpSession submit path=" << normalized_path;
+            log("info", os.str().c_str());
+        }
+
+        return reinterpret_cast<QoreHashNode*>(hashdeclSftpOperationResult->doRuntimeCast(*backend_result, xsink));
+    }
+
+    QoreHashNode* retrieve(const QoreHashNode* q_req, ExceptionSink* xsink) {
+        if (!backendHasMethod("retrieve")) {
+            xsink->raiseException("SFTPSESSION-BACKEND-ERROR",
+                "backend objects must implement retrieve() for atomic retrieval helpers");
+            return nullptr;
+        }
+
+        ReferenceHolder<QoreHashNode> typed_req(reinterpret_cast<QoreHashNode*>(
+            hashdeclSftpOpenRequest->doRuntimeCast(q_req, xsink)), xsink);
+        if (*xsink) {
+            return nullptr;
+        }
+
+        const QoreStringNode* path_node = typed_req->getKeyValue("path").get<QoreStringNode>();
+        if (!path_node || !path_node->strlen()) {
+            xsink->raiseException("SFTPSESSION-BACKEND-ERROR",
+                "retrieve() requires a non-empty request path");
+            return nullptr;
+        }
+
+        std::string normalized_path;
+        if (!ssh_sftp_normalize_virtual_path(path_node->c_str(), normalized_path)) {
+            xsink->raiseException("SFTPSESSION-BACKEND-ERROR",
+                "retrieve() path '%s' escapes the virtual root", path_node ? path_node->c_str() : "");
+            return nullptr;
+        }
+
+        ReferenceHolder<QoreHashNode> backend_req(buildBackendPathRequest(normalized_path, true, "retrieve", xsink), xsink);
+        if (*xsink) {
+            return nullptr;
+        }
+
+        backend_req->setKeyValue("path", new QoreStringNode(normalized_path.c_str()), xsink);
+        backend_req->setKeyValue("session_info", getInfo(xsink), xsink);
+        if (typed_req->existsKey("metadata")) {
+            backend_req->setKeyValue("metadata", typed_req->getKeyValue("metadata").refSelf(), xsink);
+        }
+        if (typed_req->existsKey("offset")) {
+            backend_req->setKeyValue("offset", typed_req->getKeyValue("offset").refSelf(), xsink);
+        }
+        if (typed_req->existsKey("length")) {
+            backend_req->setKeyValue("length", typed_req->getKeyValue("length").refSelf(), xsink);
+        }
+        if (*xsink) {
+            return nullptr;
+        }
+
+        ReferenceHolder<QoreHashNode> typed_backend_req(new QoreHashNode(hashdeclSftpOpenRequest, xsink), xsink);
+        typed_backend_req->setKeyValue("path", new QoreStringNode(normalized_path.c_str()), xsink);
+        typed_backend_req->setKeyValue("session_info", getInfo(xsink), xsink);
+        if (typed_req->existsKey("metadata")) {
+            typed_backend_req->setKeyValue("metadata", typed_req->getKeyValue("metadata").refSelf(), xsink);
+        }
+        if (typed_req->existsKey("offset")) {
+            typed_backend_req->setKeyValue("offset", typed_req->getKeyValue("offset").refSelf(), xsink);
+        }
+        if (typed_req->existsKey("length")) {
+            typed_backend_req->setKeyValue("length", typed_req->getKeyValue("length").refSelf(), xsink);
+        }
+        if (*xsink) {
+            return nullptr;
+        }
+
+        ReferenceHolder<QoreHashNode> backend_result(callBackendMethodDirectTyped("retrieve", *typed_backend_req,
+            xsink), xsink);
+        if (*xsink) {
+            return nullptr;
+        }
+
+        const QoreHashNode* transfer_info = backend_result->getKeyValue("transfer_info").get<QoreHashNode>();
+        if (transfer_info) {
+            if (applyTransferInfo(transfer_info, xsink)) {
+                return nullptr;
+            }
+        }
+
+        {
+            std::ostringstream os;
+            os << "SftpSession retrieve path=" << normalized_path;
+            log("info", os.str().c_str());
+        }
+
+        return reinterpret_cast<QoreHashNode*>(hashdeclSftpOpenResult->doRuntimeCast(*backend_result, xsink));
+    }
+
+    QoreHashNode* completeRetrieve(const QoreHashNode* q_req, ExceptionSink* xsink) {
+        if (!backendHasMethod("completeRetrieve")) {
+            xsink->raiseException("SFTPSESSION-BACKEND-ERROR",
+                "backend objects must implement completeRetrieve() for atomic retrieval helpers");
+            return nullptr;
+        }
+
+        ReferenceHolder<QoreHashNode> typed_req(reinterpret_cast<QoreHashNode*>(
+            hashdeclSftpOperationRequest->doRuntimeCast(q_req, xsink)), xsink);
+        if (*xsink) {
+            return nullptr;
+        }
+
+        const QoreStringNode* path_node = typed_req->getKeyValue("path").get<QoreStringNode>();
+        if (!path_node || !path_node->strlen()) {
+            xsink->raiseException("SFTPSESSION-BACKEND-ERROR",
+                "completeRetrieve() requires a non-empty request path");
+            return nullptr;
+        }
+
+        std::string normalized_path;
+        if (!ssh_sftp_normalize_virtual_path(path_node->c_str(), normalized_path)) {
+            xsink->raiseException("SFTPSESSION-BACKEND-ERROR",
+                "completeRetrieve() path '%s' escapes the virtual root", path_node ? path_node->c_str() : "");
+            return nullptr;
+        }
+
+        ReferenceHolder<QoreHashNode> backend_req(buildBackendPathRequest(normalized_path, true, "complete-retrieve", xsink),
+            xsink);
+        if (*xsink) {
+            return nullptr;
+        }
+
+        backend_req->setKeyValue("path", new QoreStringNode(normalized_path.c_str()), xsink);
+        backend_req->setKeyValue("session_info", getInfo(xsink), xsink);
+        if (typed_req->existsKey("target_path")) {
+            backend_req->setKeyValue("target_path", typed_req->getKeyValue("target_path").refSelf(), xsink);
+        }
+        if (typed_req->existsKey("completion_mode")) {
+            backend_req->setKeyValue("completion_mode", typed_req->getKeyValue("completion_mode").refSelf(), xsink);
+        }
+        if (typed_req->existsKey("metadata")) {
+            backend_req->setKeyValue("metadata", typed_req->getKeyValue("metadata").refSelf(), xsink);
+        }
+        if (*xsink) {
+            return nullptr;
+        }
+
+        ReferenceHolder<QoreHashNode> typed_backend_req(new QoreHashNode(hashdeclSftpOperationRequest, xsink), xsink);
+        typed_backend_req->setKeyValue("path", new QoreStringNode(normalized_path.c_str()), xsink);
+        typed_backend_req->setKeyValue("session_info", getInfo(xsink), xsink);
+        if (typed_req->existsKey("target_path")) {
+            typed_backend_req->setKeyValue("target_path", typed_req->getKeyValue("target_path").refSelf(), xsink);
+        }
+        if (typed_req->existsKey("completion_mode")) {
+            typed_backend_req->setKeyValue("completion_mode", typed_req->getKeyValue("completion_mode").refSelf(), xsink);
+        }
+        if (typed_req->existsKey("metadata")) {
+            typed_backend_req->setKeyValue("metadata", typed_req->getKeyValue("metadata").refSelf(), xsink);
+        }
+        if (*xsink) {
+            return nullptr;
+        }
+
+        ReferenceHolder<QoreHashNode> backend_result(callBackendMethodDirectTyped("completeRetrieve", *typed_backend_req,
+            xsink), xsink);
+        if (*xsink) {
+            return nullptr;
+        }
+
+        const QoreHashNode* transfer_info = backend_result->getKeyValue("transfer_info").get<QoreHashNode>();
+        if (transfer_info) {
+            if (applyTransferInfo(transfer_info, xsink)) {
+                return nullptr;
+            }
+        }
+
+        {
+            std::ostringstream os;
+            os << "SftpSession completeRetrieve path=" << normalized_path;
+            const QoreStringNode* completion_mode
+                = typed_req->getKeyValue("completion_mode").get<QoreStringNode>();
+            if (!completion_mode) {
+                const QoreHashNode* metadata = typed_req->getKeyValue("metadata").get<QoreHashNode>();
+                completion_mode = metadata ? metadata->getKeyValue("mode").get<QoreStringNode>() : nullptr;
+            }
+            if (completion_mode && completion_mode->strlen()) {
+                os << " completion_mode=" << completion_mode->c_str();
+            }
+            log("info", os.str().c_str());
+        }
+
+        return reinterpret_cast<QoreHashNode*>(hashdeclSftpOperationResult->doRuntimeCast(*backend_result, xsink));
+    }
+
+    int applyFactoryResult(const QoreHashNode* result, ExceptionSink* xsink) {
+        if (!result) {
+            return 0;
+        }
+
+        const QoreHashNode* typed_transfer_info = nullptr;
+        ReferenceHolder<QoreHashNode> copied_transfer_info(nullptr, xsink);
+        {
+            std::lock_guard<std::mutex> lock(m);
+
+            if (result->existsKey("root_dir")) {
+                info->setKeyValue("root_dir", result->getKeyValue("root_dir").refSelf(), xsink);
+                if (*xsink) {
+                    return -1;
+                }
+            }
+
+            if (result->existsKey("read_only")) {
+                bool read_only = result->getKeyValue("read_only").getAsBool();
+                if (*xsink) {
+                    xsink->raiseException("SFTPSESSION-FACTORY-ERROR",
+                        "the factory result \"read_only\" key must be a boolean when present");
+                    return -1;
+                }
+                info->setKeyValue("read_only", read_only, xsink);
+                if (*xsink) {
+                    return -1;
+                }
+            }
+
+            if (result->existsKey("session_data")) {
+                info->setKeyValue("session_data", result->getKeyValue("session_data").refSelf(), xsink);
+                if (*xsink) {
+                    return -1;
+                }
+            }
+
+            if (result->existsKey("transfer_info")) {
+                typed_transfer_info = result->getKeyValue("transfer_info").get<QoreHashNode>();
+                if (!typed_transfer_info) {
+                    xsink->raiseException("SFTPSESSION-FACTORY-ERROR",
+                        "the factory result \"transfer_info\" key must be a hash<SftpTransferInfo> when present");
+                    return -1;
+                }
+
+                QoreHashNode* cast_transfer_info = reinterpret_cast<QoreHashNode*>(
+                    hashdeclSftpTransferInfo->doRuntimeCast(typed_transfer_info, xsink));
+                copied_transfer_info = cast_transfer_info;
+                if (*xsink) {
+                    return -1;
+                }
+            }
+        }
+
+        if (copied_transfer_info) {
+            QoreHashNode* old_transfer_info = nullptr;
+            {
+                std::lock_guard<std::mutex> lock(m);
+                old_transfer_info = transfer_info;
+                transfer_info = copied_transfer_info.release();
+            }
+            if (old_transfer_info) {
+                old_transfer_info->deref(xsink);
+            }
+        }
+
+        if (result->existsKey("backend")) {
+            QoreObject* q_backend = result->getKeyValue("backend").get<QoreObject>();
+            if (!q_backend) {
+                xsink->raiseException("SFTPSESSION-FACTORY-ERROR",
+                    "the factory result \"backend\" key must be an object when present");
+                return -1;
+            }
+            setBackend(q_backend, xsink);
+            if (*xsink) {
+                return -1;
+            }
+        }
+
+        log("debug", "SftpSession applied factory result");
+        return *xsink ? -1 : 0;
+    }
+
+    int applyTransferInfo(const QoreHashNode* q_transfer_info, ExceptionSink* xsink) {
+        if (!q_transfer_info) {
+            xsink->raiseException("SFTPSESSION-TRANSFER-ERROR",
+                "transfer info must be a hash<SftpTransferInfo>");
+            return -1;
+        }
+
+        ReferenceHolder<QoreHashNode> typed_transfer_info(reinterpret_cast<QoreHashNode*>(
+            hashdeclSftpTransferInfo->doRuntimeCast(q_transfer_info, xsink)), xsink);
+        if (*xsink) {
+            return -1;
+        }
+
+        QoreHashNode* old_transfer_info = nullptr;
+        {
+            std::lock_guard<std::mutex> lock(m);
+            old_transfer_info = transfer_info;
+            transfer_info = typed_transfer_info.release();
+        }
+        if (old_transfer_info) {
+            old_transfer_info->deref(xsink);
+        }
+
+        log("debug", "SftpSession applied transfer info");
+        return *xsink ? -1 : 0;
+    }
+
+    void clearTransferInfo(ExceptionSink* xsink) {
+        QoreHashNode* old_transfer_info = nullptr;
+        {
+            std::lock_guard<std::mutex> lock(m);
+            old_transfer_info = transfer_info;
+            transfer_info = nullptr;
+        }
+        if (old_transfer_info) {
+            old_transfer_info->deref(xsink);
+        }
+        log("debug", "SftpSession cleared transfer info");
+    }
+
+    void closeIntern() {
+        std::map<std::string, std::unique_ptr<FileHandleState>> current_file_handles;
+        {
+            std::lock_guard<std::mutex> lock(m);
+            dir_handles.clear();
+            current_file_handles.swap(file_handles);
+        }
+
+        for (auto& i : current_file_handles) {
+            if (!i.second) {
+                continue;
+            }
+            ExceptionSink xsink;
+            if (finalizeBackendFileState(*i.second, false, 0, &xsink) && xsink) {
+                const QoreStringNode* err = xsink.getExceptionErr().get<const QoreStringNode>();
+                const QoreStringNode* desc = xsink.getExceptionDesc().get<const QoreStringNode>();
+                std::string msg = "SftpSession backend handle finalization failed during close";
+                if (err || desc) {
+                    msg += ": ";
+                    if (err) {
+                        msg += err->c_str();
+                    }
+                    if (desc) {
+                        if (err) {
+                            msg += ": ";
+                        }
+                        msg += desc->c_str();
+                    }
+                }
+                log("warn", msg.c_str());
+                xsink.clear();
+            }
+        }
+
+        ssh_channel current_channel = nullptr;
+        {
+            std::lock_guard<std::mutex> lock(m);
+            current_channel = channel;
+            channel = nullptr;
+        }
+
+        if (current_channel) {
+            ssh_channel_send_eof(current_channel);
+            ssh_channel_close(current_channel);
+            ssh_channel_free(current_channel);
+            log("info", "SftpSession closed");
+        }
+    }
+
+    QoreHashNode* publishLocalFile(const std::string& source_path, bool move, bool create_parents, ExceptionSink* xsink) {
+        ReferenceHolder<QoreHashNode> current_transfer_info(getTransferInfo(xsink), xsink);
+        if (*xsink) {
+            return nullptr;
+        }
+        if (!current_transfer_info) {
+            xsink->raiseException("SFTPSESSION-TRANSFER-ERROR",
+                "cannot publish a local file without active transfer info");
+            return nullptr;
+        }
+
+        const QoreStringNode* final_path_node = current_transfer_info->getKeyValue("final_path").get<QoreStringNode>();
+        if (!final_path_node || !final_path_node->strlen()) {
+            xsink->raiseException("SFTPSESSION-TRANSFER-ERROR",
+                "active transfer info must include a non-empty final_path");
+            return nullptr;
+        }
+
+        const QoreStringNode* temporary_path_node
+            = current_transfer_info->getKeyValue("temporary_path").get<QoreStringNode>();
+        bool atomic_publish = current_transfer_info->getKeyValue("atomic_publish").getAsBool();
+        if (*xsink) {
+            xsink->raiseException("SFTPSESSION-TRANSFER-ERROR",
+                "active transfer info must include a boolean atomic_publish flag");
+            return nullptr;
+        }
+
+        std::string final_path = final_path_node->c_str();
+        std::string temporary_path = temporary_path_node ? temporary_path_node->c_str() : std::string();
+        std::string staging_path = atomic_publish && !temporary_path.empty() ? temporary_path : final_path;
+
+        if (ssh_sftp_check_fs_access(source_path, move ? QSEC_READ | QSEC_WRITE : QSEC_READ, xsink)) {
+            return nullptr;
+        }
+        if (ssh_sftp_check_fs_access(final_path, QSEC_WRITE, xsink)) {
+            return nullptr;
+        }
+        if (!temporary_path.empty() && ssh_sftp_check_fs_access(temporary_path, QSEC_WRITE, xsink)) {
+            return nullptr;
+        }
+
+        if (create_parents) {
+            if (ssh_sftp_ensure_parent_dirs(staging_path, xsink)) {
+                return nullptr;
+            }
+            if (atomic_publish && staging_path != final_path && ssh_sftp_ensure_parent_dirs(final_path, xsink)) {
+                return nullptr;
+            }
+        }
+
+        if (move) {
+            if (::rename(source_path.c_str(), staging_path.c_str())) {
+                xsink->raiseErrnoException("SFTP-ATOMIC-PUBLISH-ERROR", errno,
+                    "cannot rename local file '%s' to staging path '%s'", source_path.c_str(), staging_path.c_str());
+                return nullptr;
+            }
+        } else if (ssh_sftp_copy_file(source_path, staging_path, xsink)) {
+            return nullptr;
+        }
+
+        if (atomic_publish && staging_path != final_path) {
+            if (qore_check_cancel(xsink, "sftp atomic publish")) {
+                return nullptr;
+            }
+
+            if (::rename(staging_path.c_str(), final_path.c_str())) {
+                xsink->raiseErrnoException("SFTP-ATOMIC-PUBLISH-ERROR", errno,
+                    "cannot rename staging file '%s' to final path '%s'", staging_path.c_str(), final_path.c_str());
+                return nullptr;
+            }
+        }
+
+        ReferenceHolder<QoreHashNode> updated_transfer_info(reinterpret_cast<QoreHashNode*>(
+            hashdeclSftpTransferInfo->doRuntimeCast(*current_transfer_info, xsink)), xsink);
+        if (*xsink) {
+            return nullptr;
+        }
+
+        updated_transfer_info->setKeyValue("completed", true, xsink);
+        if (*xsink) {
+            return nullptr;
+        }
+
+        if (applyTransferInfo(*updated_transfer_info, xsink)) {
+            return nullptr;
+        }
+
+        std::string action = atomic_publish ? "published local file atomically" : "published local file";
+        log("info", action.c_str());
+        return updated_transfer_info.release();
+    }
+
+    QoreHashNode* retrieveLocalFile(const std::string& target_path, bool move, bool create_parents, ExceptionSink* xsink) {
+        ReferenceHolder<QoreHashNode> current_transfer_info(getTransferInfo(xsink), xsink);
+        if (*xsink) {
+            return nullptr;
+        }
+        if (!current_transfer_info) {
+            xsink->raiseException("SFTPSESSION-TRANSFER-ERROR",
+                "cannot retrieve a local file without active transfer info");
+            return nullptr;
+        }
+
+        const QoreStringNode* final_path_node = current_transfer_info->getKeyValue("final_path").get<QoreStringNode>();
+        const QoreStringNode* temporary_path_node
+            = current_transfer_info->getKeyValue("temporary_path").get<QoreStringNode>();
+        const QoreStringNode* path_node = current_transfer_info->getKeyValue("path").get<QoreStringNode>();
+
+        std::string source_path;
+        if (final_path_node && final_path_node->strlen()) {
+            source_path = final_path_node->c_str();
+        } else if (temporary_path_node && temporary_path_node->strlen()) {
+            source_path = temporary_path_node->c_str();
+        } else if (path_node && path_node->strlen()) {
+            source_path = path_node->c_str();
+        } else {
+            xsink->raiseException("SFTPSESSION-TRANSFER-ERROR",
+                "active transfer info must include a readable source path");
+            return nullptr;
+        }
+
+        if (ssh_sftp_check_fs_access(source_path, move ? QSEC_READ | QSEC_WRITE : QSEC_READ, xsink)
+                || ssh_sftp_check_fs_access(target_path, QSEC_WRITE, xsink)) {
+            return nullptr;
+        }
+
+        if (create_parents && ssh_sftp_ensure_parent_dirs(target_path, xsink)) {
+            return nullptr;
+        }
+
+        if (move) {
+            if (::rename(source_path.c_str(), target_path.c_str())) {
+                xsink->raiseErrnoException("SFTPSESSION-FILESYSTEM-ERROR", errno,
+                    "cannot rename retrieved file '%s' to local path '%s'", source_path.c_str(), target_path.c_str());
+                return nullptr;
+            }
+        } else if (ssh_sftp_copy_file(source_path, target_path, xsink)) {
+            return nullptr;
+        }
+
+        ReferenceHolder<QoreHashNode> updated_transfer_info(reinterpret_cast<QoreHashNode*>(
+            hashdeclSftpTransferInfo->doRuntimeCast(*current_transfer_info, xsink)), xsink);
+        if (*xsink) {
+            return nullptr;
+        }
+
+        updated_transfer_info->setKeyValue("completed", true, xsink);
+        if (*xsink) {
+            return nullptr;
+        }
+
+        if (applyTransferInfo(*updated_transfer_info, xsink)) {
+            return nullptr;
+        }
+
+        std::string action = move ? "retrieved local file by rename" : "retrieved local file";
+        log("info", action.c_str());
+        return updated_transfer_info.release();
+    }
+
+private:
+    int readChannelExact(ssh_channel current_channel, void* ptr, size_t size, int timeout_ms, ExceptionSink* xsink,
+            const char* what) const {
+        size_t offset = 0;
+        while (offset < size) {
+            if (qore_check_cancel(xsink, "sftp protocol read")) {
+                return -1;
+            }
+
+            int rc = ssh_channel_read_timeout(current_channel, reinterpret_cast<char*>(ptr) + offset,
+                size - offset, 0, timeout_ms ? timeout_ms : -1);
+            if (rc == SSH_ERROR) {
+                xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR", "cannot read %s: %s",
+                    what ? what : "SFTP data", ssh_get_error(current_channel));
+                return -1;
+            }
+            if (!rc) {
+                return 1;
+            }
+            offset += rc;
+        }
+
+        return 0;
+    }
+
+    int writeChannelAll(const std::string& packet, ExceptionSink* xsink, const char* what) const {
+        ssh_channel current_channel = nullptr;
+        {
+            std::lock_guard<std::mutex> lock(m);
+            current_channel = channel;
+        }
+        if (!current_channel) {
+            xsink->raiseException("SFTPSESSION-STATE-ERROR", "cannot write %s to a closed SFTP session",
+                what ? what : "SFTP data");
+            return -1;
+        }
+
+        size_t offset = 0;
+        while (offset < packet.size()) {
+            if (qore_check_cancel(xsink, "sftp protocol write")) {
+                return -1;
+            }
+
+            int rc = ssh_channel_write(current_channel, packet.data() + offset, packet.size() - offset);
+            if (rc == SSH_ERROR) {
+                xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR", "cannot write %s: %s",
+                    what ? what : "SFTP data", ssh_get_error(current_channel));
+                return -1;
+            }
+            offset += rc;
+        }
+
+        return 0;
+    }
+
+    void log(const char* method, const char* msg_text) const {
+        ReferenceHolder<QoreObject> logger_holder(getLogger(), nullptr);
+        if (!logger_holder) {
+            return;
+        }
+        ssh_sftp_log_message(*logger_holder, method, msg_text ? std::string(msg_text) : std::string());
+    }
+
+    QoreHashNode* info;
+    QoreHashNode* transfer_info;
+    mutable std::mutex m;
+    QoreObject* logger;
+    QoreObject* backend;
+    ssh_channel channel;
+    std::map<std::string, std::unique_ptr<DirectoryHandleState>> dir_handles;
+    std::map<std::string, std::unique_ptr<FileHandleState>> file_handles;
+    uint64_t next_dir_handle_id;
+    uint64_t next_file_handle_id;
+};
+
+//! SFTP-session wrapper for server-side subsystem sessions
+/** This class wraps structured SFTP session metadata and the accepted channel
+    for live server-side SFTP subsystem handling.
+
+    @since ssh 0.1
+*/
+qclass SftpSession [arg=SftpSessionPriv* priv; ns=Qore::Ssh; dom=NETWORK,FILESYSTEM; flags=final];
+
+//! Creates an SFTP session from typed metadata
+/** @param info the typed `SftpSessionInfo` hash for the session
+ */
+SftpSession::constructor(hash<SftpSessionInfo> info) {
+    self->setPrivate(CID_SFTPSESSION, new SftpSessionPriv(info));
+}
+
+//! Throws an exception; SftpSession objects cannot be copied
+/** @throw SFTPSESSION-COPY-ERROR copying SftpSession objects is not supported
+ */
+SftpSession::copy() {
+    xsink->raiseException("SFTPSESSION-COPY-ERROR", "copying SftpSession objects is not supported");
+}
+
+//! Destroys the SFTP session object
+/** Releases private resources held by the SFTP session.
+ */
+SftpSession::destructor() {
+    priv->deref();
+}
+
+//! Returns the typed SFTP session info hash
+/** @return the wrapped `SftpSessionInfo` typed hash
+ */
+hash<SftpSessionInfo> SftpSession::getInfo() [flags=RET_VALUE_ONLY] {
+    return priv->getInfo(xsink);
+}
+
+//! Returns the current transfer metadata if available
+/** @return the wrapped `SftpTransferInfo` typed hash or `NOTHING`
+ */
+*hash<SftpTransferInfo> SftpSession::getTransferInfo() [flags=RET_VALUE_ONLY] {
+    return priv->getTransferInfo(xsink);
+}
+
+//! Reads the next raw SFTP protocol message from the subsystem channel
+/** Reads a single SFTP packet from the live subsystem channel and returns a
+    typed summary of the decoded packet header fields together with the raw
+    payload bytes after the packet type byte.
+
+    @param timeout_ms the maximum time in milliseconds to wait for packet data;
+    0 means wait indefinitely
+    @return the decoded `SftpProtocolMessage` or `NOTHING` on EOF
+ */
+*hash<SftpProtocolMessage> SftpSession::waitProtocolMessage(int timeout_ms = 0) {
+    return priv->waitProtocolMessage(timeout_ms, xsink);
+}
+
+//! Sets the logger object used by the SFTP session
+/** @param logger an optional logger object
+ */
+nothing SftpSession::setLogger(*object logger) {
+    priv->setLogger(logger, xsink);
+}
+
+//! Sets the backend object used by the SFTP session
+/** The backend object represents virtualized path and file semantics for this
+    session. The recommended backend contract is to implement typed backend
+    verb overloads using `SftpPathRequest`, `SftpOpenRequest`,
+    `SftpRenameRequest`, `SftpSubmissionRequest`, and
+    `SftpOperationRequest` together with typed results such as
+    `SftpPathInfo`, `SftpListResult`, `SftpOpenResult`, and
+    `SftpOperationResult`. Loose untyped backend methods remain supported as a
+    compatibility path, but typed backend methods are the intended public UX.
+
+    @param backend an optional backend object implementing at least
+    `stat()` and `list()`
+ */
+nothing SftpSession::setBackend(*object backend) {
+    priv->setBackend(backend, xsink);
+}
+
+//! Applies typed transfer metadata to the live SFTP session
+/** @param transfer_info the current transfer metadata
+ */
+nothing SftpSession::applyTransferInfo(hash<SftpTransferInfo> transfer_info) {
+    priv->applyTransferInfo(transfer_info, xsink);
+}
+
+//! Clears the current transfer metadata from the live SFTP session
+/** Removes any active transfer metadata from the session object.
+ */
+nothing SftpSession::clearTransferInfo() {
+    priv->clearTransferInfo(xsink);
+}
+
+//! Sends an `SSH_FXP_VERSION` reply on the live subsystem channel
+/** @param version the server-side SFTP protocol version to advertise
+ */
+nothing SftpSession::sendVersion(int version = 3) {
+    priv->sendVersion(version, xsink);
+}
+
+//! Sends an `SSH_FXP_STATUS` reply on the live subsystem channel
+/** @param request_id the SFTP request id being answered
+    @param status_code the numeric SFTP status code
+    @param message an optional human-readable status message
+    @param language an optional RFC 3066 language tag
+ */
+nothing SftpSession::sendStatus(int request_id, int status_code, string message = "", string language = "") {
+    priv->sendStatus(request_id, status_code, message->c_str(), language->c_str(), xsink);
+}
+
+//! Reads and processes the next SFTP request on the live subsystem channel
+/** Handles the initial `SSH_FXP_INIT` handshake by replying with
+    `SSH_FXP_VERSION`, handles `SSH_FXP_REALPATH` using the module's virtual
+    path normalization rules, handles rooted `SSH_FXP_STAT` / `SSH_FXP_LSTAT`
+    lookups with `SSH_FXP_ATTRS` replies, and replies to unsupported requests
+    with `SSH_FXP_STATUS` / `SSH_FX_OP_UNSUPPORTED`.
+
+    @param timeout_ms the maximum time in milliseconds to wait for packet data;
+    0 means wait indefinitely
+    @return the decoded `SftpProtocolMessage` that was handled or
+    `NOTHING` on EOF
+ */
+*hash<SftpProtocolMessage> SftpSession::processNextRequest(int timeout_ms = 0) {
+    return priv->processNextRequest(timeout_ms, xsink);
+}
+
+//! Submits content through the backend atomic-exchange helper
+/** Calls backend `submit()` with a typed request. The request may provide
+    either in-memory binary `data` or a local `source_path`; when `source_path`
+    is provided, the helper reads the file and includes the payload in the
+    backend request.
+
+    @param req the typed `SftpSubmissionRequest` describing the submission
+    @return the typed `SftpOperationResult` returned by the backend
+ */
+hash<SftpOperationResult> SftpSession::submit(hash<SftpSubmissionRequest> req) {
+    return priv->submit(req, xsink);
+}
+
+//! Submits in-memory content through the backend atomic-exchange helper
+/** Convenience overload for typed callers that already have a complete
+    `SftpSubmissionRequest` prepared.
+
+    @param req the typed `SftpSubmissionRequest`; `data` must be present
+    @return the typed `SftpOperationResult` returned by the backend
+ */
+hash<SftpOperationResult> SftpSession::submitData(hash<SftpSubmissionRequest> req) {
+    return priv->submit(req, xsink);
+}
+
+//! Submits in-memory content through the backend atomic-exchange helper
+/** Builds an `SftpSubmissionRequest` from a path and binary payload and then
+    calls `submit(hash<SftpSubmissionRequest>)`.
+
+    @param path the virtual destination path
+    @param data the payload to submit
+    @param metadata optional backend metadata
+    @param checksum optional caller-provided checksum
+    @return the typed `SftpOperationResult` returned by the backend
+
+    @par Example:
+    @code{.qore}
+    hash<SftpOperationResult> result = sftp.submitData("/exchange/inbound.dat", binary("payload\n"));
+    @endcode
+ */
+hash<SftpOperationResult> SftpSession::submitData(string path, binary data, *hash<auto> metadata,
+        *string checksum) {
+    ReferenceHolder<QoreHashNode> req(new QoreHashNode(autoTypeInfo), xsink);
+    req->setKeyValue("path", path->refSelf(), xsink);
+    req->setKeyValue("data", data->refSelf(), xsink);
+    if (metadata) {
+        req->setKeyValue("metadata", metadata->refSelf(), xsink);
+    }
+    if (checksum) {
+        req->setKeyValue("checksum", checksum->refSelf(), xsink);
+    }
+    return priv->submit(req.operator->(), xsink);
+}
+
+//! Submits a local file through the backend atomic-exchange helper
+/** Convenience overload for typed callers that already have a complete
+    `SftpSubmissionRequest` prepared.
+
+    @param req the typed `SftpSubmissionRequest`; `source_path` must be present
+    @return the typed `SftpOperationResult` returned by the backend
+ */
+hash<SftpOperationResult> SftpSession::submitLocalFile(hash<SftpSubmissionRequest> req) {
+    return priv->submit(req, xsink);
+}
+
+//! Submits a local file through the backend atomic-exchange helper
+/** Builds an `SftpSubmissionRequest` using a local `source_path` and then
+    calls `submit(hash<SftpSubmissionRequest>)`.
+
+    @param path the virtual destination path
+    @param source_path the local source file to submit
+    @param move if set to `True`, the backend receives the intent that the
+    local file may be moved rather than copied
+    @param create_parents if set to `True`, create parent directories when
+    applicable in backend-controlled local helpers
+    @param metadata optional backend metadata
+    @param checksum optional caller-provided checksum
+    @return the typed `SftpOperationResult` returned by the backend
+ */
+hash<SftpOperationResult> SftpSession::submitLocalFile(string path, string source_path, bool move = False,
+        bool create_parents = True, *hash<auto> metadata, *string checksum) {
+    ReferenceHolder<QoreHashNode> req(new QoreHashNode(autoTypeInfo), xsink);
+    req->setKeyValue("path", path->refSelf(), xsink);
+    req->setKeyValue("source_path", source_path->refSelf(), xsink);
+    req->setKeyValue("move", move, xsink);
+    req->setKeyValue("create_parents", create_parents, xsink);
+    if (metadata) {
+        req->setKeyValue("metadata", metadata->refSelf(), xsink);
+    }
+    if (checksum) {
+        req->setKeyValue("checksum", checksum->refSelf(), xsink);
+    }
+    return priv->submit(req.operator->(), xsink);
+}
+
+//! Lists backend-managed retrievable objects for atomic exchange
+/** Calls backend `listAvailable()` with a typed request.
+
+    @param req the typed `SftpPathRequest` describing the listing scope
+    @return the typed `SftpListResult` returned by the backend
+ */
+hash<SftpListResult> SftpSession::listAvailable(hash<SftpPathRequest> req) {
+    return priv->listAvailable(req, xsink);
+}
+
+//! Retrieves backend-managed content for atomic exchange
+/** Calls backend `retrieve()` with a typed request.
+
+    @param req the typed `SftpOpenRequest` describing the retrieval request
+    @return the typed `SftpOpenResult` returned by the backend
+ */
+hash<SftpOpenResult> SftpSession::retrieve(hash<SftpOpenRequest> req) {
+    return priv->retrieve(req, xsink);
+}
+
+//! Retrieves backend-managed content as binary data
+/** Convenience overload for typed callers that already have a complete
+    `SftpOpenRequest` prepared.
+
+    @param req the typed `SftpOpenRequest`
+    @return the retrieved binary payload
+ */
+binary SftpSession::retrieveData(hash<SftpOpenRequest> req) {
+    ReferenceHolder<QoreHashNode> result(priv->retrieve(req, xsink), xsink);
+    const BinaryNode* data_bin = result ? result->getKeyValue("data").get<BinaryNode>() : nullptr;
+    if (!data_bin) {
+        const QoreStringNode* path = req->getKeyValue("path").get<QoreStringNode>();
+        xsink->raiseException("SFTPSESSION-BACKEND-ERROR",
+            "retrieveData() requires backend retrieve() to return immediate binary data for path '%s'",
+            path ? path->c_str() : "<unknown>");
+        return QoreValue();
+    }
+    return data_bin->refSelf();
+}
+
+//! Retrieves backend-managed content as binary data
+/** Builds an `SftpOpenRequest` from a virtual path and returns the payload
+    from the backend result. This convenience method is intended for simple
+    retrieval flows where the backend returns immediate binary content.
+
+    @param path the virtual source path
+    @param metadata optional backend metadata
+    @param offset optional byte offset
+    @param length optional maximum length; a negative value means backend default
+    @return the retrieved binary payload
+ */
+binary SftpSession::retrieveData(string path, *hash<auto> metadata, int offset = 0, int length = -1) {
+    ReferenceHolder<QoreHashNode> req(new QoreHashNode(autoTypeInfo), xsink);
+    req->setKeyValue("path", path->refSelf(), xsink);
+    req->setKeyValue("offset", static_cast<int64>(offset), xsink);
+    if (metadata) {
+        req->setKeyValue("metadata", metadata->refSelf(), xsink);
+    }
+    if (length >= 0) {
+        req->setKeyValue("length", static_cast<int64>(length), xsink);
+    }
+    ReferenceHolder<QoreHashNode> result(priv->retrieve(req.operator->(), xsink), xsink);
+    const BinaryNode* data_bin = result ? result->getKeyValue("data").get<BinaryNode>() : nullptr;
+    if (!data_bin) {
+        xsink->raiseException("SFTPSESSION-BACKEND-ERROR",
+            "retrieveData() requires backend retrieve() to return immediate binary data for path '%s'",
+            path->c_str());
+        return QoreValue();
+    }
+    return data_bin->refSelf();
+}
+
+//! Finalizes an atomic retrieval workflow
+/** Calls backend `completeRetrieve()` with a typed request so the backend can
+    claim, archive, or delete the retrieved object.
+
+    @param req the typed `SftpOperationRequest` describing the completion action
+    @return the typed `SftpOperationResult` returned by the backend
+ */
+hash<SftpOperationResult> SftpSession::completeRetrieve(hash<SftpOperationRequest> req) {
+    return priv->completeRetrieve(req, xsink);
+}
+
+//! Finalizes a retrieval with an explicit completion mode
+/** Convenience overload for typed callers that already have a
+    `SftpOperationRequest` prepared.
+
+    @param req the typed `SftpOperationRequest`
+    @param completion_mode the backend completion mode
+    @return the typed `SftpOperationResult` returned by the backend
+ */
+hash<SftpOperationResult> SftpSession::completeRetrieveMode(hash<SftpOperationRequest> req, string completion_mode) {
+    ReferenceHolder<QoreHashNode> complete_metadata(
+        req->existsKey("metadata") && req->getKeyValue("metadata").getType() != NT_NOTHING
+            ? req->getKeyValue("metadata").get<QoreHashNode>()->copy()
+            : new QoreHashNode(autoTypeInfo), xsink);
+
+    ReferenceHolder<QoreHashNode> complete_req(req->copy(), xsink);
+    if (!complete_req->existsKey("operation") || complete_req->getKeyValue("operation").getType() == NT_NOTHING) {
+        complete_req->setKeyValue("operation", new QoreStringNode("complete-retrieve"), xsink);
+    }
+    complete_req->setKeyValue("completion_mode", completion_mode->refSelf(), xsink);
+    complete_req->setKeyValue("metadata", complete_metadata.release(), xsink);
+    return priv->completeRetrieve(complete_req.operator->(), xsink);
+}
+
+//! Finalizes a retrieval with an explicit completion mode
+/** Builds an `SftpOperationRequest` for `completeRetrieve(hash<SftpOperationRequest>)`
+    using a simple completion mode name such as `delete`, `claim`, or
+    `archive`.
+
+    @param path the virtual source path
+    @param completion_mode the backend completion mode
+    @param target_path an optional local target path associated with the retrieval
+    @param metadata optional backend metadata
+    @return the typed `SftpOperationResult` returned by the backend
+ */
+hash<SftpOperationResult> SftpSession::completeRetrieveMode(string path, string completion_mode,
+        *string target_path, *hash<auto> metadata) {
+    ReferenceHolder<QoreHashNode> complete_metadata(metadata ? metadata->copy() : new QoreHashNode(autoTypeInfo),
+        xsink);
+
+    ReferenceHolder<QoreHashNode> complete_req(new QoreHashNode(autoTypeInfo), xsink);
+    complete_req->setKeyValue("path", path->refSelf(), xsink);
+    complete_req->setKeyValue("operation", new QoreStringNode("complete-retrieve"), xsink);
+    complete_req->setKeyValue("completion_mode", completion_mode->refSelf(), xsink);
+    if (target_path) {
+        complete_req->setKeyValue("target_path", target_path->refSelf(), xsink);
+    }
+    complete_req->setKeyValue("metadata", complete_metadata.release(), xsink);
+    return priv->completeRetrieve(complete_req.operator->(), xsink);
+}
+
+//! Finalizes a retrieval with delete-on-success semantics
+/** Convenience wrapper for `completeRetrieveMode(path, "delete", ...)`.
+ */
+hash<SftpOperationResult> SftpSession::completeRetrieveDelete(hash<SftpOperationRequest> req) {
+    ReferenceHolder<QoreStringNode> completion_mode(new QoreStringNode("delete"), xsink);
+    ReferenceHolder<QoreHashNode> complete_metadata(
+        req->existsKey("metadata") && req->getKeyValue("metadata").getType() != NT_NOTHING
+            ? req->getKeyValue("metadata").get<QoreHashNode>()->copy()
+            : new QoreHashNode(autoTypeInfo), xsink);
+
+    ReferenceHolder<QoreHashNode> complete_req(req->copy(), xsink);
+    if (!complete_req->existsKey("operation") || complete_req->getKeyValue("operation").getType() == NT_NOTHING) {
+        complete_req->setKeyValue("operation", new QoreStringNode("complete-retrieve"), xsink);
+    }
+    complete_req->setKeyValue("completion_mode", completion_mode.release(), xsink);
+    complete_req->setKeyValue("metadata", complete_metadata.release(), xsink);
+    return priv->completeRetrieve(complete_req.operator->(), xsink);
+}
+
+//! Finalizes a retrieval with delete-on-success semantics
+/** Convenience wrapper for `completeRetrieveMode(path, "delete", ...)`.
+ */
+hash<SftpOperationResult> SftpSession::completeRetrieveDelete(string path, *string target_path,
+        *hash<auto> metadata) {
+    ReferenceHolder<QoreStringNode> completion_mode(new QoreStringNode("delete"), xsink);
+    ReferenceHolder<QoreHashNode> complete_metadata(metadata ? metadata->copy() : new QoreHashNode(autoTypeInfo),
+        xsink);
+
+    ReferenceHolder<QoreHashNode> complete_req(new QoreHashNode(autoTypeInfo), xsink);
+    complete_req->setKeyValue("path", path->refSelf(), xsink);
+    complete_req->setKeyValue("operation", new QoreStringNode("complete-retrieve"), xsink);
+    complete_req->setKeyValue("completion_mode", completion_mode.release(), xsink);
+    if (target_path) {
+        complete_req->setKeyValue("target_path", target_path->refSelf(), xsink);
+    }
+    complete_req->setKeyValue("metadata", complete_metadata.release(), xsink);
+    return priv->completeRetrieve(complete_req.operator->(), xsink);
+}
+
+//! Finalizes a retrieval with claim semantics
+/** Convenience wrapper for `completeRetrieveMode(path, "claim", ...)`.
+ */
+hash<SftpOperationResult> SftpSession::completeRetrieveClaim(hash<SftpOperationRequest> req) {
+    ReferenceHolder<QoreStringNode> completion_mode(new QoreStringNode("claim"), xsink);
+    ReferenceHolder<QoreHashNode> complete_metadata(
+        req->existsKey("metadata") && req->getKeyValue("metadata").getType() != NT_NOTHING
+            ? req->getKeyValue("metadata").get<QoreHashNode>()->copy()
+            : new QoreHashNode(autoTypeInfo), xsink);
+
+    ReferenceHolder<QoreHashNode> complete_req(req->copy(), xsink);
+    if (!complete_req->existsKey("operation") || complete_req->getKeyValue("operation").getType() == NT_NOTHING) {
+        complete_req->setKeyValue("operation", new QoreStringNode("complete-retrieve"), xsink);
+    }
+    complete_req->setKeyValue("completion_mode", completion_mode.release(), xsink);
+    complete_req->setKeyValue("metadata", complete_metadata.release(), xsink);
+    return priv->completeRetrieve(complete_req.operator->(), xsink);
+}
+
+//! Finalizes a retrieval with claim semantics
+/** Convenience wrapper for `completeRetrieveMode(path, "claim", ...)`.
+ */
+hash<SftpOperationResult> SftpSession::completeRetrieveClaim(string path, *string target_path,
+        *hash<auto> metadata) {
+    ReferenceHolder<QoreStringNode> completion_mode(new QoreStringNode("claim"), xsink);
+    ReferenceHolder<QoreHashNode> complete_metadata(metadata ? metadata->copy() : new QoreHashNode(autoTypeInfo),
+        xsink);
+
+    ReferenceHolder<QoreHashNode> complete_req(new QoreHashNode(autoTypeInfo), xsink);
+    complete_req->setKeyValue("path", path->refSelf(), xsink);
+    complete_req->setKeyValue("operation", new QoreStringNode("complete-retrieve"), xsink);
+    complete_req->setKeyValue("completion_mode", completion_mode.release(), xsink);
+    if (target_path) {
+        complete_req->setKeyValue("target_path", target_path->refSelf(), xsink);
+    }
+    complete_req->setKeyValue("metadata", complete_metadata.release(), xsink);
+    return priv->completeRetrieve(complete_req.operator->(), xsink);
+}
+
+//! Finalizes a retrieval with archive semantics
+/** Convenience wrapper for `completeRetrieveMode(path, "archive", ...)`.
+ */
+hash<SftpOperationResult> SftpSession::completeRetrieveArchive(hash<SftpOperationRequest> req) {
+    ReferenceHolder<QoreStringNode> completion_mode(new QoreStringNode("archive"), xsink);
+    ReferenceHolder<QoreHashNode> complete_metadata(
+        req->existsKey("metadata") && req->getKeyValue("metadata").getType() != NT_NOTHING
+            ? req->getKeyValue("metadata").get<QoreHashNode>()->copy()
+            : new QoreHashNode(autoTypeInfo), xsink);
+
+    ReferenceHolder<QoreHashNode> complete_req(req->copy(), xsink);
+    if (!complete_req->existsKey("operation") || complete_req->getKeyValue("operation").getType() == NT_NOTHING) {
+        complete_req->setKeyValue("operation", new QoreStringNode("complete-retrieve"), xsink);
+    }
+    complete_req->setKeyValue("completion_mode", completion_mode.release(), xsink);
+    complete_req->setKeyValue("metadata", complete_metadata.release(), xsink);
+    return priv->completeRetrieve(complete_req.operator->(), xsink);
+}
+
+//! Finalizes a retrieval with archive semantics
+/** Convenience wrapper for `completeRetrieveMode(path, "archive", ...)`.
+ */
+hash<SftpOperationResult> SftpSession::completeRetrieveArchive(string path, *string target_path,
+        *hash<auto> metadata) {
+    ReferenceHolder<QoreStringNode> completion_mode(new QoreStringNode("archive"), xsink);
+    ReferenceHolder<QoreHashNode> complete_metadata(metadata ? metadata->copy() : new QoreHashNode(autoTypeInfo),
+        xsink);
+
+    ReferenceHolder<QoreHashNode> complete_req(new QoreHashNode(autoTypeInfo), xsink);
+    complete_req->setKeyValue("path", path->refSelf(), xsink);
+    complete_req->setKeyValue("operation", new QoreStringNode("complete-retrieve"), xsink);
+    complete_req->setKeyValue("completion_mode", completion_mode.release(), xsink);
+    if (target_path) {
+        complete_req->setKeyValue("target_path", target_path->refSelf(), xsink);
+    }
+    complete_req->setKeyValue("metadata", complete_metadata.release(), xsink);
+    return priv->completeRetrieve(complete_req.operator->(), xsink);
+}
+
+//! Retrieves backend-managed content to a local file
+/** Retrieves immediate binary content through the backend atomic-exchange
+    helper, writes it to a local target file, and optionally calls
+    `completeRetrieve(hash<SftpOperationRequest>)` to finalize the retrieval
+    with a completion mode such as `delete`, `claim`, or `archive`.
+
+    @param path the virtual source path
+    @param target_path the local destination file
+    @param completion_mode optional backend completion mode
+    @param metadata optional backend metadata
+    @param create_parents if set to `True`, creates target parent directories
+    @return the typed `SftpOperationResult` describing the final retrieval state
+ */
+hash<SftpOperationResult> SftpSession::retrieveToLocalFile(string path, string target_path,
+        *string completion_mode, *hash<auto> metadata, bool create_parents = True) {
+    ReferenceHolder<QoreHashNode> req(new QoreHashNode(autoTypeInfo), xsink);
+    req->setKeyValue("path", path->refSelf(), xsink);
+    if (metadata) {
+        req->setKeyValue("metadata", metadata->refSelf(), xsink);
+    }
+
+    ReferenceHolder<QoreHashNode> result(priv->retrieve(req.operator->(), xsink), xsink);
+    const BinaryNode* data_bin = result ? result->getKeyValue("data").get<BinaryNode>() : nullptr;
+    if (!data_bin) {
+        xsink->raiseException("SFTPSESSION-BACKEND-ERROR",
+            "retrieveToLocalFile() requires backend retrieve() to return immediate binary data for path '%s'",
+            path->c_str());
+        return QoreValue();
+    }
+
+    if (ssh_sftp_write_binary_file(target_path->c_str(), *data_bin, create_parents, xsink)) {
+        return QoreValue();
+    }
+
+    ReferenceHolder<QoreHashNode> final_result(new QoreHashNode(autoTypeInfo), xsink);
+    final_result->setKeyValue("path", path->refSelf(), xsink);
+    final_result->setKeyValue("exists", true, xsink);
+    final_result->setKeyValue("completed", false, xsink);
+
+    if (!completion_mode) {
+        const QoreHashNode* transfer_info = result->getKeyValue("transfer_info").get<QoreHashNode>();
+        if (transfer_info) {
+            final_result->setKeyValue("transfer_info", transfer_info->refSelf(), xsink);
+        }
+        return final_result.release();
+    }
+
+    ReferenceHolder<QoreHashNode> complete_metadata(metadata ? metadata->copy() : new QoreHashNode(autoTypeInfo),
+        xsink);
+
+    ReferenceHolder<QoreHashNode> complete_req(new QoreHashNode(autoTypeInfo), xsink);
+    complete_req->setKeyValue("path", path->refSelf(), xsink);
+    complete_req->setKeyValue("operation", new QoreStringNode("complete-retrieve"), xsink);
+    complete_req->setKeyValue("completion_mode", completion_mode->refSelf(), xsink);
+    complete_req->setKeyValue("target_path", target_path->refSelf(), xsink);
+    complete_req->setKeyValue("metadata", complete_metadata.release(), xsink);
+    return priv->completeRetrieve(complete_req.operator->(), xsink);
+}
+
+//! Retrieves backend-managed content to a local file
+/** Convenience overload for typed callers that already have a complete
+    `SftpOpenRequest` prepared.
+
+    @param req the typed `SftpOpenRequest`
+    @param target_path the local destination file
+    @param completion_mode optional backend completion mode
+    @param create_parents if set to `True`, creates target parent directories
+    @return the typed `SftpOperationResult` describing the final retrieval state
+ */
+hash<SftpOperationResult> SftpSession::retrieveToLocalFile(hash<SftpOpenRequest> req, string target_path,
+        *string completion_mode, bool create_parents = True) {
+    ReferenceHolder<QoreHashNode> result(priv->retrieve(req, xsink), xsink);
+    const BinaryNode* data_bin = result ? result->getKeyValue("data").get<BinaryNode>() : nullptr;
+    const QoreStringNode* path = req->getKeyValue("path").get<QoreStringNode>();
+    if (!data_bin) {
+        xsink->raiseException("SFTPSESSION-BACKEND-ERROR",
+            "retrieveToLocalFile() requires backend retrieve() to return immediate binary data for path '%s'",
+            path ? path->c_str() : "<unknown>");
+        return QoreValue();
+    }
+
+    if (ssh_sftp_write_binary_file(target_path->c_str(), *data_bin, create_parents, xsink)) {
+        return QoreValue();
+    }
+
+    ReferenceHolder<QoreHashNode> final_result(new QoreHashNode(autoTypeInfo), xsink);
+    final_result->setKeyValue("path", path ? path->refSelf() : new QoreStringNode(""), xsink);
+    final_result->setKeyValue("exists", true, xsink);
+    final_result->setKeyValue("completed", false, xsink);
+
+    if (!completion_mode) {
+        const QoreHashNode* transfer_info = result->getKeyValue("transfer_info").get<QoreHashNode>();
+        if (transfer_info) {
+            final_result->setKeyValue("transfer_info", transfer_info->refSelf(), xsink);
+        }
+        return final_result.release();
+    }
+
+    ReferenceHolder<QoreHashNode> complete_metadata(
+        req->existsKey("metadata") && req->getKeyValue("metadata").getType() != NT_NOTHING
+            ? req->getKeyValue("metadata").get<QoreHashNode>()->copy()
+            : new QoreHashNode(autoTypeInfo), xsink);
+
+    ReferenceHolder<QoreHashNode> complete_req(new QoreHashNode(autoTypeInfo), xsink);
+    complete_req->setKeyValue("path", path ? path->refSelf() : new QoreStringNode(""), xsink);
+    complete_req->setKeyValue("operation", new QoreStringNode("complete-retrieve"), xsink);
+    complete_req->setKeyValue("completion_mode", completion_mode->refSelf(), xsink);
+    complete_req->setKeyValue("target_path", target_path->refSelf(), xsink);
+    complete_req->setKeyValue("metadata", complete_metadata.release(), xsink);
+    return priv->completeRetrieve(complete_req.operator->(), xsink);
+}
+
+//! Publishes a local staged file through the active transfer plan
+/** Uses the current `SftpTransferInfo` to copy or rename a local file into
+    the planned final destination. When @c atomic_publish is set and a
+    temporary path is present, the file is first staged to the temporary path
+    and then renamed into place.
+
+    @param source_path the local staged file to publish
+    @param move if set to `True`, renames the source instead of copying it
+    @param create_parents if set to `True`, creates parent directories as needed
+    @return the updated `SftpTransferInfo` with @c completed set to `True`
+
+    @par Example:
+    @code{.qore}
+    hash<SftpTransferInfo> info = sftp.publishLocalFile("/tmp/payload.dat", False, True);
+    @endcode
+ */
+hash<SftpTransferInfo> SftpSession::publishLocalFile(string source_path, bool move = False,
+        bool create_parents = True) {
+    return priv->publishLocalFile(source_path->c_str(), move, create_parents, xsink);
+}
+
+//! Retrieves a planned file to a local destination
+/** Uses the current `SftpTransferInfo` to copy or rename a planned server
+    file to a local destination path. This is intended for controlled outbound
+    retrieval or claim-style handoff workflows.
+
+    @param target_path the local destination path
+    @param move if set to `True`, renames the source into place instead of copying it
+    @param create_parents if set to `True`, creates parent directories as needed
+    @return the updated `SftpTransferInfo` with @c completed set to `True`
+
+    @par Example:
+    @code{.qore}
+    hash<SftpTransferInfo> info = sftp.retrieveLocalFile("/tmp/outbound/payload.dat", False, True);
+    @endcode
+ */
+hash<SftpTransferInfo> SftpSession::retrieveLocalFile(string target_path, bool move = False,
+        bool create_parents = True) {
+    return priv->retrieveLocalFile(target_path->c_str(), move, create_parents, xsink);
+}
+
+//! Returns the configured logger object
+/** @return the configured logger object or `NOTHING`
+ */
+*object SftpSession::getLogger() [flags=RET_VALUE_ONLY] {
+    return priv->getLogger();
+}
+
+//! Returns the configured backend object
+/** @return the configured backend object or `NOTHING`
+ */
+*object SftpSession::getBackend() [flags=RET_VALUE_ONLY] {
+    return priv->getBackend();
+}
+
+//! Returns whether the accepted SFTP channel is still connected
+/** @return `True` when the SFTP channel is still open
+ */
+bool SftpSession::connected() [flags=CONSTANT] {
+    return priv->isConnected();
+}
+
+//! Closes the accepted SFTP channel
+/** Closes the accepted SFTP subsystem channel and releases the libssh
+    resources held by this object.
+ */
+nothing SftpSession::close() {
+    priv->closeIntern();
+}
+
+DLLLOCAL QoreObject* ssh_new_sftp_session_object(QoreProgram* pgm, QoreHashNode* info, QoreHashNode* transfer_info,
+        QoreObject* logger, QoreObject* backend, ssh_channel channel, ExceptionSink* xsink) {
+    ReferenceHolder<QoreHashNode> info_holder(info, xsink);
+    ReferenceHolder<QoreHashNode> transfer_info_holder(transfer_info, xsink);
+    ReferenceHolder<QoreObject> logger_holder(logger, xsink);
+    ReferenceHolder<QoreObject> backend_holder(backend, xsink);
+    bool keep_resources = false;
+    ON_BLOCK_EXIT([&keep_resources, channel]() {
+        if (!keep_resources && channel) {
+            ssh_channel_send_eof(channel);
+            ssh_channel_close(channel);
+            ssh_channel_free(channel);
+        }
+    });
+    ReferenceHolder<QoreObject> obj(new QoreObject(QC_SFTPSESSION, pgm), xsink);
+    obj->setPrivate(CID_SFTPSESSION,
+        new SftpSessionPriv(info_holder.release(), transfer_info_holder.release(), logger_holder.release(),
+            backend_holder.release(), channel));
+    keep_resources = true;
+    return obj.release();
+}
+
+DLLLOCAL QoreHashNode* ssh_sftp_session_get_info(const QoreObject* sftp_obj, ExceptionSink* xsink) {
+    if (!sftp_obj) {
+        xsink->raiseException("SFTPSESSION-STATE-ERROR", "cannot get info from a null SFTP session object");
+        return nullptr;
+    }
+
+    PrivateDataRefHolder<SftpSessionPriv> priv(sftp_obj, CID_SFTPSESSION, xsink);
+    return *xsink ? nullptr : priv->getInfo(xsink);
+}
+
+DLLLOCAL QoreHashNode* ssh_sftp_session_get_transfer_info(const QoreObject* sftp_obj, ExceptionSink* xsink) {
+    if (!sftp_obj) {
+        xsink->raiseException("SFTPSESSION-STATE-ERROR",
+            "cannot get transfer info from a null SFTP session object");
+        return nullptr;
+    }
+
+    PrivateDataRefHolder<SftpSessionPriv> priv(sftp_obj, CID_SFTPSESSION, xsink);
+    return *xsink ? nullptr : priv->getTransferInfo(xsink);
+}
+
+DLLLOCAL int ssh_sftp_session_set_logger(const QoreObject* sftp_obj, QoreObject* logger, ExceptionSink* xsink) {
+    if (!sftp_obj) {
+        xsink->raiseException("SFTPSESSION-STATE-ERROR", "cannot set logger on a null SFTP session object");
+        return -1;
+    }
+
+    PrivateDataRefHolder<SftpSessionPriv> priv(sftp_obj, CID_SFTPSESSION, xsink);
+    if (*xsink) {
+        return -1;
+    }
+    priv->setLogger(logger, xsink);
+    return *xsink ? -1 : 0;
+}
+
+DLLLOCAL int ssh_sftp_session_set_backend(const QoreObject* sftp_obj, QoreObject* backend, ExceptionSink* xsink) {
+    if (!sftp_obj) {
+        xsink->raiseException("SFTPSESSION-STATE-ERROR", "cannot set backend on a null SFTP session object");
+        return -1;
+    }
+
+    PrivateDataRefHolder<SftpSessionPriv> priv(sftp_obj, CID_SFTPSESSION, xsink);
+    if (*xsink) {
+        return -1;
+    }
+    priv->setBackend(backend, xsink);
+    return *xsink ? -1 : 0;
+}
+
+DLLLOCAL int ssh_sftp_session_apply_factory_result(const QoreObject* sftp_obj, const QoreHashNode* result,
+        ExceptionSink* xsink) {
+    if (!sftp_obj) {
+        xsink->raiseException("SFTPSESSION-STATE-ERROR",
+            "cannot apply a factory result to a null SFTP session object");
+        return -1;
+    }
+
+    PrivateDataRefHolder<SftpSessionPriv> priv(sftp_obj, CID_SFTPSESSION, xsink);
+    return *xsink ? -1 : priv->applyFactoryResult(result, xsink);
+}
+
+DLLLOCAL int ssh_sftp_session_apply_transfer_info(const QoreObject* sftp_obj, const QoreHashNode* transfer_info,
+        ExceptionSink* xsink) {
+    if (!sftp_obj) {
+        xsink->raiseException("SFTPSESSION-STATE-ERROR",
+            "cannot apply transfer info to a null SFTP session object");
+        return -1;
+    }
+
+    PrivateDataRefHolder<SftpSessionPriv> priv(sftp_obj, CID_SFTPSESSION, xsink);
+    return *xsink ? -1 : priv->applyTransferInfo(transfer_info, xsink);
+}
+
+DLLLOCAL int ssh_sftp_session_clear_transfer_info(const QoreObject* sftp_obj, ExceptionSink* xsink) {
+    if (!sftp_obj) {
+        xsink->raiseException("SFTPSESSION-STATE-ERROR",
+            "cannot clear transfer info on a null SFTP session object");
+        return -1;
+    }
+
+    PrivateDataRefHolder<SftpSessionPriv> priv(sftp_obj, CID_SFTPSESSION, xsink);
+    if (*xsink) {
+        return -1;
+    }
+    priv->clearTransferInfo(xsink);
+    return *xsink ? -1 : 0;
+}

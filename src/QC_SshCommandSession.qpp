@@ -1,0 +1,463 @@
+/* -*- mode: c++; indent-tabs-mode: nil -*- */
+/*
+    QC_SshCommandSession.qpp
+
+    Qore Programming Language
+
+    Copyright (C) 2026 Qore Technologies, s.r.o.
+
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; either
+    version 2.1 of the License, or (at your option) any later version.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+*/
+
+#include "ssh-module.h"
+
+#include <algorithm>
+#include <libssh/server.h>
+#include <mutex>
+
+static void ssh_command_validate_logger(const QoreObject* logger, const char* err, ExceptionSink* xsink) {
+    if (!logger) {
+        return;
+    }
+
+    const QoreClass* cls = logger->getClass();
+    if (!cls || !cls->findMethod("info") || !cls->findMethod("warn") || !cls->findMethod("error")
+            || !cls->findMethod("debug")) {
+        xsink->raiseException(err,
+            "logger objects must implement info(), warn(), error(), and debug() methods");
+    }
+}
+
+static void ssh_command_log_message(QoreObject* logger, const char* method, const std::string& msg) {
+    if (!logger || !method) {
+        return;
+    }
+
+    ExceptionSink xsink;
+    ReferenceHolder<QoreListNode> args(new QoreListNode(autoTypeInfo), &xsink);
+    args->push(new QoreStringNode(msg.c_str()), &xsink);
+    if (xsink) {
+        return;
+    }
+
+    ValueHolder rv(logger->evalMethod(method, *args, &xsink), &xsink);
+}
+
+class SshCommandSessionPriv : public AbstractPrivateData {
+public:
+    explicit SshCommandSessionPriv(const QoreHashNode* request)
+            : request(request ? request->copy() : nullptr), exit_status(0), exit_status_set(false),
+            input_closed(false), channel(nullptr), request_msg(nullptr), handled(true), logger(nullptr) {
+    }
+
+    SshCommandSessionPriv(QoreHashNode* request, ssh_channel channel, ssh_message request_msg)
+            : request(request), exit_status(0), exit_status_set(false), input_closed(false), channel(channel),
+            request_msg(request_msg), handled(false), logger(nullptr) {
+    }
+
+    ~SshCommandSessionPriv() {
+        cleanupChannel();
+        if (request) {
+            request->deref(nullptr);
+        }
+        if (logger) {
+            logger->deref(nullptr);
+        }
+    }
+
+    QoreHashNode* getRequest(ExceptionSink* xsink) const {
+        return request ? reinterpret_cast<QoreHashNode*>(hashdeclSshCommandRequest->doRuntimeCast(request, xsink))
+                       : new QoreHashNode(hashdeclSshCommandRequest, xsink);
+    }
+
+    QoreStringNode* getCommand(ExceptionSink* xsink) const {
+        const QoreStringNode* command = request ? request->getKeyValue("command").get<QoreStringNode>() : nullptr;
+        return command ? command->stringRefSelf() : new QoreStringNode;
+    }
+
+    void setExitStatus(int64 status) {
+        std::lock_guard<std::mutex> lock(m);
+        exit_status = status;
+        exit_status_set = true;
+    }
+
+    QoreValue getExitStatus() const {
+        std::lock_guard<std::mutex> lock(m);
+        return exit_status_set ? exit_status : QoreValue();
+    }
+
+    void closeInputIntern() {
+        std::lock_guard<std::mutex> lock(m);
+        input_closed = true;
+    }
+
+    bool isInputClosed() const {
+        std::lock_guard<std::mutex> lock(m);
+        return input_closed;
+    }
+
+    void setLogger(QoreObject* q_logger, ExceptionSink* xsink) {
+        ssh_command_validate_logger(q_logger, "SSHCOMMANDSESSION-LOGGER-ERROR", xsink);
+        if (*xsink) {
+            return;
+        }
+
+        QoreObject* old_logger = nullptr;
+        {
+            std::lock_guard<std::mutex> lock(m);
+            old_logger = logger;
+            logger = q_logger ? q_logger->objectRefSelf() : nullptr;
+        }
+        if (old_logger) {
+            old_logger->deref(xsink);
+        }
+    }
+
+    QoreObject* getLogger() const {
+        std::lock_guard<std::mutex> lock(m);
+        return logger ? logger->objectRefSelf() : nullptr;
+    }
+
+    int applyResult(const QoreHashNode* result, ExceptionSink* xsink) {
+        ReferenceHolder<QoreHashNode> typed_result(
+            reinterpret_cast<QoreHashNode*>(hashdeclSshCommandResult->doRuntimeCast(result, xsink)), xsink);
+        if (*xsink) {
+            return -1;
+        }
+
+        bool accepted = typed_result->getKeyValue("accepted").getAsBool();
+        if (*xsink) {
+            xsink->raiseException("SSHCOMMANDSESSION-RESULT-ERROR",
+                "the command result must define a boolean \"accepted\" key");
+            return -1;
+        }
+
+        ssh_channel current_channel = nullptr;
+        ssh_message current_request_msg = nullptr;
+        {
+            std::lock_guard<std::mutex> lock(m);
+            if (handled || !channel || !request_msg) {
+                xsink->raiseException("SSHCOMMANDSESSION-STATE-ERROR",
+                    "the command request has already been handled");
+                return -1;
+            }
+
+            current_channel = channel;
+            current_request_msg = request_msg;
+            handled = true;
+            request_msg = nullptr;
+        }
+
+        ON_BLOCK_EXIT([this, current_request_msg]() {
+            if (current_request_msg) {
+                ssh_message_free(current_request_msg);
+            }
+            cleanupChannel();
+        });
+
+        if (!accepted) {
+            if (ssh_message_reply_default(current_request_msg) != SSH_OK) {
+                xsink->raiseException("SSHCOMMANDSESSION-ERROR", "could not reject the command request");
+                return -1;
+            }
+            log("warn", "SshCommandSession rejected command request");
+            return 0;
+        }
+
+        if (ssh_message_channel_request_reply_success(current_request_msg) != SSH_OK) {
+            xsink->raiseException("SSHCOMMANDSESSION-ERROR", "could not accept the command request");
+            return -1;
+        }
+
+        const BinaryNode* stdout_data = typed_result->getKeyValue("stdout").get<BinaryNode>();
+        if (stdout_data && ssh_write_channel(current_channel, false, stdout_data, xsink)) {
+            return -1;
+        }
+
+        const BinaryNode* stderr_data = typed_result->getKeyValue("stderr").get<BinaryNode>();
+        if (stderr_data && ssh_write_channel(current_channel, true, stderr_data, xsink)) {
+            return -1;
+        }
+
+        QoreValue exit_status_value = typed_result->getKeyValue("exit_status");
+        if (!exit_status_value.isNothing()) {
+            int64 status = exit_status_value.getAsBigInt();
+            if (*xsink) {
+                xsink->raiseException("SSHCOMMANDSESSION-RESULT-ERROR",
+                    "the command result \"exit_status\" key must be an integer when present");
+                return -1;
+            }
+
+            {
+                std::lock_guard<std::mutex> lock(m);
+                exit_status = status;
+                exit_status_set = true;
+            }
+
+            if (ssh_channel_request_send_exit_status(current_channel, static_cast<uint32_t>(status)) != SSH_OK) {
+                xsink->raiseException("SSHCOMMANDSESSION-ERROR", "could not send the command exit status");
+                return -1;
+            }
+        }
+
+        log("info", "SshCommandSession applied command result");
+        return 0;
+    }
+
+    QoreHashNode* request;
+    mutable std::mutex m;
+    int64 exit_status;
+    bool exit_status_set;
+    bool input_closed;
+    ssh_channel channel;
+    ssh_message request_msg;
+    bool handled;
+    QoreObject* logger;
+
+private:
+    static int ssh_write_channel(ssh_channel channel, bool stderr_stream, const BinaryNode* data, ExceptionSink* xsink) {
+        if (!data) {
+            return 0;
+        }
+
+        const char* ptr = reinterpret_cast<const char*>(data->getPtr());
+        size_t remaining = data->size();
+        while (remaining) {
+            if (qore_check_cancel(xsink, "writing SSH command output")) {
+                return -1;
+            }
+
+            uint32_t chunk = static_cast<uint32_t>(std::min<size_t>(remaining, 0x7fffffffU));
+            int rc = stderr_stream ? ssh_channel_write_stderr(channel, ptr, chunk) : ssh_channel_write(channel, ptr, chunk);
+            if (rc == SSH_ERROR) {
+                xsink->raiseException("SSHCOMMANDSESSION-ERROR", "could not write command output to the SSH channel");
+                return -1;
+            }
+
+            ptr += rc;
+            remaining -= static_cast<size_t>(rc);
+        }
+
+        return 0;
+    }
+
+    void cleanupChannel() {
+        ssh_channel current_channel = nullptr;
+        ssh_message current_request_msg = nullptr;
+        {
+            std::lock_guard<std::mutex> lock(m);
+            current_channel = channel;
+            channel = nullptr;
+            current_request_msg = request_msg;
+            request_msg = nullptr;
+        }
+
+        if (current_request_msg) {
+            ssh_message_free(current_request_msg);
+        }
+        if (current_channel) {
+            ssh_channel_send_eof(current_channel);
+            ssh_channel_close(current_channel);
+            ssh_channel_free(current_channel);
+        }
+    }
+
+    void log(const char* method, const char* msg_text) const {
+        ReferenceHolder<QoreObject> logger_holder(getLogger(), nullptr);
+        if (!logger_holder) {
+            return;
+        }
+        ssh_command_log_message(*logger_holder, method, msg_text ? std::string(msg_text) : std::string());
+    }
+};
+
+//! Server-side command-session wrapper for controlled exec requests
+/** This class wraps structured command request metadata and command-session
+    state for live libssh-backed exec and subsystem handling.
+
+    @since ssh 0.1
+*/
+qclass SshCommandSession [arg=SshCommandSessionPriv* priv; ns=Qore::Ssh; dom=NETWORK; flags=final];
+
+//! Creates a command session from a typed request hash
+/** @param request the typed `SshCommandRequest` hash for the command session
+
+    @par Example:
+    @code{.py}
+SshCommandSession cmd(request);
+printf("command: %y\n", cmd.getCommand());
+    @endcode
+ */
+SshCommandSession::constructor(hash<SshCommandRequest> request) {
+    self->setPrivate(CID_SSHCOMMANDSESSION, new SshCommandSessionPriv(request));
+}
+
+//! Throws an exception; SshCommandSession objects cannot be copied
+/** @throw SSHCOMMANDSESSION-COPY-ERROR copying SshCommandSession objects is not supported
+ */
+SshCommandSession::copy() {
+    xsink->raiseException("SSHCOMMANDSESSION-COPY-ERROR",
+        "copying SshCommandSession objects is not supported");
+}
+
+//! Destroys the command session object
+/** Releases private resources held by the command session.
+ */
+SshCommandSession::destructor() {
+    priv->deref();
+}
+
+//! Returns the typed command request hash
+/** @return the wrapped `SshCommandRequest` typed hash
+
+    @par Example:
+    @code{.py}
+hash<SshCommandRequest> req = cmd.getRequest();
+printf("command %y from %y\n", req.command, req.username);
+    @endcode
+ */
+hash<SshCommandRequest> SshCommandSession::getRequest() [flags=RET_VALUE_ONLY] {
+    return priv->getRequest(xsink);
+}
+
+//! Returns the command string for the command session
+/** @return the command string from the wrapped request hash
+ */
+string SshCommandSession::getCommand() [flags=RET_VALUE_ONLY] {
+    return priv->getCommand(xsink);
+}
+
+//! Sets the exit status for the command session
+/** @param status the command exit status to record
+
+    @par Example:
+    @code{.py}
+cmd.setExitStatus(0);
+    @endcode
+ */
+nothing SshCommandSession::setExitStatus(int status) {
+    priv->setExitStatus(status);
+}
+
+//! Returns the recorded exit status
+/** @return the recorded exit status or `NOTHING` if no status has been set
+ */
+*int SshCommandSession::getExitStatus() [flags=RET_VALUE_ONLY] {
+    return priv->getExitStatus();
+}
+
+//! Applies a typed result to the live command request
+/** Sends the command reply and, when accepted, writes any configured output
+    and exit status before closing the SSH channel.
+
+    @param result the typed command result to apply
+ */
+nothing SshCommandSession::applyResult(hash<SshCommandResult> result) {
+    priv->applyResult(result, xsink);
+}
+
+//! Sets the logger object used by the command session
+/** @param logger an optional logger object
+ */
+nothing SshCommandSession::setLogger(*object logger) {
+    priv->setLogger(logger, xsink);
+}
+
+//! Returns the configured logger object
+/** @return the configured logger object or `NOTHING`
+ */
+*object SshCommandSession::getLogger() [flags=RET_VALUE_ONLY] {
+    return priv->getLogger();
+}
+
+//! Marks standard input as closed for the command session
+/** Marks the current command-session input state as closed.
+ */
+nothing SshCommandSession::closeInput() {
+    priv->closeInputIntern();
+}
+
+//! Returns whether the command input has been closed
+/** @return `True` when the command input has been closed
+ */
+bool SshCommandSession::inputClosed() [flags=CONSTANT] {
+    return priv->isInputClosed();
+}
+
+DLLLOCAL QoreObject* ssh_new_command_session_object(QoreProgram* pgm, QoreHashNode* request, QoreObject* logger,
+        ssh_channel channel, ssh_message request_msg, ExceptionSink* xsink) {
+    ReferenceHolder<QoreHashNode> request_holder(request, xsink);
+    ReferenceHolder<QoreObject> logger_holder(logger, xsink);
+    bool keep_resources = false;
+    ON_BLOCK_EXIT([&keep_resources, channel, request_msg]() {
+        if (!keep_resources && request_msg) {
+            ssh_message_free(request_msg);
+        }
+        if (!keep_resources && channel) {
+            ssh_channel_send_eof(channel);
+            ssh_channel_close(channel);
+            ssh_channel_free(channel);
+        }
+    });
+    ReferenceHolder<QoreObject> obj(new QoreObject(QC_SSHCOMMANDSESSION, pgm), xsink);
+    obj->setPrivate(CID_SSHCOMMANDSESSION,
+        new SshCommandSessionPriv(request_holder.release(), channel, request_msg));
+    if (!*xsink && logger_holder) {
+        PrivateDataRefHolder<SshCommandSessionPriv> priv(*obj, CID_SSHCOMMANDSESSION, xsink);
+        if (!*xsink) {
+            priv->setLogger(*logger_holder, xsink);
+        }
+    }
+    keep_resources = true;
+    return obj.release();
+}
+
+DLLLOCAL QoreHashNode* ssh_command_session_get_request(const QoreObject* command_obj, ExceptionSink* xsink) {
+    if (!command_obj) {
+        xsink->raiseException("SSHCOMMANDSESSION-STATE-ERROR",
+            "cannot get the request from a null command session object");
+        return nullptr;
+    }
+
+    PrivateDataRefHolder<SshCommandSessionPriv> priv(command_obj, CID_SSHCOMMANDSESSION, xsink);
+    return *xsink ? nullptr : priv->getRequest(xsink);
+}
+
+DLLLOCAL int ssh_command_session_set_logger(const QoreObject* command_obj, QoreObject* logger, ExceptionSink* xsink) {
+    if (!command_obj) {
+        xsink->raiseException("SSHCOMMANDSESSION-STATE-ERROR",
+            "cannot set logger on a null command session object");
+        return -1;
+    }
+
+    PrivateDataRefHolder<SshCommandSessionPriv> priv(command_obj, CID_SSHCOMMANDSESSION, xsink);
+    if (*xsink) {
+        return -1;
+    }
+    priv->setLogger(logger, xsink);
+    return *xsink ? -1 : 0;
+}
+
+DLLLOCAL int ssh_command_session_apply_result(const QoreObject* command_obj, const QoreHashNode* result,
+        ExceptionSink* xsink) {
+    if (!command_obj) {
+        xsink->raiseException("SSHCOMMANDSESSION-STATE-ERROR",
+            "cannot apply a result to a null command session object");
+        return -1;
+    }
+
+    PrivateDataRefHolder<SshCommandSessionPriv> priv(command_obj, CID_SSHCOMMANDSESSION, xsink);
+    return *xsink ? -1 : priv->applyResult(result, xsink);
+}

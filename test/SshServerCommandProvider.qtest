@@ -1,0 +1,602 @@
+#!/usr/bin/env qore
+# -*- mode: qore; indent-tabs-mode: nil -*-
+
+/*  SshServerCommandProvider.qtest Copyright 2026 Qore Technologies, s.r.o.
+
+    Permission is hereby granted, free of charge, to any person obtaining a
+    copy of this software and associated documentation files (the "Software"),
+    to deal in the Software without restriction, including without limitation
+    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+    and/or sell copies of the Software, and to permit persons to whom the
+    Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+*/
+
+%modern
+%requires QUnit
+%requires ../qlib/SshServerCommandProvider
+%requires ../qlib/SshServerConnections
+%requires ./TestLoggerInterface.qm
+
+%exec-class SshServerCommandProviderTest
+
+class SshServerCommandProviderTest inherits QUnit::Test {
+    constructor() : Test("SshServerCommandProviderTest", "0.1", \ARGV) {
+        addTestCase("virtual command service handles static command results", \testStaticCommand());
+        addTestCase("virtual command service handles dynamic command closures", \testDynamicCommand());
+        addTestCase("virtual command service handles static and dynamic subsystem results", \testSubsystemHandlers());
+        addTestCase("virtual command service enforces typed command and subsystem policy",
+            \testCommandPolicy());
+        addTestCase("virtual command service supports principal-aware policy overrides",
+            \testPrincipalCommandPolicy());
+        addTestCase("virtual command service supports bundled advanced configuration",
+            \testBundledConfiguration());
+        addTestCase("virtual command service supports optional concurrency caps",
+            \testConcurrencyCaps());
+        addTestCase("virtual command service supports optional audit capture controls",
+            \testAuditCaptureControls());
+        addTestCase("virtual command service supports bounded and redacted request capture",
+            \testBoundedRequestCapture());
+        addTestCase("virtual command service accepts LoggerInterface and logs by level",
+            \testLoggerSupport());
+        addTestCase("virtual command service falls back to default and not-found results", \testDefaultAndMissing());
+        addTestCase("command server connection uses virtual command service without DataProvider",
+            \testConnectionBridge());
+        set_return_value(main());
+    }
+
+    private hash<Qore::Ssh::SshCommandRequest> getRequest(string command) {
+        return <Qore::Ssh::SshCommandRequest>{
+            "session_id": "session-1",
+            "server_name": "test-server",
+            "listener_name": "listener-1",
+            "command": command,
+        };
+    }
+
+    private hash<Qore::Ssh::SshCommandRequest> getSubsystemRequest(string subsystem) {
+        return <Qore::Ssh::SshCommandRequest>{
+            "session_id": "session-1",
+            "server_name": "test-server",
+            "listener_name": "listener-1",
+            "command": subsystem,
+            "environment": {"SECRET": "top-secret"},
+            "metadata": {
+                "request_type": "subsystem",
+                "subsystem": subsystem,
+            },
+        };
+    }
+
+    testStaticCommand() {
+        SshServerCommandProvider::VirtualSshCommandService service();
+        service.addTextCommand("status", "ok\n", "warn\n", 17, True, {"kind": "static"}, "handled");
+
+        hash<Qore::Ssh::SshCommandResult> result = service.handle(getRequest("status"));
+        assertEq(True, result.accepted);
+        assertEq(17, result.exit_status);
+        assertEq(binary("ok\n"), result.stdout);
+        assertEq(binary("warn\n"), result.stderr);
+        assertEq("static", result.result_data.kind);
+        assertEq(1, service.getRequests().size());
+    }
+
+    testDynamicCommand() {
+        SshServerCommandProvider::VirtualSshCommandService service();
+        service.addHandler("echo", hash<Qore::Ssh::SshCommandResult> sub(hash<Qore::Ssh::SshCommandRequest> req) {
+            return <Qore::Ssh::SshCommandResult>{
+                "accepted": True,
+                "exit_status": 0,
+                "stdout": binary(sprintf("echo:%s\n", req.command)),
+                "result_data": {"kind": "dynamic"},
+            };
+        });
+
+        hash<Qore::Ssh::SshCommandResult> result = service.handle(getRequest("echo"));
+        assertEq(True, result.accepted);
+        assertEq(0, result.exit_status);
+        assertEq(binary("echo:echo\n"), result.stdout);
+        assertEq("dynamic", result.result_data.kind);
+    }
+
+    testSubsystemHandlers() {
+        SshServerCommandProvider::VirtualSshCommandService service();
+        service.addTextSubsystem("status", "subsystem:status\n", NOTHING, 0, True, {"kind": "static-subsystem"});
+        service.addSubsystemHandler("metrics", hash<Qore::Ssh::SshCommandResult> sub(hash<Qore::Ssh::SshCommandRequest> req) {
+            return <Qore::Ssh::SshCommandResult>{
+                "accepted": True,
+                "exit_status": 0,
+                "stdout": binary(sprintf("subsystem:%s\n", req.metadata.subsystem)),
+                "result_data": {"kind": "dynamic-subsystem"},
+            };
+        });
+
+        hash<Qore::Ssh::SshCommandResult> static_result = service.handle(getSubsystemRequest("status"));
+        assertEq(True, static_result.accepted);
+        assertEq(binary("subsystem:status\n"), static_result.stdout);
+        assertEq("static-subsystem", static_result.result_data.kind);
+
+        hash<Qore::Ssh::SshCommandResult> dynamic_result = service.handle(getSubsystemRequest("metrics"));
+        assertEq(True, dynamic_result.accepted);
+        assertEq(binary("subsystem:metrics\n"), dynamic_result.stdout);
+        assertEq("dynamic-subsystem", dynamic_result.result_data.kind);
+    }
+
+    testCommandPolicy() {
+        SshServerCommandProvider::VirtualSshCommandService service(
+            <SshServerCommandProvider::VirtualSshCommandServiceOptions>{
+                "policy": <SshServerCommandProvider::VirtualSshCommandPolicy>{
+                    "allow_all_commands": False,
+                    "allow_all_subsystems": False,
+                    "allowed_commands": ("status",),
+                    "allowed_subsystems": ("metrics",),
+                },
+            }
+        );
+        service.addTextCommand("status", "ok\n");
+        service.addTextCommand("admin", "admin\n");
+        service.addTextSubsystem("metrics", "metrics:ok\n");
+        service.addTextSubsystem("shell", "shell\n");
+        service.setDefaultResult(<Qore::Ssh::SshCommandResult>{
+            "accepted": False,
+            "exit_status": 64,
+            "message": "default-deny",
+            "stderr": binary("default-deny\n"),
+        });
+
+        hash<Qore::Ssh::SshCommandResult> allowed_command = service.handle(getRequest("status"));
+        assertEq(True, allowed_command.accepted);
+        assertEq(binary("ok\n"), allowed_command.stdout);
+
+        hash<Qore::Ssh::SshCommandResult> denied_command = service.handle(getRequest("admin"));
+        assertEq(False, denied_command.accepted);
+        assertEq(126, denied_command.exit_status);
+        assertEq(SshServerCommandProvider::CommandRejectPolicyCommand, denied_command.result_data.reason_code);
+        assertEq("admin", denied_command.result_data.policy_target);
+
+        hash<Qore::Ssh::SshCommandResult> allowed_subsystem = service.handle(getSubsystemRequest("metrics"));
+        assertEq(True, allowed_subsystem.accepted);
+        assertEq(binary("metrics:ok\n"), allowed_subsystem.stdout);
+
+        hash<Qore::Ssh::SshCommandResult> denied_subsystem = service.handle(getSubsystemRequest("shell"));
+        assertEq(False, denied_subsystem.accepted);
+        assertEq(126, denied_subsystem.exit_status);
+        assertEq(SshServerCommandProvider::CommandRejectPolicySubsystem, denied_subsystem.result_data.reason_code);
+        assertEq("shell", denied_subsystem.result_data.policy_target);
+
+        service.setAllowAllCommands(True);
+        service.addDeniedCommand("status");
+        hash<Qore::Ssh::SshCommandResult> denylist_command = service.handle(getRequest("status"));
+        assertEq(False, denylist_command.accepted);
+        assertEq(SshServerCommandProvider::CommandRejectPolicyCommand, denylist_command.result_data.reason_code);
+    }
+
+    testPrincipalCommandPolicy() {
+        SshServerCommandProvider::VirtualSshCommandService service(
+            <SshServerCommandProvider::VirtualSshCommandServiceOptions>{
+                "policy": <SshServerCommandProvider::VirtualSshCommandPolicy>{
+                    "allow_all_commands": True,
+                    "allow_all_subsystems": True,
+                },
+                "default_result": <Qore::Ssh::SshCommandResult>{
+                    "accepted": False,
+                    "exit_status": 64,
+                    "message": "global-default",
+                    "stderr": binary("global-default\n"),
+                },
+            }
+        );
+        service.setPrincipalPolicy("principal:nobody", <SshServerCommandProvider::VirtualSshCommandPrincipalPolicy>{
+            "allow_all_commands": False,
+            "allow_all_subsystems": False,
+            "allowed_commands": ("echo",),
+            "allowed_subsystems": ("metrics",),
+        });
+        service.setPrincipalPolicy("principal:ops", <SshServerCommandProvider::VirtualSshCommandPrincipalPolicy>{
+            "allow_all_commands": True,
+            "default_result": <Qore::Ssh::SshCommandResult>{
+                "accepted": False,
+                "exit_status": 65,
+                "message": "principal-default",
+                "stderr": binary("principal-default\n"),
+            },
+        });
+        service.addTextCommand("echo", "echo\n");
+        service.addTextCommand("status", "status\n");
+        service.addTextSubsystem("metrics", "metrics\n");
+        service.addTextSubsystem("shell", "shell\n");
+
+        hash<Qore::Ssh::SshCommandRequest> req = getRequest("echo");
+        req.principal = "principal:nobody";
+        hash<Qore::Ssh::SshCommandResult> allowed_command = service.handle(req);
+        assertEq(True, allowed_command.accepted);
+        assertEq(binary("echo\n"), allowed_command.stdout);
+
+        req = getRequest("status");
+        req.principal = "principal:nobody";
+        hash<Qore::Ssh::SshCommandResult> denied_command = service.handle(req);
+        assertEq(False, denied_command.accepted);
+        assertEq(126, denied_command.exit_status);
+        assertEq(SshServerCommandProvider::CommandRejectPolicyCommand, denied_command.result_data.reason_code);
+
+        req = getSubsystemRequest("metrics");
+        req.principal = "principal:nobody";
+        hash<Qore::Ssh::SshCommandResult> allowed_subsystem = service.handle(req);
+        assertEq(True, allowed_subsystem.accepted);
+        assertEq(binary("metrics\n"), allowed_subsystem.stdout);
+
+        req = getSubsystemRequest("shell");
+        req.principal = "principal:nobody";
+        hash<Qore::Ssh::SshCommandResult> denied_subsystem = service.handle(req);
+        assertEq(False, denied_subsystem.accepted);
+        assertEq(126, denied_subsystem.exit_status);
+        assertEq(SshServerCommandProvider::CommandRejectPolicySubsystem, denied_subsystem.result_data.reason_code);
+
+        req = getRequest("missing");
+        req.principal = "principal:ops";
+        hash<Qore::Ssh::SshCommandResult> principal_default = service.handle(req);
+        assertEq(False, principal_default.accepted);
+        assertEq(65, principal_default.exit_status);
+        assertEq("principal-default", principal_default.message);
+
+        req = getRequest("missing");
+        req.principal = "principal:other";
+        hash<Qore::Ssh::SshCommandResult> global_default = service.handle(req);
+        assertEq(False, global_default.accepted);
+        assertEq(64, global_default.exit_status);
+        assertEq("global-default", global_default.message);
+
+    }
+
+    testBundledConfiguration() {
+        SshServerCommandProvider::VirtualSshCommandService service(
+            <SshServerCommandProvider::VirtualSshCommandServiceOptions>{
+                "policy": <SshServerCommandProvider::VirtualSshCommandPolicy>{
+                    "allow_all_commands": False,
+                    "allow_all_subsystems": False,
+                    "allowed_commands": ("echo",),
+                    "allowed_subsystems": ("metrics",),
+                },
+                "audit": <SshServerCommandProvider::VirtualSshCommandAuditOptions>{
+                    "request_history_limit": 1,
+                    "capture_environment": False,
+                    "capture_arguments": False,
+                    "capture_identity": False,
+                    "captured_string_limit": 8,
+                },
+                "limits": <SshServerCommandProvider::VirtualSshCommandLimits>{
+                    "max_concurrent_requests": 2,
+                    "max_concurrent_requests_per_principal": 1,
+                },
+            }
+        );
+        service.addTextCommand("echo", "echo\n");
+        service.addTextSubsystem("metrics", "metrics\n");
+
+        assertEq(False, service.getAllowAllCommands());
+        assertEq(False, service.getAllowAllSubsystems());
+        assertEq(1, service.getRequestHistoryLimit());
+        assertEq(False, service.getCaptureEnvironment());
+        assertEq(False, service.getCaptureArguments());
+        assertEq(False, service.getCaptureIdentity());
+        assertEq(8, service.getCapturedStringLimit());
+        assertEq(2, service.getMaxConcurrentRequests());
+        assertEq(1, service.getMaxConcurrentRequestsPerPrincipal());
+        assertEq(("echo",), service.getPolicy().allowed_commands);
+        assertEq(("metrics",), service.getPolicy().allowed_subsystems);
+        assertEq(1, service.getAuditOptions().request_history_limit);
+        assertEq(2, service.getLimits().max_concurrent_requests);
+
+        hash<Qore::Ssh::SshCommandResult> allowed = service.handle(getRequest("echo"));
+        assertEq(True, allowed.accepted);
+
+        hash<Qore::Ssh::SshCommandResult> denied = service.handle(getRequest("status"));
+        assertEq(False, denied.accepted);
+        assertEq(SshServerCommandProvider::CommandRejectPolicyCommand, denied.result_data.reason_code);
+
+        service.setPolicy(<SshServerCommandProvider::VirtualSshCommandPolicy>{
+            "allow_all_commands": True,
+            "denied_commands": ("echo",),
+        });
+        service.setAuditOptions(<SshServerCommandProvider::VirtualSshCommandAuditOptions>{
+            "capture_identity": True,
+        });
+        service.setLimits(<SshServerCommandProvider::VirtualSshCommandLimits>{
+            "max_concurrent_requests": 3,
+        });
+
+        assertEq(True, service.getAllowAllCommands());
+        assertEq(True, service.getAllowAllSubsystems());
+        assertEq(True, service.getCaptureIdentity());
+        assertEq(True, service.getCaptureEnvironment());
+        assertEq(True, service.getCaptureArguments());
+        assertEq(NOTHING, service.getRequestHistoryLimit());
+        assertEq(NOTHING, service.getCapturedStringLimit());
+        assertEq(3, service.getMaxConcurrentRequests());
+        assertEq(NOTHING, service.getMaxConcurrentRequestsPerPrincipal());
+        assertEq(("echo",), service.getPolicy().denied_commands);
+        assertEq(0, service.getPolicy().allowed_commands.size());
+
+        denied = service.handle(getRequest("echo"));
+        assertEq(False, denied.accepted);
+        assertEq(SshServerCommandProvider::CommandRejectPolicyCommand, denied.result_data.reason_code);
+
+        service.clearPolicy();
+        service.clearAuditOptions();
+        service.clearLimits();
+        assertEq(True, service.getAllowAllCommands());
+        assertEq(True, service.getAllowAllSubsystems());
+        assertEq(NOTHING, service.getRequestHistoryLimit());
+        assertEq(True, service.getCaptureEnvironment());
+        assertEq(True, service.getCaptureArguments());
+        assertEq(True, service.getCaptureIdentity());
+        assertEq(NOTHING, service.getCapturedStringLimit());
+        assertEq(NOTHING, service.getMaxConcurrentRequests());
+        assertEq(NOTHING, service.getMaxConcurrentRequestsPerPrincipal());
+    }
+
+    testConcurrencyCaps() {
+        SshServerCommandProvider::VirtualSshCommandService service(
+            <SshServerCommandProvider::VirtualSshCommandServiceOptions>{
+                "limits": <SshServerCommandProvider::VirtualSshCommandLimits>{
+                    "max_concurrent_requests": 1,
+                    "max_concurrent_requests_per_principal": 1,
+                },
+            }
+        );
+        Qore::Thread::Mutex lock();
+        Qore::Thread::Condition cond();
+        bool ready = False;
+        bool release = False;
+
+        service.addHandler("slow", hash<Qore::Ssh::SshCommandResult> sub(hash<Qore::Ssh::SshCommandRequest> req) {
+            lock.lock();
+            on_exit lock.unlock();
+            ready = True;
+            cond.broadcast();
+            while (!release) {
+                cond.wait(lock);
+            }
+            return <Qore::Ssh::SshCommandResult>{
+                "accepted": True,
+                "exit_status": 0,
+                "stdout": binary("slow\n"),
+            };
+        });
+
+        hash<Qore::Ssh::SshCommandResult> slow_result;
+        Counter done1(1);
+        hash<Qore::Ssh::SshCommandRequest> slow_req = getRequest("slow");
+        slow_req.principal = "principal:one";
+        background sub() {
+            slow_result = service.handle(slow_req);
+            done1.dec();
+        }();
+
+        lock.lock();
+        while (!ready) {
+            cond.wait(lock);
+        }
+        lock.unlock();
+
+        hash<Qore::Ssh::SshCommandRequest> denied_req = getRequest("slow");
+        denied_req.principal = "principal:two";
+        hash<Qore::Ssh::SshCommandResult> denied = service.handle(denied_req);
+        assertEq(False, denied.accepted);
+        assertEq(126, denied.exit_status);
+        assertEq(SshServerCommandProvider::CommandRejectMaxConcurrentRequests, denied.result_data.reason_code);
+
+        lock.lock();
+        release = True;
+        cond.broadcast();
+        lock.unlock();
+        done1.waitForZero(5s);
+        assertEq(True, slow_result.accepted);
+
+        service.clearMaxConcurrentRequests();
+        service.setMaxConcurrentRequestsPerPrincipal(1);
+        ready = False;
+        release = False;
+        Counter done2(1);
+        slow_req = getRequest("slow");
+        slow_req.principal = "principal:same";
+        background sub() {
+            slow_result = service.handle(slow_req);
+            done2.dec();
+        }();
+
+        lock.lock();
+        while (!ready) {
+            cond.wait(lock);
+        }
+        lock.unlock();
+
+        denied_req = getRequest("slow");
+        denied_req.principal = "principal:same";
+        denied = service.handle(denied_req);
+        assertEq(False, denied.accepted);
+        assertEq(126, denied.exit_status);
+        assertEq(SshServerCommandProvider::CommandRejectMaxConcurrentRequestsPerPrincipal,
+            denied.result_data.reason_code);
+        assertEq("principal:same", denied.result_data.policy_target);
+
+        hash<Qore::Ssh::SshCommandRequest> allowed_req = getRequest("slow");
+        allowed_req.principal = "principal:other";
+        lock.lock();
+        release = True;
+        cond.broadcast();
+        lock.unlock();
+        done2.waitForZero(5s);
+        hash<Qore::Ssh::SshCommandResult> allowed_other = service.handle(allowed_req);
+        assertEq(True, allowed_other.accepted);
+    }
+
+    testAuditCaptureControls() {
+        SshServerCommandProvider::VirtualSshCommandService service(
+            <SshServerCommandProvider::VirtualSshCommandServiceOptions>{
+                "audit": <SshServerCommandProvider::VirtualSshCommandAuditOptions>{
+                    "request_history_limit": 1,
+                    "capture_arguments": False,
+                    "capture_identity": False,
+                    "capture_environment": True,
+                    "captured_string_limit": 5,
+                },
+            }
+        );
+        service.addTextCommand("echo", "echo\n");
+
+        hash<Qore::Ssh::SshCommandRequest> req = getRequest("echo");
+        req.username = "nobody";
+        req.principal = "principal:nobody";
+        req.arguments = ("argument-one", "argument-two");
+        req.environment = {
+            "SECRET": "secret-value",
+        };
+        service.handle(req);
+
+        list<hash<Qore::Ssh::SshCommandRequest>> requests = service.getRequests();
+        assertEq(1, requests.size());
+        assertEq(NOTHING, requests[0].username);
+        assertEq(NOTHING, requests[0].principal);
+        assertEq(NOTHING, requests[0].arguments);
+        assertEq("se...", requests[0].environment.SECRET);
+
+        service.setCaptureIdentity(True);
+        service.setCaptureArguments(True);
+        service.setCapturedStringLimit(4);
+
+        req = getRequest("echo");
+        req.username = "nobody";
+        req.principal = "principal:nobody";
+        req.arguments = ("argument-one", "argument-two");
+        req.environment = {
+            "SECRET": "secret-value",
+        };
+        service.handle(req);
+
+        requests = service.getRequests();
+        assertEq(1, requests.size());
+        assertEq("n...", requests[0].username);
+        assertEq("p...", requests[0].principal);
+        assertEq("a...", requests[0].arguments[0]);
+        assertEq("a...", requests[0].arguments[1]);
+        assertEq("s...", requests[0].environment.SECRET);
+    }
+
+    testBoundedRequestCapture() {
+        SshServerCommandProvider::VirtualSshCommandService service(
+            <SshServerCommandProvider::VirtualSshCommandServiceOptions>{
+                "audit": <SshServerCommandProvider::VirtualSshCommandAuditOptions>{
+                    "request_history_limit": 2,
+                    "capture_environment": False,
+                },
+            }
+        );
+        service.addTextCommand("one", "one\n");
+        service.addTextCommand("two", "two\n");
+        service.addTextCommand("three", "three\n");
+
+        hash<Qore::Ssh::SshCommandRequest> req1 = getRequest("one");
+        req1.environment = {"SECRET": "one"};
+        hash<Qore::Ssh::SshCommandRequest> req2 = getSubsystemRequest("two");
+        hash<Qore::Ssh::SshCommandRequest> req3 = getRequest("three");
+        req3.environment = {"SECRET": "three"};
+
+        service.handle(req1);
+        service.handle(req2);
+        service.handle(req3);
+
+        list<hash<Qore::Ssh::SshCommandRequest>> requests = service.getRequests();
+        assertEq(2, requests.size());
+        assertEq("two", requests[0].command);
+        assertEq("three", requests[1].command);
+        assertEq(NOTHING, requests[0].environment);
+        assertEq(NOTHING, requests[1].environment);
+        assertEq("subsystem", requests[0].metadata.request_type);
+        assertEq("two", requests[0].metadata.subsystem);
+
+        service.setRequestHistoryLimit(1);
+        requests = service.getRequests();
+        assertEq(1, requests.size());
+        assertEq("three", requests[0].command);
+
+        service.setRequestHistoryLimit(0);
+        requests = service.getRequests();
+        assertEq(0, requests.size());
+        service.handle(getRequest("one"));
+        requests = service.getRequests();
+        assertEq(0, requests.size());
+    }
+
+    testLoggerSupport() {
+        RecordingLoggerInterface logger();
+        SshServerCommandProvider::VirtualSshCommandService service(
+            <SshServerCommandProvider::VirtualSshCommandServiceOptions>{
+                "logger": logger,
+            }
+        );
+        service.addTextCommand("status", "ok\n");
+
+        assertTrue(service.handle(getRequest("status")).accepted);
+        assertFalse(service.handle(getRequest("missing")).accepted);
+
+        assertEq(logger, service.getLogger());
+        assertTrue(logger.events.size() >= 3);
+        assertEq("debug", logger.events[0].level);
+        assertEq("info", logger.events[1].level);
+        assertEq("warn", logger.events[2].level);
+    }
+
+    testDefaultAndMissing() {
+        SshServerCommandProvider::VirtualSshCommandService service();
+        service.setDefaultResult(<Qore::Ssh::SshCommandResult>{
+            "accepted": False,
+            "exit_status": 64,
+            "message": "default-deny",
+            "stderr": binary("default-deny\n"),
+        });
+
+        hash<Qore::Ssh::SshCommandResult> default_result = service.handle(getRequest("missing"));
+        assertEq(False, default_result.accepted);
+        assertEq(64, default_result.exit_status);
+        assertEq("default-deny", default_result.message);
+
+        SshServerCommandProvider::VirtualSshCommandService missing_only();
+        hash<Qore::Ssh::SshCommandResult> missing_result = missing_only.handle(getRequest("missing"));
+        assertEq(False, missing_result.accepted);
+        assertEq(127, missing_result.exit_status);
+        assertEq(binary("command not found: missing\n"), missing_result.stderr);
+    }
+
+    testConnectionBridge() {
+        SshServerCommandProvider::VirtualSshCommandService service();
+        service.addTextSubsystem("status", "ok\n", NOTHING, 0, True, {"kind": "subsystem"});
+
+        SshServerConnections::SshCommandServerConnection conn({
+            "name": "virtual-command-test",
+            "url": "sshserver://127.0.0.1:0",
+            "opts": {
+                "host_keys": (get_script_dir() + "data/ssh_host_ed25519_key",),
+                "command_backend": service,
+            },
+        });
+
+        assertEq(False, conn.hasDataProvider());
+        hash<Qore::Ssh::SshServerConfig> config = conn.getServerConfig();
+        hash<Qore::Ssh::SshCommandResult> result = config.command_callback(getSubsystemRequest("status"));
+        assertEq(True, result.accepted);
+        assertEq(binary("ok\n"), result.stdout);
+        assertEq("subsystem", service.getRequests()[0].metadata.request_type);
+        assertEq(1, service.getRequests().size());
+    }
+}

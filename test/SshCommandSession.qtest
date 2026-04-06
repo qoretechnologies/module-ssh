@@ -1,0 +1,99 @@
+#!/usr/bin/env qore
+# -*- mode: qore; indent-tabs-mode: nil -*-
+
+/*  SshCommandSession.qtest Copyright 2026 Qore Technologies, s.r.o.
+
+    Permission is hereby granted, free of charge, to any person obtaining a
+    copy of this software and associated documentation files (the "Software"),
+    to deal in the Software without restriction, including without limitation
+    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+    and/or sell copies of the Software, and to permit persons to whom the
+    Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+*/
+
+%modern
+%requires ssh
+%requires QUnit
+%requires ./TestLoggerInterface.qm
+
+%exec-class SshCommandSessionTest
+
+class TestLogger inherits RecordingLoggerInterface {
+}
+
+class SshCommandSessionTest inherits QUnit::Test {
+    constructor() : Test("SshCommandSessionTest", "0.1", \ARGV) {
+        addTestCase("request roundtrip", \testRequestRoundtrip());
+        addTestCase("getCommand returns request command", \testGetCommand());
+        addTestCase("exit status lifecycle", \testExitStatusLifecycle());
+        addTestCase("logger roundtrip", \testLoggerRoundtrip());
+        addTestCase("closeInput updates state", \testCloseInput());
+        addTestCase("copy is denied", \testCopyDenied());
+        set_return_value(main());
+    }
+
+    private hash<Qore::Ssh::SshCommandRequest> getRequest() {
+        return <Qore::Ssh::SshCommandRequest>{
+            "session_id": "s-1",
+            "server_name": "srv",
+            "listener_name": "lst",
+            "username": "user",
+            "principal": "user@example.com",
+            "command": "qorus-action",
+            "arguments": ("--id", "42"),
+            "environment": {"QORUS_ENV": "test"},
+            "metadata": {"source": "unit-test"},
+        };
+    }
+
+    testRequestRoundtrip() {
+        Qore::Ssh::SshCommandSession s(getRequest());
+        hash<Qore::Ssh::SshCommandRequest> req = s.getRequest();
+        assertEq("s-1", req.session_id);
+        assertEq("qorus-action", req.command);
+        assertEq(2, req.arguments.size());
+    }
+
+    testGetCommand() {
+        Qore::Ssh::SshCommandSession s(getRequest());
+        assertEq("qorus-action", s.getCommand());
+    }
+
+    testExitStatusLifecycle() {
+        Qore::Ssh::SshCommandSession s(getRequest());
+        assertEq(NOTHING, s.getExitStatus());
+        s.setExitStatus(17);
+        assertEq(17, s.getExitStatus());
+    }
+
+    testLoggerRoundtrip() {
+        TestLogger logger();
+        Qore::Ssh::SshCommandSession s(getRequest());
+        assertEq(NOTHING, s.getLogger());
+        s.setLogger(logger);
+        assertEq(logger, s.getLogger());
+    }
+
+    testCloseInput() {
+        Qore::Ssh::SshCommandSession s(getRequest());
+        assertFalse(s.inputClosed());
+        s.closeInput();
+        assertTrue(s.inputClosed());
+    }
+
+    testCopyDenied() {
+        Qore::Ssh::SshCommandSession s(getRequest());
+        assertThrows("SSHCOMMANDSESSION-COPY-ERROR", sub() { s.copy(); });
+    }
+}

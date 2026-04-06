@@ -1,0 +1,90 @@
+#!/usr/bin/env qore
+# -*- mode: qore; indent-tabs-mode: nil -*-
+
+/*  Scaffold.qtest Copyright 2026 Qore Technologies, s.r.o.
+
+    Permission is hereby granted, free of charge, to any person obtaining a
+    copy of this software and associated documentation files (the "Software"),
+    to deal in the Software without restriction, including without limitation
+    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+    and/or sell copies of the Software, and to permit persons to whom the
+    Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+*/
+
+%modern
+%requires QUnit
+
+%exec-class ScaffoldTest
+
+class ScaffoldTest inherits QUnit::Test {
+    constructor() : Test("ScaffoldTest", "0.1", \ARGV) {
+        addTestCase("Repository scaffold files exist", \scaffoldFilesExist());
+        addTestCase("Phase 1 design files exist", \phase1DesignFilesExist());
+        addTestCase("Phase 6 provider design files exist", \phase6DesignFilesExist());
+        addTestCase("Phase 6 provider tests exist", \phase6ProviderTestsExist());
+        addTestCase("API spec contains CamelCase contracts", \apiSpecContainsContracts());
+        addTestCase("Phase 2 binary module files exist", \phase2FilesExist());
+        set_return_value(main());
+    }
+
+    private string repoPath(string rel) {
+        return get_script_dir() + "../" + rel;
+    }
+
+    scaffoldFilesExist() {
+        assertTrue(is_file(repoPath("README")));
+        assertTrue(is_file(repoPath("design/api-spec.md")));
+        assertTrue(is_dir(repoPath("qlib/SshServerConnections")));
+        assertTrue(is_file(repoPath("qlib/SshServerConnections/SshServerConnections.qm")));
+        assertTrue(is_dir(repoPath("qlib/SftpServerDataProvider")));
+        assertTrue(is_file(repoPath("qlib/SftpServerDataProvider/SftpServerDataProvider.qm")));
+        assertTrue(is_dir(repoPath("qlib/SshServerCommandProvider")));
+        assertTrue(is_file(repoPath("qlib/SshServerCommandProvider/SshServerCommandProvider.qm")));
+        assertTrue(is_dir(repoPath("qlib/QorusSshIntegration")));
+        assertTrue(is_file(repoPath("qlib/QorusSshIntegration/QorusSshIntegration.qm")));
+    }
+
+    phase1DesignFilesExist() {
+        assertTrue(is_file(repoPath("design/callback-contracts.md")));
+        assertTrue(is_file(repoPath("design/error-taxonomy.md")));
+    }
+
+    phase6DesignFilesExist() {
+        assertTrue(is_file(repoPath("design/data-provider-infrastructure.md")));
+    }
+
+    phase6ProviderTestsExist() {
+        assertTrue(is_file(repoPath("test/SshServerConnections.qtest")));
+        assertTrue(is_file(repoPath("test/SftpServerDataProviderDataProvider.qtest")));
+        assertTrue(is_file(repoPath("test/SshServerCommandProvider.qtest")));
+        assertTrue(is_file(repoPath("test/VirtualSftpInboundPolicyServer.qtest")));
+    }
+
+    apiSpecContainsContracts() {
+        ReadOnlyFile f(repoPath("design/api-spec.md"));
+        string spec = f.read(-1);
+        assertTrue(spec.regex("Qore::Ssh"));
+        assertTrue(spec.regex("SshServer"));
+        assertTrue(spec.regex("SftpServer"));
+        assertTrue(spec.regex("SshAuthDecision"));
+        assertTrue(spec.regex("SftpAtomicPublishPolicy"));
+        assertTrue(spec.regex("SSH-AUTH-DENIED"));
+    }
+
+    phase2FilesExist() {
+        assertTrue(is_file(repoPath("src/ssh.qpp")));
+        assertTrue(is_file(repoPath("src/QC_SshServer.qpp")));
+        assertTrue(is_file(repoPath("src/ssh-module.h")));
+    }
+}

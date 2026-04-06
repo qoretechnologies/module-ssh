@@ -1,0 +1,723 @@
+#!/usr/bin/env qore
+# -*- mode: qore; indent-tabs-mode: nil -*-
+
+/*  SftpServerDataProviderDataProvider.qtest Copyright 2026 Qore Technologies, s.r.o.
+
+    Permission is hereby granted, free of charge, to any person obtaining a
+    copy of this software and associated documentation files (the "Software"),
+    to deal in the Software without restriction, including without limitation
+    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+    and/or sell copies of the Software, and to permit persons to whom the
+    Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+*/
+
+%modern
+%requires ../qlib/SftpServerDataProvider
+%requires ../qlib/SshServerConnections
+%requires DataProvider
+%requires QUnit
+
+%exec-class SftpServerDataProviderDataProviderTest
+
+class EventObserver inherits DataProvider::Observer {
+    public {
+        list<hash<auto>> events = ();
+    }
+
+    update(string event_id, hash<auto> data_) {
+        events += ((data_ + ("event_id": event_id)),);
+    }
+}
+
+class SftpServerDataProviderDataProviderTest inherits QUnit::Test {
+    constructor() : Test("SftpServerDataProviderDataProviderTest", "0.1", \ARGV) {
+        addTestCase("data provider factory and app are registered", \testRegistration());
+        addTestCase("root provider exposes generic exchange children", \testRootProviderChildren());
+        addTestCase("scheme bridge exposes generic exchange actions", \testSchemeBridge());
+        addTestCase("provider exchange actions work end to end", \testProviderActions());
+        addTestCase("provider exposes retention cleanup actions", \testRetentionCleanupAction());
+        addTestCase("provider exposes inbound submission events", \testInboundSubmissionEvents());
+        addTestCase("provider exposes outbound completion events", \testOutboundCompletionEvents());
+        addTestCase("provider surfaces inbound acceptance policy and rejects invalid submissions",
+            \testInboundSubmissionPolicy());
+        addTestCase("provider surfaces content-aware inbound policy",
+            \testInboundSubmissionContentPolicy());
+        addTestCase("provider surfaces custom inbound validation callbacks",
+            \testInboundSubmissionValidationCallback());
+        addTestCase("invalid backend constructor option is rejected", \testInvalidBackend());
+        set_return_value(main());
+    }
+
+    private SftpServerDataProvider::VirtualSftpExchangeRecordStore getStore() {
+        SftpServerDataProvider::VirtualSftpExchangeRecordStore store(
+            <SftpServerDataProvider::VirtualSftpExchangeOptions>{
+                "archive_dir": "/archive",
+                "claim_dir": "/claim",
+            }
+        );
+        store.addOutboundTextRecord("hello.txt", "hello\n", {"kind": "greeting"});
+        return store;
+    }
+
+    testRegistration() {
+        AbstractDataProviderFactory factory = DataProvider::getFactory(SftpServerDataProvider::FactoryName);
+        @assert(factory);
+        assertEq(SftpServerDataProvider::FactoryName, factory.getInfo().name);
+        assertEq("virtual SFTP server exchange data provider factory", factory.getInfo().desc);
+
+        hash<DataProviderAppInfo> app = DataProviderActionCatalog::getAppEx(SftpServerDataProvider::AppName);
+        assertEq(SftpServerDataProvider::AppName, app.name);
+        assertEq("SFTP Server Exchange", app.display_name);
+        assertEq("sftpserver", app.scheme);
+
+        hash<DataProviderActionInfo> action = DataProviderActionCatalog::getAppActionEx(
+            SftpServerDataProvider::AppName, "retrieve-outbound");
+        assertNothing(action.cls);
+        assertEq("constructor", action.options.backend.loc);
+
+        hash<DataProviderActionInfo> submit_action = DataProviderActionCatalog::getAppActionEx(
+            SftpServerDataProvider::AppName, "submit-inbound");
+        assertEq("constructor", submit_action.options.inbound_policy.loc);
+        assertTrue(exists submit_action.options.inbound_policy.type);
+
+        hash<DataProviderActionInfo> cleanup_action = DataProviderActionCatalog::getAppActionEx(
+            SftpServerDataProvider::AppName, "cleanup-expired");
+        assertNothing(cleanup_action.cls);
+        assertEq("constructor", cleanup_action.options.inbound_retention_policy.loc);
+    }
+
+    testRootProviderChildren() {
+        SftpServerDataProvider::VirtualSftpExchangeRecordStore store = getStore();
+        AbstractDataProvider provider = DataProvider::getFactory(SftpServerDataProvider::FactoryName).create({
+            "backend": store,
+        });
+
+        assertEq(SftpServerDataProvider::FactoryName, provider.getName());
+        list<string> children = provider.getChildProviderNames();
+        assertEq(11, children.size());
+        assertTrue(inlist("list-outbound", children));
+        assertTrue(inlist("retrieve-outbound", children));
+        assertTrue(inlist("submit-inbound", children));
+        assertTrue(inlist("cleanup-expired", children));
+        assertTrue(inlist(SftpServerDataProvider::EventInboundFileAccepted, children));
+        assertTrue(inlist(SftpServerDataProvider::EventOutboundFileClaimed, children));
+    }
+
+    testSchemeBridge() {
+        SftpServerDataProvider::VirtualSftpExchangeRecordStore store = getStore();
+        list<hash<DataProviderActionInfo>> actions = DataProviderActionCatalog::getActionsForScheme("sftpserver");
+        assertEq(11, actions.size());
+        assertTrue(inlist("cleanup-expired", map $1.action, actions.iterator()));
+        assertTrue(inlist("list-outbound", map $1.action, actions.iterator()));
+        assertTrue(inlist(SftpServerDataProvider::EventInboundFileAccepted, map $1.action, actions.iterator()));
+        assertTrue(inlist(SftpServerDataProvider::EventOutboundFileClaimed, map $1.action, actions.iterator()));
+
+        SshServerConnections::SftpServerConnection conn({
+            "name": "sftp-provider-bridge",
+            "url": "sftpserver://127.0.0.1:0",
+            "opts": {
+                "host_keys": (get_script_dir() + "data/ssh_host_ed25519_key",),
+                "backend": store,
+            },
+        });
+
+        AbstractDataProvider provider = conn.getDataProvider();
+        hash<auto> result = provider.getChildProviderEx("list-outbound").doRequest({});
+        assertEq(1, result.records.size());
+        assertEq("hello.txt", result.records[0].name);
+    }
+
+    testProviderActions() {
+        SftpServerDataProvider::VirtualSftpExchangeRecordStore store = getStore();
+        AbstractDataProvider provider = DataProvider::getFactory(SftpServerDataProvider::FactoryName).create({
+            "backend": store,
+        });
+
+        hash<auto> list_result = provider.getChildProviderEx("list-outbound").doRequest({});
+        assertEq(1, list_result.records.size());
+        assertEq("hello.txt", list_result.records[0].name);
+
+        hash<auto> retrieve_result = provider.getChildProviderEx("retrieve-outbound").doRequest({
+            "name": "hello.txt",
+        });
+        assertEq(binary("hello\n"), retrieve_result.data);
+        assertEq("outbound", retrieve_result.queue);
+
+        hash<auto> claim_result = provider.getChildProviderEx("claim-outbound").doRequest({
+            "name": "hello.txt",
+            "completion_mode": "claim",
+        });
+        assertTrue(claim_result.completed);
+        assertEq("claim", claim_result.operation);
+        assertEq(binary("hello\n"), store.getExchange().getFilesystem().getFileData("/claim/hello.txt"));
+
+        hash<auto> submit_result = provider.getChildProviderEx("submit-inbound").doRequest({
+            "name": "upload.txt",
+            "data": binary("upload\n"),
+            "metadata": {"kind": "upload"},
+        });
+        assertEq("inbound", submit_result.queue);
+        assertEq(binary("upload\n"), store.retrieveInboundRecord("upload.txt").data);
+    }
+
+    testRetentionCleanupAction() {
+        SftpServerDataProvider::VirtualSftpExchangeRecordStore store(
+            <SftpServerDataProvider::VirtualSftpExchangeOptions>{
+                "archive_dir": "/archive",
+                "claim_dir": "/claim",
+                "inbound_retention_policy": <SftpServerDataProvider::VirtualSftpRetentionPolicy>{
+                    "max_age_seconds": 10,
+                },
+            }
+        );
+        AbstractDataProvider provider = DataProvider::getFactory(SftpServerDataProvider::FactoryName).create({
+            "backend": store,
+        });
+
+        provider.getChildProviderEx("submit-inbound").doRequest({
+            "name": "tenant/old.dat",
+            "data": binary("expired\n"),
+        });
+
+        hash<auto> stat = store.getExchange().stat({"path": "/inbound/tenant/old.dat"});
+        hash<auto> cleanup_result = provider.getChildProviderEx("cleanup-expired").doRequest({
+            "queue": SftpServerDataProvider::RetentionQueueInbound,
+            "now_s": stat.metadata.expires_at,
+            "remove_empty_directories": True,
+        });
+
+        assertEq(SftpServerDataProvider::RetentionQueueInbound, cleanup_result.queue);
+        assertEq(1, cleanup_result.removed_count);
+        assertEq(("/inbound/tenant/old.dat",), cleanup_result.removed_paths);
+        assertEq(("/inbound/tenant",), cleanup_result.removed_directories);
+        assertFalse(store.getExchange().getFilesystem().exists("/inbound/tenant/old.dat"));
+
+        store.getExchange().submit({
+            "path": "/inbound/tenant/alpha.dat",
+            "data": binary("alpha\n"),
+            "session_info": <Qore::Ssh::SftpSessionInfo>{
+                "session_info": <Qore::Ssh::SshSessionInfo>{
+                    "session_id": "session-alpha",
+                    "server_name": "provider-test",
+                    "listener_name": "provider-test",
+                    "remote_address": "127.0.0.1",
+                    "remote_port": 22,
+                    "local_address": "127.0.0.1",
+                    "local_port": 22,
+                    "username": "alpha",
+                    "authenticated": True,
+                    "auth_method": "none",
+                    "principal": "principal:alpha",
+                    "started": now(),
+                    "last_activity": now(),
+                },
+                "principal": "principal:alpha",
+                "read_only": False,
+            },
+        });
+        store.getExchange().submit({
+            "path": "/inbound/tenant/beta.dat",
+            "data": binary("beta\n"),
+            "session_info": <Qore::Ssh::SftpSessionInfo>{
+                "session_info": <Qore::Ssh::SshSessionInfo>{
+                    "session_id": "session-beta",
+                    "server_name": "provider-test",
+                    "listener_name": "provider-test",
+                    "remote_address": "127.0.0.1",
+                    "remote_port": 22,
+                    "local_address": "127.0.0.1",
+                    "local_port": 22,
+                    "username": "beta",
+                    "authenticated": True,
+                    "auth_method": "none",
+                    "principal": "principal:beta",
+                    "started": now(),
+                    "last_activity": now(),
+                },
+                "principal": "principal:beta",
+                "read_only": False,
+            },
+        });
+        hash<auto> alpha_stat = store.getExchange().stat({"path": "/inbound/tenant/alpha.dat"});
+        hash<auto> alpha_cleanup = provider.getChildProviderEx("cleanup-expired").doRequest({
+            "queue": SftpServerDataProvider::RetentionQueueInbound,
+            "now_s": alpha_stat.metadata.expires_at,
+            "principal": "principal:alpha",
+        });
+        assertEq("principal:alpha", alpha_cleanup.principal);
+        assertEq(1, alpha_cleanup.removed_count);
+        assertEq(("/inbound/tenant/alpha.dat",), alpha_cleanup.removed_paths);
+        assertFalse(store.getExchange().getFilesystem().exists("/inbound/tenant/alpha.dat"));
+        assertTrue(store.getExchange().getFilesystem().exists("/inbound/tenant/beta.dat"));
+    }
+
+    testInboundSubmissionEvents() {
+        SftpServerDataProvider::VirtualSftpExchangeRecordStore store = getStore();
+        AbstractDataProvider provider = DataProvider::getFactory(SftpServerDataProvider::FactoryName).create({
+            "backend": store,
+        });
+        AbstractDataProvider event_provider = provider.getChildProviderEx(SftpServerDataProvider::EventInboundFileAccepted);
+        EventObserver observer();
+        EventObserver accepted_observer();
+        cast<DataProvider::Observable>(event_provider).registerObserver(
+            observer, SftpServerDataProvider::EventInboundFileAccepted);
+        cast<DataProvider::Observable>(event_provider).registerObserver(
+            accepted_observer, SftpServerDataProvider::EventInboundFileAccepted);
+        cast<DataProvider::DelayedObservable>(event_provider).observersReady();
+
+        hash<auto> submit_result = provider.getChildProviderEx("submit-inbound").doRequest({
+            "name": "event-upload.txt",
+            "data": binary("payload\n"),
+            "metadata": {"kind": "event"},
+        });
+
+        assertEq("event-upload.txt", submit_result.name);
+        assertEq(1, observer.events.size());
+        assertEq(SftpServerDataProvider::EventInboundFileAccepted, observer.events[0].event_id);
+        assertEq(SftpServerDataProvider::EventInboundFileAccepted, observer.events[0].event_type);
+        assertEq("event-upload.txt", observer.events[0].name);
+        assertEq("/inbound/event-upload.txt", observer.events[0].path);
+        assertEq(NOTHING, observer.events[0].data);
+        assertEq("helper", observer.events[0].source);
+        assertTrue(observer.events[0].accepted);
+        assertEq("event", observer.events[0].metadata.kind);
+        assertEq(1, accepted_observer.events.size());
+        assertEq(SftpServerDataProvider::EventInboundFileAccepted, accepted_observer.events[0].event_id);
+        assertEq(SftpServerDataProvider::EventInboundFileAccepted, accepted_observer.events[0].event_type);
+
+        AbstractDataProvider provider_with_mode = DataProvider::getFactory(SftpServerDataProvider::FactoryName).create({
+            "inbound_event_payload_mode": SftpServerDataProvider::InboundEventPayloadInline,
+        });
+        AbstractDataProvider event_provider_with_mode
+            = provider_with_mode.getChildProviderEx(SftpServerDataProvider::EventInboundFileAccepted);
+        EventObserver observer_with_mode();
+        cast<DataProvider::Observable>(event_provider_with_mode).registerObserver(
+            observer_with_mode, SftpServerDataProvider::EventInboundFileAccepted);
+        cast<DataProvider::DelayedObservable>(event_provider_with_mode).observersReady();
+
+        provider_with_mode.getChildProviderEx("submit-inbound").doRequest({
+            "name": "event-upload-with-data.txt",
+            "data": binary("payload-with-data\n"),
+        });
+
+        assertEq(1, observer_with_mode.events.size());
+        assertEq(binary("payload-with-data\n"), observer_with_mode.events[0].data);
+
+        AbstractDataProvider provider_with_checksum = DataProvider::getFactory(SftpServerDataProvider::FactoryName).create({
+            "generate_inbound_checksum": True,
+            "inbound_policy": <SftpServerDataProvider::VirtualSftpInboundPolicy>{
+                "max_size": 16,
+                "directory_policies": (
+                    <SftpServerDataProvider::VirtualSftpInboundDirectoryPolicy>{
+                        "subdir": "strict",
+                        "policy": <SftpServerDataProvider::VirtualSftpInboundPolicyRule>{
+                            "max_size": 4,
+                        },
+                    },
+                ),
+            },
+        });
+        AbstractDataProvider checksum_event_provider
+            = provider_with_checksum.getChildProviderEx(SftpServerDataProvider::EventInboundFileAccepted);
+        EventObserver checksum_observer();
+        cast<DataProvider::Observable>(checksum_event_provider).registerObserver(
+            checksum_observer, SftpServerDataProvider::EventInboundFileAccepted);
+        cast<DataProvider::DelayedObservable>(checksum_event_provider).observersReady();
+
+        hash<auto> checksum_submit_result = provider_with_checksum.getChildProviderEx("submit-inbound").doRequest({
+            "name": "strict/ok.dat",
+            "data": binary("ok\n"),
+        });
+        assertEq(SftpServerDataProvider::ChecksumAlgorithmSha256, checksum_submit_result.checksum_algorithm);
+        assertTrue(checksum_submit_result.checksum.size() > 0);
+        assertEq(1, checksum_observer.events.size());
+        assertEq(checksum_submit_result.checksum, checksum_observer.events[0].checksum);
+        assertEq(SftpServerDataProvider::ChecksumAlgorithmSha256, checksum_observer.events[0].checksum_algorithm);
+
+        assertThrows("VIRTUAL-SFTP-EXCHANGE-ERROR", sub() {
+            provider_with_checksum.getChildProviderEx("submit-inbound").doRequest({
+                "name": "strict/rejected.dat",
+                "data": binary("oversized\n"),
+            });
+        });
+
+        AbstractDataProvider provider_reject = DataProvider::getFactory(SftpServerDataProvider::FactoryName).create({
+            "inbound_policy": <SftpServerDataProvider::VirtualSftpInboundPolicy>{
+                "allow_overwrite": False,
+            },
+        });
+        AbstractDataProvider reject_event_provider = provider_reject.getChildProviderEx(SftpServerDataProvider::EventInboundFileAccepted);
+        EventObserver reject_observer();
+        cast<DataProvider::Observable>(reject_event_provider).registerObserver(
+            reject_observer, SftpServerDataProvider::EventInboundFileRejected);
+        cast<DataProvider::DelayedObservable>(reject_event_provider).observersReady();
+
+        provider_reject.getChildProviderEx("submit-inbound").doRequest({
+            "name": "event-upload.txt",
+            "data": binary("first"),
+        });
+        assertThrows("VIRTUAL-SFTP-EXCHANGE-ERROR", sub() {
+            provider_reject.getChildProviderEx("submit-inbound").doRequest({
+                "name": "event-upload.txt",
+                "data": binary("redo"),
+                "metadata": {"kind": "event-reject"},
+            });
+        });
+        assertEq(1, reject_observer.events.size());
+        assertEq(SftpServerDataProvider::EventInboundFileRejected, reject_observer.events[0].event_id);
+        assertEq(SftpServerDataProvider::EventInboundFileRejected, reject_observer.events[0].event_type);
+        assertFalse(reject_observer.events[0].accepted);
+        assertEq(SftpServerDataProvider::InboundRejectOverwrite, reject_observer.events[0].reason_code);
+        assertEq("/inbound/event-upload.txt", reject_observer.events[0].path);
+
+        SftpServerDataProvider::VirtualSftpExchange duplicate_exchange(
+            <SftpServerDataProvider::VirtualSftpExchangeOptions>{
+                "inbound_policy": <SftpServerDataProvider::VirtualSftpInboundPolicy>{
+                    "reject_duplicate_name": True,
+                },
+            }
+        );
+        duplicate_exchange.getFilesystem().addDirectory("/inbound/existing");
+        duplicate_exchange.getFilesystem().addTextFile("/inbound/existing/dup.dat", "existing\n");
+        AbstractDataProvider duplicate_provider = DataProvider::getFactory(SftpServerDataProvider::FactoryName).create({
+            "backend": duplicate_exchange,
+        });
+        AbstractDataProvider duplicate_event_provider = duplicate_provider.getChildProviderEx(SftpServerDataProvider::EventInboundFileAccepted);
+        EventObserver duplicate_observer();
+        cast<DataProvider::Observable>(duplicate_event_provider).registerObserver(
+            duplicate_observer, SftpServerDataProvider::EventInboundFileRejected);
+        cast<DataProvider::DelayedObservable>(duplicate_event_provider).observersReady();
+
+        assertThrows("VIRTUAL-SFTP-EXCHANGE-ERROR", sub() {
+            duplicate_provider.getChildProviderEx("submit-inbound").doRequest({
+                "name": "dup.dat",
+                "data": binary("redo"),
+            });
+        });
+        assertEq(1, duplicate_observer.events.size());
+        assertEq(SftpServerDataProvider::InboundRejectDuplicateName, duplicate_observer.events[0].reason_code);
+        assertEq("/inbound/dup.dat", duplicate_observer.events[0].path);
+
+        SftpServerDataProvider::VirtualSftpExchange duplicate_size_exchange(
+            <SftpServerDataProvider::VirtualSftpExchangeOptions>{
+                "inbound_policy": <SftpServerDataProvider::VirtualSftpInboundPolicy>{
+                    "reject_duplicate_size": True,
+                },
+            }
+        );
+        duplicate_size_exchange.getFilesystem().addTextFile("/inbound/existing-size.dat", "alpha\n");
+        AbstractDataProvider duplicate_size_provider = DataProvider::getFactory(SftpServerDataProvider::FactoryName).create({
+            "backend": duplicate_size_exchange,
+        });
+        AbstractDataProvider duplicate_size_event_provider
+            = duplicate_size_provider.getChildProviderEx(SftpServerDataProvider::EventInboundFileAccepted);
+        EventObserver duplicate_size_observer();
+        cast<DataProvider::Observable>(duplicate_size_event_provider).registerObserver(
+            duplicate_size_observer, SftpServerDataProvider::EventInboundFileRejected);
+        cast<DataProvider::DelayedObservable>(duplicate_size_event_provider).observersReady();
+
+        assertThrows("VIRTUAL-SFTP-EXCHANGE-ERROR", sub() {
+            duplicate_size_provider.getChildProviderEx("submit-inbound").doRequest({
+                "name": "new-size.dat",
+                "data": binary("omega\n"),
+            });
+        });
+        assertEq(1, duplicate_size_observer.events.size());
+        assertEq(SftpServerDataProvider::InboundRejectDuplicateSize, duplicate_size_observer.events[0].reason_code);
+        assertEq("/inbound/new-size.dat", duplicate_size_observer.events[0].path);
+
+        SftpServerDataProvider::VirtualSftpExchange duplicate_hash_exchange(
+            <SftpServerDataProvider::VirtualSftpExchangeOptions>{
+                "inbound_policy": <SftpServerDataProvider::VirtualSftpInboundPolicy>{
+                    "reject_duplicate_hash": True,
+                },
+            }
+        );
+        duplicate_hash_exchange.getFilesystem().addTextFile("/inbound/existing-hash.dat", "same-content\n");
+        AbstractDataProvider duplicate_hash_provider = DataProvider::getFactory(SftpServerDataProvider::FactoryName).create({
+            "backend": duplicate_hash_exchange,
+        });
+        AbstractDataProvider duplicate_hash_event_provider
+            = duplicate_hash_provider.getChildProviderEx(SftpServerDataProvider::EventInboundFileAccepted);
+        EventObserver duplicate_hash_observer();
+        cast<DataProvider::Observable>(duplicate_hash_event_provider).registerObserver(
+            duplicate_hash_observer, SftpServerDataProvider::EventInboundFileRejected);
+        cast<DataProvider::DelayedObservable>(duplicate_hash_event_provider).observersReady();
+
+        assertThrows("VIRTUAL-SFTP-EXCHANGE-ERROR", sub() {
+            duplicate_hash_provider.getChildProviderEx("submit-inbound").doRequest({
+                "name": "new-hash.dat",
+                "data": binary("same-content\n"),
+            });
+        });
+        assertEq(1, duplicate_hash_observer.events.size());
+        assertEq(SftpServerDataProvider::InboundRejectDuplicateHash, duplicate_hash_observer.events[0].reason_code);
+        assertEq("/inbound/new-hash.dat", duplicate_hash_observer.events[0].path);
+    }
+
+    testOutboundCompletionEvents() {
+        SftpServerDataProvider::VirtualSftpExchangeRecordStore store(
+            <SftpServerDataProvider::VirtualSftpExchangeOptions>{
+                "archive_dir": "/archive",
+                "claim_dir": "/claim",
+            }
+        );
+        store.addOutboundTextRecord("claim.txt", "claim\n", {
+            "kind": "claim",
+            "checksum": "claim-checksum",
+            "checksum_algorithm": SftpServerDataProvider::ChecksumAlgorithmSha256,
+        });
+        store.addOutboundTextRecord("archive.txt", "archive\n", {
+            "kind": "archive",
+            "checksum": "archive-checksum",
+            "checksum_algorithm": SftpServerDataProvider::ChecksumAlgorithmSha256,
+        });
+        store.addOutboundTextRecord("delete.txt", "delete\n", {
+            "kind": "delete",
+            "checksum": "delete-checksum",
+            "checksum_algorithm": SftpServerDataProvider::ChecksumAlgorithmSha256,
+        });
+
+        AbstractDataProvider provider = DataProvider::getFactory(SftpServerDataProvider::FactoryName).create({
+            "backend": store,
+        });
+        EventObserver claim_observer();
+        EventObserver archive_observer();
+        EventObserver delete_observer();
+        AbstractDataProvider claim_provider = provider.getChildProviderEx(SftpServerDataProvider::EventOutboundFileClaimed);
+        AbstractDataProvider archive_provider = provider.getChildProviderEx(SftpServerDataProvider::EventOutboundFileArchived);
+        AbstractDataProvider delete_provider = provider.getChildProviderEx(SftpServerDataProvider::EventOutboundFileDeleted);
+        cast<DataProvider::Observable>(claim_provider).registerObserver(
+            claim_observer, SftpServerDataProvider::EventOutboundFileClaimed);
+        cast<DataProvider::Observable>(archive_provider).registerObserver(
+            archive_observer, SftpServerDataProvider::EventOutboundFileArchived);
+        cast<DataProvider::Observable>(delete_provider).registerObserver(
+            delete_observer, SftpServerDataProvider::EventOutboundFileDeleted);
+        cast<DataProvider::DelayedObservable>(claim_provider).observersReady();
+        cast<DataProvider::DelayedObservable>(archive_provider).observersReady();
+        cast<DataProvider::DelayedObservable>(delete_provider).observersReady();
+
+        hash<auto> claim_result = provider.getChildProviderEx("claim-outbound").doRequest({
+            "name": "claim.txt",
+            "completion_mode": "claim",
+            "final_name": "claimed.txt",
+        });
+        hash<auto> archive_result = provider.getChildProviderEx("archive-outbound").doRequest({
+            "name": "archive.txt",
+            "completion_mode": "archive",
+            "final_name": "archived.txt",
+        });
+        hash<auto> delete_result = provider.getChildProviderEx("delete-outbound").doRequest({
+            "name": "delete.txt",
+            "completion_mode": "delete",
+        });
+
+        assertEq(1, claim_observer.events.size());
+        assertEq(SftpServerDataProvider::EventOutboundFileClaimed, claim_observer.events[0].event_id);
+        assertEq("claim.txt", claim_observer.events[0].name);
+        assertEq("/claim/claimed.txt", claim_observer.events[0].path);
+        assertEq("claimed.txt", claim_observer.events[0].final_name);
+        assertEq("claim", claim_observer.events[0].operation);
+        assertEq("claim-checksum", claim_result.checksum);
+        assertEq("claim-checksum", claim_observer.events[0].checksum);
+        assertEq(SftpServerDataProvider::ChecksumAlgorithmSha256, claim_observer.events[0].checksum_algorithm);
+
+        assertEq(1, archive_observer.events.size());
+        assertEq(SftpServerDataProvider::EventOutboundFileArchived, archive_observer.events[0].event_id);
+        assertEq("archive.txt", archive_observer.events[0].name);
+        assertEq("/archive/archived.txt", archive_observer.events[0].path);
+        assertEq("archived.txt", archive_observer.events[0].final_name);
+        assertEq("archive", archive_observer.events[0].operation);
+        assertEq("archive-checksum", archive_result.checksum);
+        assertEq("archive-checksum", archive_observer.events[0].checksum);
+        assertEq(SftpServerDataProvider::ChecksumAlgorithmSha256, archive_observer.events[0].checksum_algorithm);
+
+        assertEq(1, delete_observer.events.size());
+        assertEq(SftpServerDataProvider::EventOutboundFileDeleted, delete_observer.events[0].event_id);
+        assertEq("delete.txt", delete_observer.events[0].name);
+        assertEq("/outbound/delete.txt", delete_observer.events[0].path);
+        assertEq("delete", delete_observer.events[0].operation);
+        assertEq("delete-checksum", delete_result.checksum);
+        assertEq("delete-checksum", delete_observer.events[0].checksum);
+        assertEq(SftpServerDataProvider::ChecksumAlgorithmSha256, delete_observer.events[0].checksum_algorithm);
+    }
+
+    testInboundSubmissionPolicy() {
+        AbstractDataProvider provider = DataProvider::getFactory(SftpServerDataProvider::FactoryName).create({
+            "inbound_policy": <SftpServerDataProvider::VirtualSftpInboundPolicy>{
+                "accept_filename_glob": "*.dat",
+                "max_size": 4,
+                "allow_overwrite": False,
+            },
+        });
+
+        hash<auto> ok_result = provider.getChildProviderEx("submit-inbound").doRequest({
+            "name": "ok.dat",
+            "data": binary("okay"),
+        });
+        assertEq("ok.dat", ok_result.name);
+
+        assertThrows("VIRTUAL-SFTP-EXCHANGE-ERROR", sub() {
+            provider.getChildProviderEx("submit-inbound").doRequest({
+                "name": "bad.txt",
+                "data": binary("okay"),
+            });
+        });
+
+        assertThrows("VIRTUAL-SFTP-EXCHANGE-ERROR", sub() {
+            provider.getChildProviderEx("submit-inbound").doRequest({
+                "name": "large.dat",
+                "data": binary("oversized"),
+            });
+        });
+
+        assertThrows("VIRTUAL-SFTP-EXCHANGE-ERROR", sub() {
+            provider.getChildProviderEx("submit-inbound").doRequest({
+                "name": "ok.dat",
+                "data": binary("redo"),
+            });
+        });
+
+        AbstractDataProvider count_provider = DataProvider::getFactory(SftpServerDataProvider::FactoryName).create({
+            "inbound_policy": <SftpServerDataProvider::VirtualSftpInboundPolicy>{
+                "max_file_count": 1,
+            },
+        });
+        count_provider.getChildProviderEx("submit-inbound").doRequest({
+            "name": "count-1.dat",
+            "data": binary("one\n"),
+        });
+        assertThrows("VIRTUAL-SFTP-EXCHANGE-ERROR", sub() {
+            count_provider.getChildProviderEx("submit-inbound").doRequest({
+                "name": "count-2.dat",
+                "data": binary("two\n"),
+            });
+        });
+
+        AbstractDataProvider bytes_provider = DataProvider::getFactory(SftpServerDataProvider::FactoryName).create({
+            "inbound_policy": <SftpServerDataProvider::VirtualSftpInboundPolicy>{
+                "max_total_bytes": 8,
+            },
+        });
+        bytes_provider.getChildProviderEx("submit-inbound").doRequest({
+            "name": "bytes-1.dat",
+            "data": binary("four\n"),
+        });
+        assertThrows("VIRTUAL-SFTP-EXCHANGE-ERROR", sub() {
+            bytes_provider.getChildProviderEx("submit-inbound").doRequest({
+                "name": "bytes-2.dat",
+                "data": binary("again\n"),
+            });
+        });
+    }
+
+    testInboundSubmissionContentPolicy() {
+        AbstractDataProvider provider = DataProvider::getFactory(SftpServerDataProvider::FactoryName).create({
+            "inbound_policy": <SftpServerDataProvider::VirtualSftpInboundPolicy>{
+                "accept_content_prefix": binary("PK"),
+                "reject_content_prefix": binary("MZ"),
+                "accept_content_type_hints": ("application/zip",),
+                "reject_content_type_hints": ("application/x-msdownload",),
+            },
+        });
+        AbstractDataProvider event_provider = provider.getChildProviderEx(SftpServerDataProvider::EventInboundFileAccepted);
+        EventObserver reject_observer();
+        cast<DataProvider::Observable>(event_provider).registerObserver(
+            reject_observer, SftpServerDataProvider::EventInboundFileRejected);
+        cast<DataProvider::DelayedObservable>(event_provider).observersReady();
+
+        hash<auto> ok_result = provider.getChildProviderEx("submit-inbound").doRequest({
+            "name": "ok.zip",
+            "data": binary("PKzip-data\n"),
+            "metadata": {"content_type_hint": "application/zip"},
+        });
+        assertEq("ok.zip", ok_result.name);
+
+        assertThrows("VIRTUAL-SFTP-EXCHANGE-ERROR", sub() {
+            provider.getChildProviderEx("submit-inbound").doRequest({
+                "name": "bad-prefix.exe",
+                "data": binary("MZexe-data\n"),
+                "metadata": {"content_type_hint": "application/zip"},
+            });
+        });
+
+        assertThrows("VIRTUAL-SFTP-EXCHANGE-ERROR", sub() {
+            provider.getChildProviderEx("submit-inbound").doRequest({
+                "name": "bad-hint.zip",
+                "data": binary("PKzip-data\n"),
+                "metadata": {"content_type_hint": "application/x-msdownload"},
+            });
+        });
+
+        assertEq(2, reject_observer.events.size());
+        assertEq(SftpServerDataProvider::InboundRejectContentPrefix, reject_observer.events[0].reason_code);
+        assertEq("/inbound/bad-prefix.exe", reject_observer.events[0].path);
+        assertEq(SftpServerDataProvider::InboundRejectContentTypeHint, reject_observer.events[1].reason_code);
+        assertEq("/inbound/bad-hint.zip", reject_observer.events[1].path);
+    }
+
+    testInboundSubmissionValidationCallback() {
+        list<hash<auto>> requests = ();
+        AbstractDataProvider provider = DataProvider::getFactory(SftpServerDataProvider::FactoryName).create({
+            "inbound_policy": <SftpServerDataProvider::VirtualSftpInboundPolicy>{
+                "validation_callback": hash<SftpServerDataProvider::VirtualSftpInboundValidationResult>
+                        sub(hash<SftpServerDataProvider::VirtualSftpInboundValidationRequest> req) {
+                    requests += (req,);
+                    return <SftpServerDataProvider::VirtualSftpInboundValidationResult>{
+                        "accepted": req.data.toString("UTF-8").find("ALLOW") >= 0,
+                        "reason_code": "provider-validation-failed",
+                        "reason_desc": sprintf("provider validator rejected %y", req.name),
+                    };
+                },
+            },
+        });
+        AbstractDataProvider event_provider = provider.getChildProviderEx(SftpServerDataProvider::EventInboundFileAccepted);
+        EventObserver reject_observer();
+        cast<DataProvider::Observable>(event_provider).registerObserver(
+            reject_observer, SftpServerDataProvider::EventInboundFileRejected);
+        cast<DataProvider::DelayedObservable>(event_provider).observersReady();
+
+        hash<auto> ok_result = provider.getChildProviderEx("submit-inbound").doRequest({
+            "name": "ok.dat",
+            "data": binary("ALLOW provider\n"),
+        });
+        assertEq("ok.dat", ok_result.name);
+
+        assertThrows("VIRTUAL-SFTP-EXCHANGE-ERROR", sub() {
+            provider.getChildProviderEx("submit-inbound").doRequest({
+                "name": "bad.dat",
+                "data": binary("REJECT provider\n"),
+            });
+        });
+
+        assertEq(2, requests.size());
+        assertEq("/inbound/ok.dat", requests[0].path);
+        assertEq("ALLOW provider\n", requests[0].data.toString("UTF-8"));
+        assertEq("/inbound/bad.dat", requests[1].path);
+        assertEq("REJECT provider\n", requests[1].data.toString("UTF-8"));
+
+        assertEq(1, reject_observer.events.size());
+        assertEq("provider-validation-failed", reject_observer.events[0].reason_code);
+        assertEq("/inbound/bad.dat", reject_observer.events[0].path);
+    }
+
+    testInvalidBackend() {
+        assertThrows("CONSTRUCTOR-ERROR", sub() {
+            AbstractDataProviderFactory factory = DataProvider::getFactory(SftpServerDataProvider::FactoryName);
+            factory.create({
+                "backend": new SftpServerDataProvider::VirtualSftpFilesystem(),
+            });
+        });
+    }
+}

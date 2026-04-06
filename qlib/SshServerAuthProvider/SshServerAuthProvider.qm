@@ -1,0 +1,409 @@
+# -*- mode: qore; indent-tabs-mode: nil -*-
+#! @file SshServerAuthProvider.qm typed auth-provider abstractions and built-in config-driven implementations
+
+/*  SshServerAuthProvider.qm Copyright 2026 Qore Technologies, s.r.o.
+
+    Permission is hereby granted, free of charge, to any person obtaining a
+    copy of this software and associated documentation files (the "Software"),
+    to deal in the Software without restriction, including without limitation
+    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+    and/or sell copies of the Software, and to permit persons to whom the
+    Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+*/
+
+%requires qore >= 2.0
+%modern
+
+%requires(reexport) ssh
+%requires(reexport) Logger
+
+module SshServerAuthProvider {
+    version = "0.1";
+    desc = "typed auth-provider abstractions and built-in config-driven SSH auth implementations";
+    author = "Qore Technologies, s.r.o.";
+    url = "http://qore.org";
+    license = "MIT";
+}
+
+/** @mainpage SshServerAuthProvider Module
+
+    @tableofcontents
+
+    @section sshserverauthproviderintro SshServerAuthProvider Module Introduction
+
+    The %SshServerAuthProvider module provides typed object-driven
+    authentication helpers for the @ref sshintro "ssh module".
+
+    It exposes:
+    - @ref SshServerAuthProvider::AbstractSshAuthProvider for user-defined
+      provider implementations
+    - @ref SshServerAuthProvider::VirtualSshAuthProvider for built-in
+      config-driven authentication
+
+    The built-in provider supports:
+    - @c none
+    - @c password
+    - @c publickey
+    - @c interactive
+    - @c hostbased
+    - @c gssapi-mic
+
+    Connection helpers can synthesize
+    @ref SshServerAuthProvider::VirtualSshAuthProvider automatically from
+    grouped @c auth options, while low-level binary-module server configs can
+    attach provider objects directly through
+    @ref Qore::Ssh::SshServerConfig "Qore::Ssh::SshServerConfig".
+*/
+
+public namespace SshServerAuthProvider {
+    public hashdecl VirtualSshAuthDecisionTemplate {
+        *bool partial;
+        *string principal;
+        *string message;
+        *list<string> allowed_auth_methods;
+        *hash<auto> command_policy;
+        *hash<auto> sftp_policy;
+        *hash<auto> session_data;
+        *hash<auto> audit_data;
+    }
+
+    public hashdecl VirtualSshStaticAuthMethodOptions {
+        *list<string> allowed_usernames;
+        *list<string> denied_usernames;
+        *hash<VirtualSshAuthDecisionTemplate> success_decision;
+        *hash<VirtualSshAuthDecisionTemplate> failure_decision;
+        *code<hash<Qore::Ssh::SshAuthDecision>(hash<Qore::Ssh::SshAuthContextInfo>)> validator;
+    }
+
+    public hashdecl VirtualSshPasswordUserInfo {
+        string username;
+        string password;
+        *hash<VirtualSshAuthDecisionTemplate> decision;
+    }
+
+    public hashdecl VirtualSshPasswordAuthOptions inherits VirtualSshStaticAuthMethodOptions {
+        *list<hash<VirtualSshPasswordUserInfo>> users;
+    }
+
+    public hashdecl VirtualSshAuthorizedKeyInfo {
+        string username;
+        binary public_key;
+        *string public_key_type;
+        *hash<VirtualSshAuthDecisionTemplate> decision;
+    }
+
+    public hashdecl VirtualSshPublicKeyAuthOptions inherits VirtualSshStaticAuthMethodOptions {
+        *list<hash<VirtualSshAuthorizedKeyInfo>> authorized_keys;
+    }
+
+    public hashdecl VirtualSshAuthProviderOptions {
+        *list<string> methods;
+        *hash<VirtualSshStaticAuthMethodOptions> none;
+        *hash<VirtualSshPasswordAuthOptions> password;
+        *hash<VirtualSshPublicKeyAuthOptions> publickey;
+        *hash<VirtualSshStaticAuthMethodOptions> interactive;
+        *hash<VirtualSshStaticAuthMethodOptions> hostbased;
+        *hash<VirtualSshStaticAuthMethodOptions> gssapi_mic;
+        *hash<VirtualSshAuthDecisionTemplate> default_failure_decision;
+        *LoggerInterface logger;
+    }
+
+    /** Base auth-provider abstraction for object-driven SSH authentication.
+
+        User-defined auth providers should implement @c authenticate() and
+        return a typed @ref Qore::Ssh::SshAuthDecision "Qore::Ssh::SshAuthDecision".
+    */
+    public class AbstractSshAuthProvider {
+        /** Authenticates a single SSH authentication attempt.
+
+            @param ctx the typed authentication context
+            @return a typed authentication decision
+        */
+        hash<Qore::Ssh::SshAuthDecision> authenticate(hash<Qore::Ssh::SshAuthContextInfo> ctx) {
+            throw "SSH-AUTH-PROVIDER-ERROR",
+                sprintf("%y must implement authenticate(hash<SshAuthContextInfo>)", self.getClassName());
+        }
+    }
+
+    /** Built-in config-driven auth provider supporting:
+        - `none`
+        - `password`
+        - `publickey`
+        - `interactive`
+        - `hostbased`
+        - `gssapi-mic`
+
+        Static validation and on-demand app validation use the same provider
+        object API.
+    */
+    public class VirtualSshAuthProvider inherits AbstractSshAuthProvider {
+        private {
+            hash<VirtualSshAuthProviderOptions> options = <VirtualSshAuthProviderOptions>{};
+            *LoggerInterface logger;
+        }
+
+        constructor(*hash<VirtualSshAuthProviderOptions> opts) {
+            if (opts) {
+                options = opts;
+                logger = opts.logger;
+            }
+        }
+
+        hash<VirtualSshAuthProviderOptions> getOptions() {
+            return options;
+        }
+
+        nothing setLogger(*LoggerInterface logger) {
+            self.logger = logger;
+        }
+
+        *LoggerInterface getLogger() {
+            return logger;
+        }
+
+        hash<Qore::Ssh::SshAuthDecision> authenticate(hash<Qore::Ssh::SshAuthContextInfo> ctx) {
+            logDetail(sprintf("ssh auth attempt method=%s username=%s", ctx.auth_method, ctx.username));
+
+            hash<Qore::Ssh::SshAuthDecision> decision;
+            switch (ctx.auth_method) {
+                case "none":
+                    decision = authenticateStaticMethod(ctx, options.none, "none");
+                    break;
+                case "password":
+                    decision = authenticatePassword(ctx);
+                    break;
+                case "publickey":
+                    decision = authenticatePublicKey(ctx);
+                    break;
+                case "interactive":
+                    decision = authenticateStaticMethod(ctx, options.interactive, "interactive");
+                    break;
+                case "hostbased":
+                    decision = authenticateStaticMethod(ctx, options.hostbased, "hostbased");
+                    break;
+                case "gssapi-mic":
+                    decision = authenticateStaticMethod(ctx, options.gssapi_mic, "gssapi-mic");
+                    break;
+                default:
+                    decision = makeRejectedDecision(
+                        sprintf("unsupported auth method %y", ctx.auth_method), NOTHING, ctx.username);
+                    break;
+            }
+
+            if (decision.accepted) {
+                logInfo(sprintf("ssh auth accepted method=%s username=%s principal=%s",
+                    ctx.auth_method, ctx.username, decision.principal ?? ctx.username));
+            } else {
+                logWarn(sprintf("ssh auth rejected method=%s username=%s: %s",
+                    ctx.auth_method, ctx.username, decision.message ?? "authentication rejected"));
+            }
+            return decision;
+        }
+
+        private hash<Qore::Ssh::SshAuthDecision> authenticatePassword(hash<Qore::Ssh::SshAuthContextInfo> ctx) {
+            *hash<VirtualSshPasswordAuthOptions> method = options.password;
+            if (!method) {
+                return makeRejectedDecision(
+                    sprintf("password authentication is not configured for %y", ctx.username), NOTHING, ctx.username);
+            }
+            if (*list<string> denied_usernames = method.denied_usernames) {
+                if (inlist(ctx.username, denied_usernames)) {
+                    return makeRejectedDecision(
+                        sprintf("password authentication is denied for %y", ctx.username), method.failure_decision,
+                        ctx.username);
+                }
+            }
+            if (*list<string> allowed_usernames = method.allowed_usernames) {
+                if (!inlist(ctx.username, allowed_usernames)) {
+                    return makeRejectedDecision(
+                        sprintf("password authentication is not allowed for %y", ctx.username), method.failure_decision,
+                        ctx.username);
+                }
+            }
+            if (*code<hash<Qore::Ssh::SshAuthDecision>(hash<Qore::Ssh::SshAuthContextInfo>)> validator
+                    = method.validator) {
+                return cast<hash<Qore::Ssh::SshAuthDecision>>(validator(ctx));
+            }
+            if (ctx.password == NOTHING) {
+                return makeRejectedDecision(
+                    sprintf("password authentication request for %y has no password payload", ctx.username),
+                    method.failure_decision, ctx.username);
+            }
+            if (*list<hash<VirtualSshPasswordUserInfo>> users = method.users) {
+                foreach hash<VirtualSshPasswordUserInfo> user in (users) {
+                    if (user.username == ctx.username && user.password == ctx.password) {
+                        return makeAcceptedDecision(user.decision ?? method.success_decision, ctx.username);
+                    }
+                }
+            }
+            return makeRejectedDecision(
+                sprintf("password authentication failed for %y", ctx.username), method.failure_decision, ctx.username);
+        }
+
+        private hash<Qore::Ssh::SshAuthDecision> authenticatePublicKey(hash<Qore::Ssh::SshAuthContextInfo> ctx) {
+            *hash<VirtualSshPublicKeyAuthOptions> method = options.publickey;
+            if (!method) {
+                return makeRejectedDecision(
+                    sprintf("public-key authentication is not configured for %y", ctx.username), NOTHING, ctx.username);
+            }
+            if (*list<string> denied_usernames = method.denied_usernames) {
+                if (inlist(ctx.username, denied_usernames)) {
+                    return makeRejectedDecision(
+                        sprintf("public-key authentication is denied for %y", ctx.username), method.failure_decision,
+                        ctx.username);
+                }
+            }
+            if (*list<string> allowed_usernames = method.allowed_usernames) {
+                if (!inlist(ctx.username, allowed_usernames)) {
+                    return makeRejectedDecision(
+                        sprintf("public-key authentication is not allowed for %y", ctx.username),
+                        method.failure_decision, ctx.username);
+                }
+            }
+            if (*code<hash<Qore::Ssh::SshAuthDecision>(hash<Qore::Ssh::SshAuthContextInfo>)> validator
+                    = method.validator) {
+                return cast<hash<Qore::Ssh::SshAuthDecision>>(validator(ctx));
+            }
+            if (ctx.public_key == NOTHING) {
+                return makeRejectedDecision(
+                    sprintf("public-key authentication request for %y has no public key payload", ctx.username),
+                    method.failure_decision, ctx.username);
+            }
+            if (*list<hash<VirtualSshAuthorizedKeyInfo>> authorized_keys = method.authorized_keys) {
+                foreach hash<VirtualSshAuthorizedKeyInfo> key_info in (authorized_keys) {
+                    if (key_info.username != ctx.username) {
+                        continue;
+                    }
+                    if (key_info.public_key != ctx.public_key) {
+                        continue;
+                    }
+                    if (key_info.public_key_type != NOTHING && key_info.public_key_type != ctx.public_key_type) {
+                        continue;
+                    }
+                    return makeAcceptedDecision(key_info.decision ?? method.success_decision, ctx.username);
+                }
+            }
+            return makeRejectedDecision(
+                sprintf("public-key authentication failed for %y", ctx.username), method.failure_decision, ctx.username);
+        }
+
+        private hash<Qore::Ssh::SshAuthDecision> authenticateStaticMethod(hash<Qore::Ssh::SshAuthContextInfo> ctx,
+                *hash<VirtualSshStaticAuthMethodOptions> method, string method_name) {
+            if (!method) {
+                return makeRejectedDecision(
+                    sprintf("%s authentication is not configured for %y", method_name, ctx.username), NOTHING,
+                    ctx.username);
+            }
+            if (*list<string> denied_usernames = method.denied_usernames) {
+                if (inlist(ctx.username, denied_usernames)) {
+                    return makeRejectedDecision(
+                        sprintf("%s authentication is denied for %y", method_name, ctx.username),
+                        method.failure_decision, ctx.username);
+                }
+            }
+            if (*list<string> allowed_usernames = method.allowed_usernames) {
+                if (!inlist(ctx.username, allowed_usernames)) {
+                    return makeRejectedDecision(
+                        sprintf("%s authentication is not allowed for %y", method_name, ctx.username),
+                        method.failure_decision, ctx.username);
+                }
+            }
+            if (*code<hash<Qore::Ssh::SshAuthDecision>(hash<Qore::Ssh::SshAuthContextInfo>)> validator
+                    = method.validator) {
+                return cast<hash<Qore::Ssh::SshAuthDecision>>(validator(ctx));
+            }
+            return makeAcceptedDecision(method.success_decision, ctx.username);
+        }
+
+        private hash<Qore::Ssh::SshAuthDecision> makeAcceptedDecision(
+                *hash<VirtualSshAuthDecisionTemplate> tmpl, *string username) {
+            return makeDecision(True, tmpl, username, "authentication accepted");
+        }
+
+        private hash<Qore::Ssh::SshAuthDecision> makeRejectedDecision(string message,
+                *hash<VirtualSshAuthDecisionTemplate> tmpl, *string username) {
+            return makeDecision(False, tmpl ?? options.default_failure_decision, username, message);
+        }
+
+        private hash<Qore::Ssh::SshAuthDecision> makeDecision(bool accepted,
+                *hash<VirtualSshAuthDecisionTemplate> tmpl, *string username, string default_message) {
+            hash<Qore::Ssh::SshAuthDecision> rv = <Qore::Ssh::SshAuthDecision>{
+                "accepted": accepted,
+            };
+            if (tmpl) {
+                if (exists tmpl.partial) {
+                    rv.partial = tmpl.partial;
+                }
+                if (tmpl.principal != NOTHING) {
+                    rv.principal = tmpl.principal;
+                }
+                if (tmpl.message != NOTHING) {
+                    rv.message = tmpl.message;
+                }
+                if (tmpl.allowed_auth_methods != NOTHING) {
+                    rv.allowed_auth_methods = tmpl.allowed_auth_methods;
+                }
+                if (tmpl.command_policy != NOTHING) {
+                    rv.command_policy = tmpl.command_policy;
+                }
+                if (tmpl.sftp_policy != NOTHING) {
+                    rv.sftp_policy = tmpl.sftp_policy;
+                }
+                if (tmpl.session_data != NOTHING) {
+                    rv.session_data = tmpl.session_data;
+                }
+                if (tmpl.audit_data != NOTHING) {
+                    rv.audit_data = tmpl.audit_data;
+                }
+            }
+            if (rv.message == NOTHING) {
+                rv.message = default_message;
+            }
+            if (accepted && rv.principal == NOTHING && username != NOTHING) {
+                rv.principal = username;
+            }
+            if (!accepted && rv.allowed_auth_methods == NOTHING && options.methods != NOTHING) {
+                rv.allowed_auth_methods = options.methods;
+            }
+            return rv;
+        }
+
+        private nothing logDetail(string message) {
+            if (logger) {
+                try {
+                    logger.detail("%s", message);
+                } catch (auto e) {
+                }
+            }
+        }
+
+        private nothing logInfo(string message) {
+            if (logger) {
+                try {
+                    logger.info("%s", message);
+                } catch (auto e) {
+                }
+            }
+        }
+
+        private nothing logWarn(string message) {
+            if (logger) {
+                try {
+                    logger.warn("%s", message);
+                } catch (auto e) {
+                }
+            }
+        }
+    }
+}

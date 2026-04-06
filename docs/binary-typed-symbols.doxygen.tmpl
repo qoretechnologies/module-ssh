@@ -1,0 +1,533 @@
+/** @file binary-typed-symbols.dox
+
+    Documentation-only symbol targets for the public binary-module typed hash
+    contracts and generated restriction/flag refs used by the ssh module HTML
+    docs.
+*/
+
+namespace Qore {
+namespace Ssh {
+
+/** Typed SSH listener configuration hash. */
+struct SshListenerConfig {
+    /** Listener name. */
+    string name;
+    /** Bind address for the listener. */
+    string bind_address;
+    /** TCP port for the listener. */
+    int port;
+    /** Host key file paths. */
+    list<string> host_keys;
+    /** Optional session cap for the listener. */
+    int* max_sessions;
+    /** Optional SSH banner string. */
+    string* banner;
+    /** Optional allowed authentication methods. */
+    list<string>* enabled_auth_methods;
+    /** Optional flag enabling command-service requests. */
+    bool* allow_command_service;
+    /** Optional flag enabling SFTP subsystem requests. */
+    bool* allow_sftp_service;
+    /** Optional low-level listener server options. */
+    hash* server_options;
+};
+
+/** Typed SSH server configuration hash. */
+struct SshServerConfig {
+    /** Server name. */
+    string name;
+    /** Listener configuration list. */
+    list<SshListenerConfig> listeners;
+    /** Optional logger object. */
+    object* logger;
+    /** Optional object-driven authentication provider implementing authenticate(). */
+    object* auth_provider;
+    /** Optional authentication callback. */
+    code* auth_callback;
+    /** Optional command callback. */
+    code* command_callback;
+    /** Optional audit callback. */
+    code* audit_callback;
+    /** Optional SFTP session factory callback. */
+    code* sftp_factory_callback;
+    /** Optional authentication configuration hash. */
+    hash* auth_config;
+    /** Optional command configuration hash. */
+    hash* command_config;
+    /** Optional audit configuration hash. */
+    hash* audit_config;
+    /** Optional SFTP configuration hash. */
+    hash* sftp_config;
+    /** Optional default command timeout in milliseconds. */
+    int* default_command_timeout_ms;
+    /** Optional flag enabling authenticated-session logging. */
+    bool* log_authenticated_sessions;
+    /** Optional flag enabling file-transfer logging. */
+    bool* log_file_transfers;
+};
+
+/** Typed SSH listener runtime status hash. */
+struct SshListenerStatus {
+    /** Listener name. */
+    string name;
+    /** Configured bind address. */
+    string bind_address;
+    /** Configured port. */
+    int port;
+    /** Actual bound port, if available. */
+    int* bound_port;
+    /** True when the listener is running. */
+    bool running;
+    /** Current active session count on this listener. */
+    int active_session_count;
+    /** Optional last listener error. */
+    hash* last_error;
+};
+
+/** Typed SSH server runtime status hash. */
+struct SshServerStatus {
+    /** Server name. */
+    string name;
+    /** True when the server is running. */
+    bool running;
+    /** Number of configured listeners. */
+    int listener_count;
+    /** Total active session count. */
+    int active_session_count;
+    /** Optional server start time. */
+    date* started;
+    /** Per-listener runtime status entries. */
+    list<SshListenerStatus> listeners;
+};
+
+/** Typed SSH session metadata hash. */
+struct SshSessionInfo {
+    /** Stable session identifier. */
+    string session_id;
+    /** Server name. */
+    string server_name;
+    /** Listener name. */
+    string listener_name;
+    /** Remote peer address. */
+    string remote_address;
+    /** Remote peer port. */
+    int remote_port;
+    /** Local bound address. */
+    string local_address;
+    /** Local bound port. */
+    int local_port;
+    /** Optional authenticated username. */
+    string* username;
+    /** True when the session is authenticated. */
+    bool authenticated;
+    /** Optional authentication method name. */
+    string* auth_method;
+    /** Optional authenticated principal. */
+    string* principal;
+    /** Optional arbitrary session data. */
+    hash* session_data;
+    /** Optional session command policy data. */
+    hash* command_policy;
+    /** Optional session SFTP policy data. */
+    hash* sftp_policy;
+    /** Session start time. */
+    date started;
+    /** Last activity timestamp. */
+    date last_activity;
+};
+
+/** Typed SSH authentication context hash. */
+struct SshAuthContextInfo {
+    /** Stable session identifier. */
+    string session_id;
+    /** Server name. */
+    string server_name;
+    /** Listener name. */
+    string listener_name;
+    /** Remote peer address. */
+    string remote_address;
+    /** Remote peer port. */
+    int remote_port;
+    /** Username supplied by the client. */
+    string username;
+    /** Authentication method name. */
+    string auth_method;
+    /** Optional password payload. */
+    string* password;
+    /** Optional public key blob. */
+    binary* public_key;
+    /** Optional public key type. */
+    string* public_key_type;
+    /** Optional requested service name. */
+    string* service;
+    /** Optional authentication metadata. */
+    hash* metadata;
+};
+
+/** Typed SSH authentication decision hash. */
+struct SshAuthDecision {
+    /** True when authentication is accepted. */
+    bool accepted;
+    /** Optional partial-authentication flag. */
+    bool* partial;
+    /** Optional resulting principal name. */
+    string* principal;
+    /** Optional message for the client or audit trail. */
+    string* message;
+    /** Optional list of allowed authentication methods to advertise. */
+    list<string>* allowed_auth_methods;
+    /** Optional command policy attached to the session. */
+    hash* command_policy;
+    /** Optional SFTP policy attached to the session. */
+    hash* sftp_policy;
+    /** Optional arbitrary session data. */
+    hash* session_data;
+    /** Optional audit payload. */
+    hash* audit_data;
+};
+
+/** Typed SSH command request hash. */
+struct SshCommandRequest {
+    /** Stable session identifier. */
+    string session_id;
+    /** Server name. */
+    string server_name;
+    /** Listener name. */
+    string listener_name;
+    /** Optional authenticated username. */
+    string* username;
+    /** Optional authenticated principal. */
+    string* principal;
+    /** Command or subsystem name. */
+    string command;
+    /** Optional command arguments. */
+    list<string>* arguments;
+    /** Optional environment map. */
+    hash* environment;
+    /** Optional routing and request metadata. */
+    hash* metadata;
+};
+
+/** Typed SSH command result hash. */
+struct SshCommandResult {
+    /** True when the request was accepted by the virtual command layer. */
+    bool accepted;
+    /** Optional exit status. */
+    int* exit_status;
+    /** Optional human-readable message. */
+    string* message;
+    /** Optional stdout payload. */
+    binary* stdout;
+    /** Optional stderr payload. */
+    binary* stderr;
+    /** Optional structured result metadata. */
+    hash* result_data;
+};
+
+/** Typed SFTP session metadata hash. */
+struct SftpSessionInfo {
+    /** Wrapped SSH session metadata. */
+    SshSessionInfo session_info;
+    /** Authenticated principal for the SFTP session. */
+    string principal;
+    /** Optional effective root directory. */
+    string* root_dir;
+    /** True when the session is read-only. */
+    bool read_only;
+    /** Optional session-specific backend data. */
+    hash* session_data;
+};
+
+/** Typed SFTP protocol message hash. */
+struct SftpProtocolMessage {
+    /** Numeric SFTP message type. */
+    int type;
+    /** Human-readable SFTP message name. */
+    string name;
+    /** Optional request identifier. */
+    int* request_id;
+    /** Optional protocol version. */
+    int* version;
+    /** Optional raw payload bytes. */
+    binary* payload;
+    /** Raw payload size in bytes. */
+    int payload_size;
+};
+
+/** Typed SFTP transfer request hash. */
+struct SftpTransferRequest {
+    /** Live SFTP session metadata. */
+    SftpSessionInfo session_info;
+    /** Transfer operation name. */
+    string operation;
+    /** Virtual source path. */
+    string path;
+    /** Optional target path. */
+    string* target_path;
+    /** Optional temporary path for atomic publish workflows. */
+    string* temporary_path;
+    /** Optional transfer size in bytes. */
+    int* size;
+    /** Optional backend or policy metadata. */
+    hash* metadata;
+};
+
+/** Typed SFTP transfer info hash. */
+struct SftpTransferInfo {
+    /** Transfer operation name. */
+    string operation;
+    /** Virtual source path. */
+    string path;
+    /** Optional temporary path. */
+    string* temporary_path;
+    /** Optional final published path. */
+    string* final_path;
+    /** Optional transfer size in bytes. */
+    int* size;
+    /** Optional checksum string. */
+    string* checksum;
+    /** True when atomic publish behavior is active. */
+    bool atomic_publish;
+    /** True when the transfer workflow is completed. */
+    bool completed;
+};
+
+/** Typed SFTP transfer decision hash. */
+struct SftpTransferDecision {
+    /** True when the transfer is allowed. */
+    bool allowed;
+    /** Optional rejection or audit message. */
+    string* message;
+    /** Resulting transfer metadata. */
+    SftpTransferInfo transfer_info;
+};
+
+/** Typed SFTP path request hash. */
+struct SftpPathRequest {
+    /** Optional live SFTP session metadata. */
+    SftpSessionInfo* session_info;
+    /** Requested virtual path. */
+    string path;
+    /** Optional symlink-following flag. */
+    bool* follow_symlinks;
+    /** Optional logical operation name. */
+    string* operation;
+    /** Optional backend metadata. */
+    hash* metadata;
+};
+
+/** Typed SFTP path info hash. */
+struct SftpPathInfo {
+    /** Optional resolved path. */
+    string* path;
+    /** Optional existence flag. */
+    bool* exists;
+    /** Optional directory flag. */
+    bool* directory;
+    /** Optional size in bytes. */
+    int* size;
+    /** Optional permission bits. */
+    int* permissions;
+    /** Optional backend metadata. */
+    hash* metadata;
+};
+
+/** Typed SFTP directory listing result hash. */
+struct SftpListResult {
+    /** Optional listed path. */
+    string* path;
+    /** Optional entry list. */
+    list<hash>* entries;
+    /** Optional backend metadata. */
+    hash* metadata;
+};
+
+/** Typed SFTP open request hash. */
+struct SftpOpenRequest {
+    /** Optional live SFTP session metadata. */
+    SftpSessionInfo* session_info;
+    /** Requested virtual path. */
+    string path;
+    /** Optional logical operation name. */
+    string* operation;
+    /** Optional SFTP open flags. */
+    int* pflags;
+    /** Optional backend metadata. */
+    hash* metadata;
+    /** Optional byte offset. */
+    int* offset;
+    /** Optional byte length. */
+    int* length;
+};
+
+/** Typed SFTP open result hash. */
+struct SftpOpenResult {
+    /** Optional opened path. */
+    string* path;
+    /** Optional existence flag. */
+    bool* exists;
+    /** Optional eager-read payload. */
+    binary* data;
+    /** Backend handle for streamed operations. */
+    auto backend_handle;
+    /** Optional size in bytes. */
+    int* size;
+    /** Optional permission bits. */
+    int* permissions;
+    /** Optional backend metadata. */
+    hash* metadata;
+    /** Optional transfer metadata. */
+    SftpTransferInfo* transfer_info;
+};
+
+/** Typed SFTP operation result hash. */
+struct SftpOperationResult {
+    /** Optional resulting path. */
+    string* path;
+    /** Optional existence flag. */
+    bool* exists;
+    /** Optional completion flag. */
+    bool* completed;
+    /** Optional message. */
+    string* message;
+    /** Optional backend metadata. */
+    hash* metadata;
+    /** Optional transfer metadata. */
+    SftpTransferInfo* transfer_info;
+};
+
+/** Typed SFTP rename request hash. */
+struct SftpRenameRequest {
+    /** Optional live SFTP session metadata. */
+    SftpSessionInfo* session_info;
+    /** Source path. */
+    string path;
+    /** Destination path. */
+    string target_path;
+    /** Optional logical operation name. */
+    string* operation;
+    /** Optional backend metadata. */
+    hash* metadata;
+};
+
+/** Typed SFTP submission request hash. */
+struct SftpSubmissionRequest {
+    /** Optional live SFTP session metadata. */
+    SftpSessionInfo* session_info;
+    /** Destination virtual path. */
+    string path;
+    /** Optional local source path. */
+    string* source_path;
+    /** Optional inline data payload. */
+    binary* data;
+    /** Optional backend metadata. */
+    hash* metadata;
+    /** Optional checksum string. */
+    string* checksum;
+    /** Optional move-instead-of-copy flag. */
+    bool* move;
+    /** Optional create-parent-directories flag. */
+    bool* create_parents;
+    /** Optional logical operation name. */
+    string* operation;
+};
+
+/** Typed SFTP operation request hash. */
+struct SftpOperationRequest {
+    /** Optional live SFTP session metadata. */
+    SftpSessionInfo* session_info;
+    /** Source or record path. */
+    string path;
+    /** Optional target path. */
+    string* target_path;
+    /** Optional logical operation name. */
+    string* operation;
+    /** Optional explicit completion mode. */
+    string* completion_mode;
+    /** Optional backend metadata. */
+    hash* metadata;
+};
+
+/** Typed SFTP streamed read request hash. */
+struct SftpReadRequest {
+    /** Optional live SFTP session metadata. */
+    SftpSessionInfo* session_info;
+    /** Opened virtual path. */
+    string path;
+    /** Optional logical operation name. */
+    string* operation;
+    /** Backend handle for the open stream. */
+    auto backend_handle;
+    /** Optional original open result. */
+    SftpOpenResult* open_result;
+    /** Read offset. */
+    int offset;
+    /** Requested byte length. */
+    int length;
+    /** Optional backend metadata. */
+    hash* metadata;
+};
+
+/** Typed SFTP streamed read result hash. */
+struct SftpReadResult {
+    /** Optional data payload. */
+    binary* data;
+    /** Optional EOF flag. */
+    bool* eof;
+    /** Optional backend metadata. */
+    hash* metadata;
+};
+
+/** Typed SFTP streamed write request hash. */
+struct SftpWriteRequest {
+    /** Optional live SFTP session metadata. */
+    SftpSessionInfo* session_info;
+    /** Opened virtual path. */
+    string path;
+    /** Optional logical operation name. */
+    string* operation;
+    /** Backend handle for the open stream. */
+    auto backend_handle;
+    /** Optional original open result. */
+    SftpOpenResult* open_result;
+    /** Write offset. */
+    int offset;
+    /** Data payload to write. */
+    binary data;
+    /** Optional backend metadata. */
+    hash* metadata;
+};
+
+/** Typed SFTP streamed close request hash. */
+struct SftpCloseRequest {
+    /** Optional live SFTP session metadata. */
+    SftpSessionInfo* session_info;
+    /** Opened virtual path. */
+    string path;
+    /** Optional logical operation name. */
+    string* operation;
+    /** Backend handle for the open stream. */
+    auto backend_handle;
+    /** Optional original open result. */
+    SftpOpenResult* open_result;
+    /** Optional final buffered data payload. */
+    binary* data;
+    /** Optional backend metadata. */
+    hash* metadata;
+};
+
+}  // namespace Ssh
+
+/** Restriction target for operations that require filesystem access. */
+extern int PO_NO_FILESYSTEM;
+
+/** Restriction target for operations that require network access. */
+extern int PO_NO_NETWORK;
+
+}  // namespace Qore
+
+/** Method metadata flag used for non-mutating accessors. */
+extern int CONSTANT;
+
+/** Method metadata flag used for return-value-only accessors. */
+extern int RET_VALUE_ONLY;

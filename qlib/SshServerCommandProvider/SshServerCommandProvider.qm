@@ -1,0 +1,1028 @@
+# -*- mode: qore; indent-tabs-mode: nil -*-
+#! @file SshServerCommandProvider.qm generic virtual command-service helpers for module-ssh
+
+/*  SshServerCommandProvider.qm Copyright 2026 Qore Technologies, s.r.o.
+
+    Permission is hereby granted, free of charge, to any person obtaining a
+    copy of this software and associated documentation files (the "Software"),
+    to deal in the Software without restriction, including without limitation
+    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+    and/or sell copies of the Software, and to permit persons to whom the
+    Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+*/
+
+%requires qore >= 2.0
+%modern
+
+%requires(reexport) ssh
+%requires(reexport) Logger
+
+module SshServerCommandProvider {
+    version = "0.1";
+    desc = "generic virtual command-service helpers for SSH server command virtualization";
+    author = "Qore Technologies, s.r.o.";
+    url = "http://qore.org";
+    license = "MIT";
+}
+
+/** @mainpage SshServerCommandProvider Module
+
+    @tableofcontents
+
+    @section sshservercommandproviderintro SshServerCommandProvider Module Introduction
+
+    The %SshServerCommandProvider module provides generic helper classes for
+    virtualizing the SSH command-service side of the
+    @ref sshintro "ssh module".
+
+    The first helper is:
+    - @ref SshServerCommandProvider::VirtualSshCommandService
+
+    It allows command-oriented SSH server sessions to be backed by a fully
+    virtual command namespace rather than a real shell.
+
+    The command-side boundary is intentional:
+    - use @ref SshServerCommandProvider::VirtualSshCommandService
+      with @ref SshServerConnections::SshCommandServerConnection for command
+      virtualization
+    - keep the public contract typed with
+      @ref Qore::Ssh::SshCommandRequest "Qore::Ssh::SshCommandRequest" and
+      @ref Qore::Ssh::SshCommandResult "Qore::Ssh::SshCommandResult"
+    - do not introduce a command-side @c DataProvider abstraction
+*/
+
+public namespace SshServerCommandProvider {
+    public const CommandRejectPolicyCommand = "command-policy-denied";
+    public const CommandRejectPolicySubsystem = "subsystem-policy-denied";
+    public const CommandRejectMaxConcurrentRequests = "command-concurrency-above-maximum";
+    public const CommandRejectMaxConcurrentRequestsPerPrincipal = "principal-command-concurrency-above-maximum";
+
+    /** Generic exact-name command and subsystem policy. */
+    public hashdecl VirtualSshCommandPolicy {
+        *bool allow_all_commands;
+        *bool allow_all_subsystems;
+        *list<string> allowed_commands;
+        *list<string> denied_commands;
+        *list<string> allowed_subsystems;
+        *list<string> denied_subsystems;
+    }
+
+    /** Principal-specific command policy override. */
+    public hashdecl VirtualSshCommandPrincipalPolicy inherits VirtualSshCommandPolicy {
+        *hash<Qore::Ssh::SshCommandResult> default_result;
+    }
+
+    /** Optional audit-capture controls for retained request history. */
+    public hashdecl VirtualSshCommandAuditOptions {
+        *int request_history_limit;
+        *bool capture_environment;
+        *bool capture_arguments;
+        *bool capture_identity;
+        *int captured_string_limit;
+    }
+
+    /** Optional concurrency caps for active virtual command dispatch. */
+    public hashdecl VirtualSshCommandLimits {
+        *int max_concurrent_requests;
+        *int max_concurrent_requests_per_principal;
+    }
+
+    /** Constructor options for @ref SshServerCommandProvider::VirtualSshCommandService. */
+    public hashdecl VirtualSshCommandServiceOptions {
+        *hash<VirtualSshCommandPolicy> policy;
+        *hash<VirtualSshCommandAuditOptions> audit;
+        *hash<VirtualSshCommandLimits> limits;
+        *hash<Qore::Ssh::SshCommandResult> default_result;
+        *LoggerInterface logger;
+    }
+
+    /** Generic typed virtual command namespace for
+        @ref Qore::Ssh::SshCommandRequest "Qore::Ssh::SshCommandRequest" /
+        @ref Qore::Ssh::SshCommandResult "Qore::Ssh::SshCommandResult" handling.
+
+        The service is designed to be attached through
+        @ref SshServerConnections::SshCommandServerConnection using the
+        @c command_backend option. It supports:
+        - static and closure-backed exec command handlers
+        - static and closure-backed subsystem handlers
+        - grouped optional configuration through
+          @ref SshServerCommandProvider::VirtualSshCommandPolicy,
+          @ref SshServerCommandProvider::VirtualSshCommandAuditOptions, and
+          @ref SshServerCommandProvider::VirtualSshCommandLimits
+        - deterministic grouped runtime replacement through @c setPolicy(),
+          @c setAuditOptions(), and @c setLimits(), with matching @c clear...()
+          helpers and typed @c get...() snapshots
+        - exact-name allow/deny policy for commands and subsystems
+        - principal-aware policy overrides through @c setPrincipalPolicy()
+        - optional global and per-principal concurrency caps
+        - optional bounded request capture for test/audit-oriented inspection
+        - optional environment, argument, and identity redaction in captured
+          requests
+        - optional string truncation for captured audit values
+    */
+    public class VirtualSshCommandService {
+        private {
+            hash<auto> command_results = {};
+            hash<auto> command_handlers = {};
+            hash<auto> subsystem_results = {};
+            hash<auto> subsystem_handlers = {};
+            hash<auto> allowed_commands = {};
+            hash<auto> denied_commands = {};
+            hash<auto> allowed_subsystems = {};
+            hash<auto> denied_subsystems = {};
+            hash<auto> principal_policies = {};
+            *hash<Qore::Ssh::SshCommandResult> default_result;
+            list<hash<Qore::Ssh::SshCommandRequest>> requests = ();
+            *LoggerInterface logger;
+            int request_history_limit = -1;
+            bool capture_environment = True;
+            bool capture_arguments = True;
+            bool capture_identity = True;
+            int captured_string_limit = -1;
+            int max_concurrent_requests = -1;
+            int max_concurrent_requests_per_principal = -1;
+            int active_requests = 0;
+            hash<auto> active_requests_by_principal = {};
+            bool allow_all_commands = True;
+            bool allow_all_subsystems = True;
+            Qore::Thread::Mutex state_lock();
+        }
+
+        constructor(*hash<VirtualSshCommandServiceOptions> options) {
+            if (options) {
+                if (options.logger) {
+                    logger = options.logger;
+                }
+                if (options.policy) {
+                    applyPolicyUnlocked(options.policy);
+                }
+                if (options.audit) {
+                    applyAuditOptionsUnlocked(options.audit);
+                }
+                if (options.limits) {
+                    applyLimitsUnlocked(options.limits);
+                }
+                if (options.default_result) {
+                    default_result = options.default_result;
+                }
+            }
+        }
+
+        nothing addCommand(string command, hash<Qore::Ssh::SshCommandResult> result) {
+            {
+                state_lock.lock();
+                on_exit state_lock.unlock();
+                command_handlers -= command;
+                command_results{command} = result;
+            }
+            logDebug(sprintf("virtual command added: %s", command));
+        }
+
+        nothing addHandler(string command,
+                code<hash<Qore::Ssh::SshCommandResult>(hash<Qore::Ssh::SshCommandRequest>)> handler) {
+            {
+                state_lock.lock();
+                on_exit state_lock.unlock();
+                command_results -= command;
+                command_handlers{command} = handler;
+            }
+            logDebug(sprintf("virtual command handler added: %s", command));
+        }
+
+        nothing addSubsystem(string subsystem, hash<Qore::Ssh::SshCommandResult> result) {
+            {
+                state_lock.lock();
+                on_exit state_lock.unlock();
+                subsystem_handlers -= subsystem;
+                subsystem_results{subsystem} = result;
+            }
+            logDebug(sprintf("virtual subsystem added: %s", subsystem));
+        }
+
+        nothing addSubsystemHandler(string subsystem,
+                code<hash<Qore::Ssh::SshCommandResult>(hash<Qore::Ssh::SshCommandRequest>)> handler) {
+            {
+                state_lock.lock();
+                on_exit state_lock.unlock();
+                subsystem_results -= subsystem;
+                subsystem_handlers{subsystem} = handler;
+            }
+            logDebug(sprintf("virtual subsystem handler added: %s", subsystem));
+        }
+
+        nothing addTextCommand(string command, string stdout, *string stderr = NOTHING, int exit_status = 0,
+                bool accepted = True, *hash<auto> result_data = NOTHING, *string message = NOTHING) {
+            addCommand(command, <Qore::Ssh::SshCommandResult>{
+                "accepted": accepted,
+                "exit_status": exit_status,
+                "message": message,
+                "stdout": binary(stdout),
+                "stderr": stderr ? binary(stderr) : NOTHING,
+                "result_data": result_data,
+            });
+        }
+
+        nothing addTextSubsystem(string subsystem, string stdout, *string stderr = NOTHING, int exit_status = 0,
+                bool accepted = True, *hash<auto> result_data = NOTHING, *string message = NOTHING) {
+            addSubsystem(subsystem, <Qore::Ssh::SshCommandResult>{
+                "accepted": accepted,
+                "exit_status": exit_status,
+                "message": message,
+                "stdout": binary(stdout),
+                "stderr": stderr ? binary(stderr) : NOTHING,
+                "result_data": result_data,
+            });
+        }
+
+        nothing setAllowAllCommands(bool allow_all_commands) {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            self.allow_all_commands = allow_all_commands;
+        }
+
+        bool getAllowAllCommands() {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            return allow_all_commands;
+        }
+
+        nothing setAllowAllSubsystems(bool allow_all_subsystems) {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            self.allow_all_subsystems = allow_all_subsystems;
+        }
+
+        bool getAllowAllSubsystems() {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            return allow_all_subsystems;
+        }
+
+        nothing addAllowedCommand(string command) {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            allowed_commands{command} = True;
+        }
+
+        nothing addDeniedCommand(string command) {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            denied_commands{command} = True;
+        }
+
+        nothing addAllowedSubsystem(string subsystem) {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            allowed_subsystems{subsystem} = True;
+        }
+
+        nothing addDeniedSubsystem(string subsystem) {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            denied_subsystems{subsystem} = True;
+        }
+
+        nothing clearAllowedCommands() {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            allowed_commands = {};
+        }
+
+        nothing clearDeniedCommands() {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            denied_commands = {};
+        }
+
+        nothing clearAllowedSubsystems() {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            allowed_subsystems = {};
+        }
+
+        nothing clearDeniedSubsystems() {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            denied_subsystems = {};
+        }
+
+        nothing setPrincipalPolicy(string principal, hash<VirtualSshCommandPrincipalPolicy> policy) {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            principal_policies{principal} = policy;
+        }
+
+        nothing setPolicy(hash<VirtualSshCommandPolicy> policy) {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            resetPolicyUnlocked();
+            applyPolicyUnlocked(policy);
+        }
+
+        nothing setAuditOptions(hash<VirtualSshCommandAuditOptions> audit) {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            resetAuditOptionsUnlocked();
+            applyAuditOptionsUnlocked(audit);
+        }
+
+        nothing setLimits(hash<VirtualSshCommandLimits> limits) {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            resetLimitsUnlocked();
+            applyLimitsUnlocked(limits);
+        }
+
+        nothing clearPolicy() {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            resetPolicyUnlocked();
+        }
+
+        nothing clearAuditOptions() {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            resetAuditOptionsUnlocked();
+        }
+
+        nothing clearLimits() {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            resetLimitsUnlocked();
+        }
+
+        hash<VirtualSshCommandPolicy> getPolicy() {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            return <VirtualSshCommandPolicy>{
+                "allow_all_commands": allow_all_commands,
+                "allow_all_subsystems": allow_all_subsystems,
+                "allowed_commands": sort(keys(allowed_commands)),
+                "denied_commands": sort(keys(denied_commands)),
+                "allowed_subsystems": sort(keys(allowed_subsystems)),
+                "denied_subsystems": sort(keys(denied_subsystems)),
+            };
+        }
+
+        hash<VirtualSshCommandAuditOptions> getAuditOptions() {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            return <VirtualSshCommandAuditOptions>{
+                "request_history_limit": request_history_limit < 0 ? NOTHING : request_history_limit,
+                "capture_environment": capture_environment,
+                "capture_arguments": capture_arguments,
+                "capture_identity": capture_identity,
+                "captured_string_limit": captured_string_limit < 0 ? NOTHING : captured_string_limit,
+            };
+        }
+
+        hash<VirtualSshCommandLimits> getLimits() {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            return <VirtualSshCommandLimits>{
+                "max_concurrent_requests": max_concurrent_requests < 0 ? NOTHING : max_concurrent_requests,
+                "max_concurrent_requests_per_principal": max_concurrent_requests_per_principal < 0
+                    ? NOTHING : max_concurrent_requests_per_principal,
+            };
+        }
+
+        nothing clearPrincipalPolicy(string principal) {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            principal_policies -= principal;
+        }
+
+        nothing setDefaultResult(hash<Qore::Ssh::SshCommandResult> result) {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            default_result = result;
+        }
+
+        hash<Qore::Ssh::SshCommandResult> handle(hash<Qore::Ssh::SshCommandRequest> req) {
+            auto handler = NOTHING;
+            *string subsystem;
+            *hash<Qore::Ssh::SshCommandResult> static_result;
+            *hash<Qore::Ssh::SshCommandResult> fallback_result;
+            *hash<Qore::Ssh::SshCommandResult> denied_result;
+            *hash<VirtualSshCommandPrincipalPolicy> principal_policy;
+            bool reserved = False;
+            {
+                state_lock.lock();
+                on_exit state_lock.unlock();
+                captureRequest(req);
+                subsystem = getRequestedSubsystem(req);
+                principal_policy = getPrincipalPolicyUnlocked(req.principal);
+                denied_result = getDeniedResultUnlocked(req, subsystem, principal_policy);
+                if (!denied_result) {
+                    denied_result = reserveExecutionSlotUnlocked(req.principal);
+                    reserved = !denied_result;
+                }
+                if (denied_result) {
+                    fallback_result = NOTHING;
+                    static_result = NOTHING;
+                    handler = NOTHING;
+                } else if (subsystem) {
+                    handler = subsystem_handlers{subsystem};
+                    static_result = subsystem_results{subsystem};
+                } else {
+                    handler = NOTHING;
+                    static_result = NOTHING;
+                }
+                if (!denied_result && !handler && !static_result) {
+                    handler = command_handlers{req.command};
+                    static_result = command_results{req.command};
+                }
+                fallback_result = getEffectiveDefaultResultUnlocked(principal_policy);
+            }
+            on_exit if (reserved) {
+                releaseExecutionSlot(req.principal);
+            }
+
+            hash<Qore::Ssh::SshCommandResult> final_result;
+            if (denied_result) {
+                final_result = denied_result;
+            } else if (handler) {
+                final_result = cast<hash<Qore::Ssh::SshCommandResult>>(handler(req));
+            } else if (static_result) {
+                final_result = static_result;
+            } else if (fallback_result) {
+                final_result = fallback_result;
+            } else {
+                final_result = <Qore::Ssh::SshCommandResult>{
+                    "accepted": False,
+                    "exit_status": 127,
+                    "message": sprintf("virtual command %y is not defined", req.command),
+                    "stderr": binary(sprintf("command not found: %s\n", req.command)),
+                };
+            }
+
+            string request_name = subsystem ? sprintf("subsystem:%s", subsystem) : req.command;
+            if (final_result.accepted) {
+                logInfo(sprintf("virtual command request handled: %s", request_name));
+            } else {
+                logWarn(sprintf("virtual command request rejected: %s: %s", request_name,
+                    final_result.message ?? "request rejected"));
+            }
+            return final_result;
+        }
+
+        list<hash<Qore::Ssh::SshCommandRequest>> getRequests() {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            return requests;
+        }
+
+        nothing clearRequests() {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            requests = ();
+        }
+
+        nothing setRequestHistoryLimit(int request_history_limit) {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            self.request_history_limit = request_history_limit;
+            trimCapturedRequestsUnlocked();
+        }
+
+        nothing clearRequestHistoryLimit() {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            request_history_limit = -1;
+        }
+
+        *int getRequestHistoryLimit() {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            if (request_history_limit < 0) {
+                return NOTHING;
+            }
+            return request_history_limit;
+        }
+
+        nothing setCaptureEnvironment(bool capture_environment) {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            self.capture_environment = capture_environment;
+        }
+
+        bool getCaptureEnvironment() {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            return capture_environment;
+        }
+
+        nothing setCaptureArguments(bool capture_arguments) {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            self.capture_arguments = capture_arguments;
+        }
+
+        bool getCaptureArguments() {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            return capture_arguments;
+        }
+
+        nothing setCaptureIdentity(bool capture_identity) {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            self.capture_identity = capture_identity;
+        }
+
+        bool getCaptureIdentity() {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            return capture_identity;
+        }
+
+        nothing setCapturedStringLimit(int captured_string_limit) {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            self.captured_string_limit = captured_string_limit;
+        }
+
+        nothing clearCapturedStringLimit() {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            captured_string_limit = -1;
+        }
+
+        *int getCapturedStringLimit() {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            if (captured_string_limit < 0) {
+                return NOTHING;
+            }
+            return captured_string_limit;
+        }
+
+        nothing setMaxConcurrentRequests(int max_concurrent_requests) {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            self.max_concurrent_requests = max_concurrent_requests;
+        }
+
+        nothing clearMaxConcurrentRequests() {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            max_concurrent_requests = -1;
+        }
+
+        *int getMaxConcurrentRequests() {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            if (max_concurrent_requests < 0) {
+                return NOTHING;
+            }
+            return max_concurrent_requests;
+        }
+
+        nothing setMaxConcurrentRequestsPerPrincipal(int max_concurrent_requests_per_principal) {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            self.max_concurrent_requests_per_principal = max_concurrent_requests_per_principal;
+        }
+
+        nothing clearMaxConcurrentRequestsPerPrincipal() {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            max_concurrent_requests_per_principal = -1;
+        }
+
+        *int getMaxConcurrentRequestsPerPrincipal() {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            if (max_concurrent_requests_per_principal < 0) {
+                return NOTHING;
+            }
+            return max_concurrent_requests_per_principal;
+        }
+
+        nothing setLogger(*LoggerInterface logger) {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            self.logger = logger;
+        }
+
+        *LoggerInterface getLogger() {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            return logger;
+        }
+
+        private nothing logInfo(string msg) {
+            *LoggerInterface current_logger;
+            {
+                state_lock.lock();
+                on_exit state_lock.unlock();
+                current_logger = logger;
+            }
+            if (current_logger) {
+                try {
+                    current_logger.info(msg);
+                } catch (auto e) {
+                }
+            }
+        }
+
+        private nothing logWarn(string msg) {
+            *LoggerInterface current_logger;
+            {
+                state_lock.lock();
+                on_exit state_lock.unlock();
+                current_logger = logger;
+            }
+            if (current_logger) {
+                try {
+                    current_logger.warn(msg);
+                } catch (auto e) {
+                }
+            }
+        }
+
+        private nothing logDebug(string msg) {
+            *LoggerInterface current_logger;
+            {
+                state_lock.lock();
+                on_exit state_lock.unlock();
+                current_logger = logger;
+            }
+            if (current_logger) {
+                try {
+                    current_logger.debug(msg);
+                } catch (auto e) {
+                }
+            }
+        }
+
+        private *string getRequestedSubsystem(hash<Qore::Ssh::SshCommandRequest> req) {
+            if (req.metadata == NOTHING || req.metadata.request_type != "subsystem") {
+                return NOTHING;
+            }
+            return req.metadata.subsystem;
+        }
+
+        private nothing applyPolicyUnlocked(hash<VirtualSshCommandPolicy> policy) {
+            if (exists policy.allow_all_commands) {
+                allow_all_commands = policy.allow_all_commands;
+            }
+            if (exists policy.allow_all_subsystems) {
+                allow_all_subsystems = policy.allow_all_subsystems;
+            }
+            if (policy.allowed_commands) {
+                addAllowedCommandsUnlocked(policy.allowed_commands);
+            }
+            if (policy.denied_commands) {
+                addDeniedCommandsUnlocked(policy.denied_commands);
+            }
+            if (policy.allowed_subsystems) {
+                addAllowedSubsystemsUnlocked(policy.allowed_subsystems);
+            }
+            if (policy.denied_subsystems) {
+                addDeniedSubsystemsUnlocked(policy.denied_subsystems);
+            }
+        }
+
+        private nothing applyAuditOptionsUnlocked(hash<VirtualSshCommandAuditOptions> audit) {
+            if (audit.request_history_limit != NOTHING) {
+                request_history_limit = audit.request_history_limit;
+                trimCapturedRequestsUnlocked();
+            }
+            if (exists audit.capture_environment) {
+                capture_environment = audit.capture_environment;
+            }
+            if (exists audit.capture_arguments) {
+                capture_arguments = audit.capture_arguments;
+            }
+            if (exists audit.capture_identity) {
+                capture_identity = audit.capture_identity;
+            }
+            if (audit.captured_string_limit != NOTHING) {
+                captured_string_limit = audit.captured_string_limit;
+            }
+        }
+
+        private nothing applyLimitsUnlocked(hash<VirtualSshCommandLimits> limits) {
+            if (limits.max_concurrent_requests != NOTHING) {
+                max_concurrent_requests = limits.max_concurrent_requests;
+            }
+            if (limits.max_concurrent_requests_per_principal != NOTHING) {
+                max_concurrent_requests_per_principal = limits.max_concurrent_requests_per_principal;
+            }
+        }
+
+        private nothing resetPolicyUnlocked() {
+            allow_all_commands = True;
+            allow_all_subsystems = True;
+            allowed_commands = {};
+            denied_commands = {};
+            allowed_subsystems = {};
+            denied_subsystems = {};
+        }
+
+        private nothing resetAuditOptionsUnlocked() {
+            request_history_limit = -1;
+            capture_environment = True;
+            capture_arguments = True;
+            capture_identity = True;
+            captured_string_limit = -1;
+            trimCapturedRequestsUnlocked();
+        }
+
+        private nothing resetLimitsUnlocked() {
+            max_concurrent_requests = -1;
+            max_concurrent_requests_per_principal = -1;
+        }
+
+        private nothing addAllowedCommandsUnlocked(list<string> commands) {
+            foreach string command in (commands) {
+                allowed_commands{command} = True;
+            }
+        }
+
+        private nothing addDeniedCommandsUnlocked(list<string> commands) {
+            foreach string command in (commands) {
+                denied_commands{command} = True;
+            }
+        }
+
+        private nothing addAllowedSubsystemsUnlocked(list<string> subsystems) {
+            foreach string subsystem in (subsystems) {
+                allowed_subsystems{subsystem} = True;
+            }
+        }
+
+        private nothing addDeniedSubsystemsUnlocked(list<string> subsystems) {
+            foreach string subsystem in (subsystems) {
+                denied_subsystems{subsystem} = True;
+            }
+        }
+
+        private *hash<VirtualSshCommandPrincipalPolicy> getPrincipalPolicyUnlocked(*string principal) {
+            if (!principal) {
+                return NOTHING;
+            }
+            auto policy = principal_policies{principal};
+            if (!policy) {
+                return NOTHING;
+            }
+            return cast<hash<VirtualSshCommandPrincipalPolicy>>(policy);
+        }
+
+        private *hash<Qore::Ssh::SshCommandResult> reserveExecutionSlotUnlocked(*string principal) {
+            if (max_concurrent_requests >= 0 && active_requests >= max_concurrent_requests) {
+                return getConcurrencyDeniedResultUnlocked();
+            }
+            int principal_active = principal ? int(active_requests_by_principal{principal} ?? 0) : 0;
+            if (principal && max_concurrent_requests_per_principal >= 0
+                    && principal_active >= max_concurrent_requests_per_principal) {
+                return getPrincipalConcurrencyDeniedResultUnlocked(principal);
+            }
+
+            ++active_requests;
+            if (principal) {
+                active_requests_by_principal{principal} = principal_active + 1;
+            }
+            return NOTHING;
+        }
+
+        private nothing releaseExecutionSlot(*string principal) {
+            state_lock.lock();
+            on_exit state_lock.unlock();
+            if (active_requests > 0) {
+                --active_requests;
+            }
+            if (principal) {
+                int principal_active = int(active_requests_by_principal{principal} ?? 0);
+                if (principal_active <= 1) {
+                    active_requests_by_principal -= principal;
+                } else {
+                    active_requests_by_principal{principal} = principal_active - 1;
+                }
+            }
+        }
+
+        private *hash<Qore::Ssh::SshCommandResult> getDeniedResultUnlocked(hash<Qore::Ssh::SshCommandRequest> req,
+                *string subsystem, *hash<VirtualSshCommandPrincipalPolicy> principal_policy) {
+            if (subsystem) {
+                if (denied_subsystems{subsystem} || listContains(principal_policy ? principal_policy.denied_subsystems
+                        : NOTHING, subsystem)) {
+                    return getSubsystemDeniedResultUnlocked(subsystem);
+                }
+                if (!getAllowAllSubsystemsUnlocked(principal_policy)
+                        && !(allowed_subsystems{subsystem}
+                        || listContains(principal_policy ? principal_policy.allowed_subsystems : NOTHING,
+                            subsystem))) {
+                    return getSubsystemDeniedResultUnlocked(subsystem);
+                }
+                return NOTHING;
+            }
+
+            if (denied_commands{req.command}
+                    || listContains(principal_policy ? principal_policy.denied_commands : NOTHING, req.command)) {
+                return getCommandDeniedResultUnlocked(req.command);
+            }
+            if (!getAllowAllCommandsUnlocked(principal_policy)
+                    && !(allowed_commands{req.command}
+                    || listContains(principal_policy ? principal_policy.allowed_commands : NOTHING, req.command))) {
+                return getCommandDeniedResultUnlocked(req.command);
+            }
+            return NOTHING;
+        }
+
+        private bool listContains(*list<string> values, string value) {
+            if (!values) {
+                return False;
+            }
+            foreach string entry in (values) {
+                if (entry == value) {
+                    return True;
+                }
+            }
+            return False;
+        }
+
+        private bool getAllowAllCommandsUnlocked(*hash<VirtualSshCommandPrincipalPolicy> principal_policy) {
+            if (principal_policy && exists principal_policy.allow_all_commands) {
+                return principal_policy.allow_all_commands;
+            }
+            return allow_all_commands;
+        }
+
+        private bool getAllowAllSubsystemsUnlocked(*hash<VirtualSshCommandPrincipalPolicy> principal_policy) {
+            if (principal_policy && exists principal_policy.allow_all_subsystems) {
+                return principal_policy.allow_all_subsystems;
+            }
+            return allow_all_subsystems;
+        }
+
+        private *hash<Qore::Ssh::SshCommandResult> getEffectiveDefaultResultUnlocked(
+                *hash<VirtualSshCommandPrincipalPolicy> principal_policy) {
+            if (principal_policy && principal_policy.default_result) {
+                return principal_policy.default_result;
+            }
+            return default_result;
+        }
+
+        private hash<Qore::Ssh::SshCommandResult> getConcurrencyDeniedResultUnlocked() {
+            return <Qore::Ssh::SshCommandResult>{
+                "accepted": False,
+                "exit_status": 126,
+                "message": "virtual command request denied by concurrency policy",
+                "stderr": binary("command concurrency denied by policy\n"),
+                "result_data": {
+                    "reason_code": CommandRejectMaxConcurrentRequests,
+                },
+            };
+        }
+
+        private hash<Qore::Ssh::SshCommandResult> getPrincipalConcurrencyDeniedResultUnlocked(string principal) {
+            return <Qore::Ssh::SshCommandResult>{
+                "accepted": False,
+                "exit_status": 126,
+                "message": sprintf("virtual command request denied by concurrency policy for principal %y", principal),
+                "stderr": binary(sprintf("principal command concurrency denied by policy: %s\n", principal)),
+                "result_data": {
+                    "reason_code": CommandRejectMaxConcurrentRequestsPerPrincipal,
+                    "policy_target": principal,
+                },
+            };
+        }
+
+        private hash<Qore::Ssh::SshCommandResult> getCommandDeniedResultUnlocked(string command) {
+            return <Qore::Ssh::SshCommandResult>{
+                "accepted": False,
+                "exit_status": 126,
+                "message": sprintf("virtual command %y is denied by policy", command),
+                "stderr": binary(sprintf("command denied by policy: %s\n", command)),
+                "result_data": {
+                    "reason_code": CommandRejectPolicyCommand,
+                    "policy_target": command,
+                },
+            };
+        }
+
+        private hash<Qore::Ssh::SshCommandResult> getSubsystemDeniedResultUnlocked(string subsystem) {
+            return <Qore::Ssh::SshCommandResult>{
+                "accepted": False,
+                "exit_status": 126,
+                "message": sprintf("virtual subsystem %y is denied by policy", subsystem),
+                "stderr": binary(sprintf("subsystem denied by policy: %s\n", subsystem)),
+                "result_data": {
+                    "reason_code": CommandRejectPolicySubsystem,
+                    "policy_target": subsystem,
+                },
+            };
+        }
+
+        private nothing captureRequest(hash<Qore::Ssh::SshCommandRequest> req) {
+            if (!request_history_limit) {
+                return;
+            }
+            hash<Qore::Ssh::SshCommandRequest> captured = copyCapturedRequest(req);
+            requests += (captured,);
+            trimCapturedRequestsUnlocked();
+        }
+
+        private hash<Qore::Ssh::SshCommandRequest> copyCapturedRequest(hash<Qore::Ssh::SshCommandRequest> req) {
+            return <Qore::Ssh::SshCommandRequest>{
+                "session_id": req.session_id,
+                "server_name": req.server_name,
+                "listener_name": req.listener_name,
+                "username": capture_identity ? sanitizeCapturedString(req.username) : NOTHING,
+                "principal": capture_identity ? sanitizeCapturedString(req.principal) : NOTHING,
+                "command": req.command,
+                "arguments": capture_arguments ? copyCapturedArguments(req.arguments) : NOTHING,
+                "environment": capture_environment ? copyCapturedAutoHash(req.environment) : NOTHING,
+                "metadata": copyCapturedAutoHash(req.metadata),
+            };
+        }
+
+        private *string sanitizeCapturedString(*string value) {
+            if (!value || captured_string_limit < 0 || value.size() <= captured_string_limit) {
+                return value;
+            }
+            if (!captured_string_limit) {
+                return "";
+            }
+            if (captured_string_limit <= 3) {
+                return value.substr(0, captured_string_limit);
+            }
+            return value.substr(0, captured_string_limit - 3) + "...";
+        }
+
+        private *list<string> copyCapturedArguments(*list<string> arguments) {
+            if (!arguments) {
+                return NOTHING;
+            }
+            list<string> captured = ();
+            foreach string arg in (arguments) {
+                captured += (sanitizeCapturedString(arg),);
+            }
+            return captured;
+        }
+
+        private *hash<auto> copyCapturedAutoHash(*hash<auto> source) {
+            if (!source) {
+                return NOTHING;
+            }
+            hash<auto> captured = {};
+            foreach string key in (keys source) {
+                auto value = source{key};
+                switch (value.typeCode()) {
+                    case NT_STRING:
+                        captured{key} = sanitizeCapturedString(value);
+                        break;
+                    case NT_LIST: {
+                        list<auto> out = ();
+                        foreach auto entry in (value) {
+                            if (entry.typeCode() == NT_STRING) {
+                                out += (sanitizeCapturedString(entry),);
+                            } else {
+                                out += (entry,);
+                            }
+                        }
+                        captured{key} = out;
+                        break;
+                    }
+                    default:
+                        captured{key} = value;
+                        break;
+                }
+            }
+            return captured;
+        }
+
+        private nothing trimCapturedRequestsUnlocked() {
+            if (request_history_limit < 0) {
+                return;
+            }
+            if (requests.size() <= request_history_limit) {
+                return;
+            }
+            if (!request_history_limit) {
+                requests = ();
+                return;
+            }
+            list<hash<Qore::Ssh::SshCommandRequest>> trimmed = ();
+            int start = requests.size() - request_history_limit;
+            int end = requests.size();
+            for (int i = start; i < end; ++i) {
+                trimmed += (requests[i],);
+            }
+            requests = trimmed;
+        }
+    }
+}

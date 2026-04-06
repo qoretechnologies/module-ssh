@@ -1,0 +1,305 @@
+# -*- mode: qore; indent-tabs-mode: nil -*-
+#! Qore SftpServerDataProvider module definition
+
+/*  SftpServerDataProvider.qm Copyright 2026 Qore Technologies, s.r.o.
+
+    Permission is hereby granted, free of charge, to any person obtaining a
+    copy of this software and associated documentation files (the "Software"),
+    to deal in the Software without restriction, including without limitation
+    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+    and/or sell copies of the Software, and to permit persons to whom the
+    Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+*/
+
+%requires qore >= 2.0
+%requires ssh
+%requires(reexport) DataProvider
+%requires(reexport) Logger
+%modern
+
+namespace Priv {
+#! SFTP server exchange logo (loaded at initialization)
+const SftpServerWhiteLogo = File::readTextFile(get_script_dir() + "/generic-sftp-server-exchange-logo.svg");
+}
+
+module SftpServerDataProvider {
+    version = "0.1";
+    desc = "virtual SFTP filesystem and atomic exchange helpers for the Ssh module";
+    author = "Qore Technologies, s.r.o.";
+    url = "http://qore.org";
+    license = "MIT";
+    init = sub() {
+        DataProvider::registerFactory(new SftpServerDataProviderFactory());
+        DataProvider::registerType("qore/sftp-server/inbound-event", SftpServerInboundEventInfoDataType);
+        DataProvider::registerType("qore/sftp-server/outbound-event", SftpServerOutboundEventInfoDataType);
+
+        DataProviderActionCatalog::registerApp(<DataProviderAppInfo>{
+            "name": SftpServerDataProvider::AppName,
+            "display_name": "SFTP Server Exchange",
+            "short_desc": "Generic virtual SFTP exchange data provider",
+            "scheme": "sftpserver",
+            "desc": "Generic data-provider API for virtualized SFTP exchange workflows built on top of the "
+                "`module-ssh` server-side SFTP backend.\n\n"
+                "This initial provider layer is intentionally generic and backend-driven:\n"
+                "- it uses typed request and response models\n"
+                "- it is backed by `VirtualSftpExchangeRecordStore`\n"
+                "- it exposes generic outbound retrieval and completion operations plus inbound submission\n\n"
+                "The app is served by the `sftpserver` connection scheme through "
+                "`SshServerConnections::SftpServerConnection`.",
+            "groups": (DataProvider::AppGroup::FileTransfer,),
+            "logo": Priv::SftpServerWhiteLogo,
+            "logo_file_name": "generic-sftp-server-exchange-logo.svg",
+            "logo_mime_type": MimeTypeSvg,
+        });
+
+        DataProviderActionCatalog::registerAction(<DataProviderActionInfo>{
+            "app": SftpServerDataProvider::AppName,
+            "path": "/submit-inbound",
+            "action": "submit-inbound",
+            "display_name": "Submit Inbound File",
+            "short_desc": "Submit an inbound file to a virtual SFTP exchange",
+            "desc": "Submits an inbound file into the configured virtual SFTP exchange backend.",
+            "action_code": DPAT_API,
+            "output_type": SftpServerSubmitResponseDataType,
+            "options": SftpServerDataProvider::ConstructorActionOptions +
+                DataProviderActionCatalog::getActionOptionFromFields(
+                    SftpServerSubmitInboundRequestDataType::Fields{"name", "data"}, {
+                        "preselected": True,
+                        "required": True,
+                    },
+                ) + DataProviderActionCatalog::getActionOptionFromFields(
+                    SftpServerSubmitInboundRequestDataType::Fields - ("name", "data")
+                ),
+        });
+
+        DataProviderActionCatalog::registerAction(<DataProviderActionInfo>{
+            "app": SftpServerDataProvider::AppName,
+            "path": "/list-outbound",
+            "action": "list-outbound",
+            "display_name": "List Outbound Files",
+            "short_desc": "List available outbound files in a virtual SFTP exchange",
+            "desc": "Lists currently available outbound files in the configured virtual SFTP exchange backend.",
+            "action_code": DPAT_API,
+            "output_type": SftpServerListResponseDataType,
+            "options": SftpServerDataProvider::ConstructorActionOptions,
+        });
+
+        DataProviderActionCatalog::registerAction(<DataProviderActionInfo>{
+            "app": SftpServerDataProvider::AppName,
+            "path": "/retrieve-outbound",
+            "action": "retrieve-outbound",
+            "display_name": "Retrieve Outbound File",
+            "short_desc": "Retrieve an outbound file from a virtual SFTP exchange",
+            "desc": "Retrieves an outbound file payload from the configured virtual SFTP exchange backend.",
+            "action_code": DPAT_API,
+            "output_type": SftpServerRecordResponseDataType,
+            "options": SftpServerDataProvider::ConstructorActionOptions +
+                DataProviderActionCatalog::getActionOptionFromFields(
+                    SftpServerRecordRequestDataType::Fields{"name",}, {
+                        "preselected": True,
+                        "required": True,
+                    },
+                ) + DataProviderActionCatalog::getActionOptionFromFields(
+                    SftpServerRecordRequestDataType::Fields - ("name",)
+                ),
+        });
+
+        DataProviderActionCatalog::registerAction(<DataProviderActionInfo>{
+            "app": SftpServerDataProvider::AppName,
+            "path": "/claim-outbound",
+            "action": "claim-outbound",
+            "display_name": "Claim Outbound File",
+            "short_desc": "Claim an outbound file in a virtual SFTP exchange",
+            "desc": "Marks an outbound file as claimed in the configured virtual SFTP exchange backend.",
+            "action_code": DPAT_API,
+            "output_type": SftpServerRecordResponseDataType,
+            "options": SftpServerDataProvider::ConstructorActionOptions +
+                DataProviderActionCatalog::getActionOptionFromFields(
+                    SftpServerRecordCompletionRequestDataType::Fields{"name",}, {
+                        "preselected": True,
+                        "required": True,
+                    },
+                ) + DataProviderActionCatalog::getActionOptionFromFields(
+                    SftpServerRecordCompletionRequestDataType::Fields - ("name",)
+                ),
+        });
+
+        DataProviderActionCatalog::registerAction(<DataProviderActionInfo>{
+            "app": SftpServerDataProvider::AppName,
+            "path": "/archive-outbound",
+            "action": "archive-outbound",
+            "display_name": "Archive Outbound File",
+            "short_desc": "Archive an outbound file in a virtual SFTP exchange",
+            "desc": "Moves an outbound file to archive storage in the configured virtual SFTP exchange backend.",
+            "action_code": DPAT_API,
+            "output_type": SftpServerRecordResponseDataType,
+            "options": SftpServerDataProvider::ConstructorActionOptions +
+                DataProviderActionCatalog::getActionOptionFromFields(
+                    SftpServerRecordCompletionRequestDataType::Fields{"name",}, {
+                        "preselected": True,
+                        "required": True,
+                    },
+                ) + DataProviderActionCatalog::getActionOptionFromFields(
+                    SftpServerRecordCompletionRequestDataType::Fields - ("name",)
+                ),
+        });
+
+        DataProviderActionCatalog::registerAction(<DataProviderActionInfo>{
+            "app": SftpServerDataProvider::AppName,
+            "path": "/delete-outbound",
+            "action": "delete-outbound",
+            "display_name": "Delete Outbound File",
+            "short_desc": "Delete an outbound file from a virtual SFTP exchange",
+            "desc": "Deletes an outbound file from the configured virtual SFTP exchange backend.",
+            "action_code": DPAT_API,
+            "output_type": SftpServerRecordResponseDataType,
+            "options": SftpServerDataProvider::ConstructorActionOptions +
+                DataProviderActionCatalog::getActionOptionFromFields(
+                    SftpServerRecordCompletionRequestDataType::Fields{"name",}, {
+                        "preselected": True,
+                        "required": True,
+                    },
+                ) + DataProviderActionCatalog::getActionOptionFromFields(
+                    SftpServerRecordCompletionRequestDataType::Fields - ("name",)
+                ),
+        });
+        DataProviderActionCatalog::registerAction(<DataProviderActionInfo>{
+            "app": SftpServerDataProvider::AppName,
+            "path": "/cleanup-expired",
+            "action": "cleanup-expired",
+            "display_name": "Cleanup Expired Files",
+            "short_desc": "Remove expired files according to typed retention policies",
+            "desc": "Runs deterministic retention cleanup against the configured inbound, archive, or claim "
+                "queue in the virtual SFTP exchange backend.",
+            "action_code": DPAT_API,
+            "output_type": SftpServerRetentionCleanupResponseDataType,
+            "options": SftpServerDataProvider::ConstructorActionOptions +
+                DataProviderActionCatalog::getActionOptionFromFields(
+                    SftpServerRetentionCleanupRequestDataType::Fields{"queue",}, {
+                        "preselected": True,
+                        "required": True,
+                    },
+                ) + DataProviderActionCatalog::getActionOptionFromFields(
+                    SftpServerRetentionCleanupRequestDataType::Fields - ("queue",)
+                ),
+        });
+        DataProviderActionCatalog::registerAction(<DataProviderActionInfo>{
+            "app": SftpServerDataProvider::AppName,
+            "path": "/" + SftpServerDataProvider::EventInboundFileAccepted,
+            "action": SftpServerDataProvider::EventInboundFileAccepted,
+            "display_name": "Inbound File Accepted",
+            "short_desc": "Raise an event when a new inbound file is accepted",
+            "desc": "Raises a typed event when a new inbound file is accepted by the configured virtual SFTP "
+                "exchange backend, including files uploaded through accepted SFTP sessions.",
+            "action_code": DPAT_EVENT,
+            "action_val": SftpServerDataProvider::EventInboundFileAccepted,
+            "output_type": SftpServerInboundEventInfoDataType,
+            "options": SftpServerDataProvider::ConstructorActionOptions,
+        });
+        DataProviderActionCatalog::registerAction(<DataProviderActionInfo>{
+            "app": SftpServerDataProvider::AppName,
+            "path": "/" + SftpServerDataProvider::EventOutboundFileClaimed,
+            "action": SftpServerDataProvider::EventOutboundFileClaimed,
+            "display_name": "Outbound File Claimed",
+            "short_desc": "Raise an event when an outbound file is claimed",
+            "desc": "Raises a typed event when an outbound file is claimed from the configured virtual SFTP "
+                "exchange backend.",
+            "action_code": DPAT_EVENT,
+            "action_val": SftpServerDataProvider::EventOutboundFileClaimed,
+            "output_type": SftpServerOutboundEventInfoDataType,
+            "options": SftpServerDataProvider::ConstructorActionOptions,
+        });
+        DataProviderActionCatalog::registerAction(<DataProviderActionInfo>{
+            "app": SftpServerDataProvider::AppName,
+            "path": "/" + SftpServerDataProvider::EventOutboundFileArchived,
+            "action": SftpServerDataProvider::EventOutboundFileArchived,
+            "display_name": "Outbound File Archived",
+            "short_desc": "Raise an event when an outbound file is archived",
+            "desc": "Raises a typed event when an outbound file is archived by the configured virtual SFTP "
+                "exchange backend.",
+            "action_code": DPAT_EVENT,
+            "action_val": SftpServerDataProvider::EventOutboundFileArchived,
+            "output_type": SftpServerOutboundEventInfoDataType,
+            "options": SftpServerDataProvider::ConstructorActionOptions,
+        });
+        DataProviderActionCatalog::registerAction(<DataProviderActionInfo>{
+            "app": SftpServerDataProvider::AppName,
+            "path": "/" + SftpServerDataProvider::EventOutboundFileDeleted,
+            "action": SftpServerDataProvider::EventOutboundFileDeleted,
+            "display_name": "Outbound File Deleted",
+            "short_desc": "Raise an event when an outbound file is deleted",
+            "desc": "Raises a typed event when an outbound file is deleted from the configured virtual SFTP "
+                "exchange backend.",
+            "action_code": DPAT_EVENT,
+            "action_val": SftpServerDataProvider::EventOutboundFileDeleted,
+            "output_type": SftpServerOutboundEventInfoDataType,
+            "options": SftpServerDataProvider::ConstructorActionOptions,
+        });
+    };
+}
+
+/** @mainpage SftpServerDataProvider Module
+
+    @tableofcontents
+
+    @section sftpserverdataproviderintro SftpServerDataProvider Module Introduction
+
+    The %SftpServerDataProvider module provides file-oriented APIs for
+    atomic submission and retrieval workflows on top of the Ssh module,
+    including easy-to-use in-memory helpers for both generic virtual
+    filesystems and exchange-oriented inbound/outbound SFTP backends.
+
+    The primary helper classes are:
+    - @ref SftpServerDataProvider::VirtualSftpFilesystem
+    - @ref SftpServerDataProvider::VirtualSftpExchange
+    - @ref SftpServerDataProvider::VirtualSftpExchangeRecordStore
+
+    @section sftpserverdataprovidertypes Typed Helper Contracts
+
+    The following anchors provide stable documentation targets for the typed
+    helper hashes used by the generic SFTP provider layer.
+
+    @anchor sftpserverdataprovider-virtualsftpfilesystemoptions
+    @anchor sftpserverdataprovider-virtualsftpexchangeoptions
+    @anchor sftpserverdataprovider-virtualsftppathrequest
+    @anchor sftpserverdataprovider-virtualsftpsubmissionrequest
+    @anchor sftpserverdataprovider-virtualsftpcompletionrequest
+    @anchor sftpserverdataprovider-virtualsftprecordrequest
+    @anchor sftpserverdataprovider-virtualsftprecordsubmissionrequest
+    @anchor sftpserverdataprovider-virtualsftprecordcompletionrequest
+    @anchor sftpserverdataprovider-virtualsftpinboundpolicy
+    @anchor sftpserverdataprovider-virtualsftpfilesnapshot
+    @anchor sftpserverdataprovider-virtualsftpsnapshot
+    @anchor sftpserverdataprovider-virtualsftpentryinfo
+    @anchor sftpserverdataprovider-virtualsftprecordinfo
+    @anchor sftpserverdataprovider-virtualsftpbuiltinstate
+
+    The following table summarizes the public typed helper hashes.
+
+    | !Symbol | !Description |
+    | @ref sftpserverdataprovider-virtualsftpfilesystemoptions "SftpServerDataProvider::VirtualSftpFilesystemOptions" | filesystem constructor options |
+    | @ref sftpserverdataprovider-virtualsftpexchangeoptions "SftpServerDataProvider::VirtualSftpExchangeOptions" | exchange backend constructor options |
+    | @ref sftpserverdataprovider-virtualsftppathrequest "SftpServerDataProvider::VirtualSftpPathRequest" | typed path request hash |
+    | @ref sftpserverdataprovider-virtualsftpsubmissionrequest "SftpServerDataProvider::VirtualSftpSubmissionRequest" | typed inbound or outbound submission request hash |
+    | @ref sftpserverdataprovider-virtualsftpcompletionrequest "SftpServerDataProvider::VirtualSftpCompletionRequest" | typed retrieve completion request hash |
+    | @ref sftpserverdataprovider-virtualsftprecordrequest "SftpServerDataProvider::VirtualSftpRecordRequest" | typed record lookup request hash |
+    | @ref sftpserverdataprovider-virtualsftprecordsubmissionrequest "SftpServerDataProvider::VirtualSftpRecordSubmissionRequest" | typed record submission request hash |
+    | @ref sftpserverdataprovider-virtualsftprecordcompletionrequest "SftpServerDataProvider::VirtualSftpRecordCompletionRequest" | typed record completion request hash |
+    | @ref sftpserverdataprovider-virtualsftpinboundpolicy "SftpServerDataProvider::VirtualSftpInboundPolicy" | typed inbound acceptance and routing policy hash |
+    | @ref sftpserverdataprovider-virtualsftpfilesnapshot "SftpServerDataProvider::VirtualSftpFileSnapshot" | typed filesystem snapshot file entry hash |
+    | @ref sftpserverdataprovider-virtualsftpsnapshot "SftpServerDataProvider::VirtualSftpSnapshot" | typed filesystem snapshot hash |
+    | @ref sftpserverdataprovider-virtualsftpentryinfo "SftpServerDataProvider::VirtualSftpEntryInfo" | typed listing entry hash |
+    | @ref sftpserverdataprovider-virtualsftprecordinfo "SftpServerDataProvider::VirtualSftpRecordInfo" | typed record result hash |
+    | @ref sftpserverdataprovider-virtualsftpbuiltinstate "SftpServerDataProvider::VirtualSftpBuiltinState" | typed built-in helper state projection hash |
+*/

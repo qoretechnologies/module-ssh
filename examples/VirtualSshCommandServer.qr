@@ -1,0 +1,62 @@
+/*  VirtualSshCommandServer.qr Copyright 2026 Qore Technologies, s.r.o.
+
+    Permission is hereby granted, free of charge, to any person obtaining a
+    copy of this software and associated documentation files (the "Software"),
+    to deal in the Software without restriction, including without limitation
+    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+    and/or sell copies of the Software, and to permit persons to whom the
+    Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+*/
+
+%requires ../qlib/SshServerConnections
+%requires ../qlib/SshServerCommandProvider
+
+SshServerCommandProvider::VirtualSshCommandService service();
+service.addTextCommand("status", "ok\n", NOTHING, 0, True, {"kind": "example"});
+service.addHandler("echo", hash<Qore::Ssh::SshCommandResult> sub(hash<Qore::Ssh::SshCommandRequest> req) {
+    return <Qore::Ssh::SshCommandResult>{
+        "accepted": True,
+        "exit_status": 0,
+        "stdout": binary(sprintf("echo:%s\n", req.command)),
+        "result_data": {"kind": "dynamic"},
+    };
+});
+
+SshServerConnections::SshCommandServerConnection conn({
+    "name": "virtual-command-example",
+    "url": "sshserver://127.0.0.1:0",
+    "opts": {
+        "host_keys": (get_script_dir() + "../test/data/ssh_host_ed25519_key",),
+        "command_backend": service,
+    },
+});
+
+hash<Qore::Ssh::SshServerConfig> config = conn.getServerConfig();
+hash<Qore::Ssh::SshCommandResult> status_result = config.command_callback(<Qore::Ssh::SshCommandRequest>{
+    "session_id": "session-1",
+    "server_name": "virtual-command-example",
+    "listener_name": "virtual-command-example",
+    "command": "status",
+});
+hash<Qore::Ssh::SshCommandResult> missing_result = config.command_callback(<Qore::Ssh::SshCommandRequest>{
+    "session_id": "session-2",
+    "server_name": "virtual-command-example",
+    "listener_name": "virtual-command-example",
+    "command": "missing",
+});
+
+printf("status accepted=%y exit=%y stdout=%y\n", status_result.accepted, status_result.exit_status,
+    status_result.stdout);
+printf("missing accepted=%y exit=%y stderr=%y\n", missing_result.accepted, missing_result.exit_status,
+    missing_result.stderr);

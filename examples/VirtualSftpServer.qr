@@ -1,0 +1,166 @@
+#!/usr/bin/env qore
+
+/*  VirtualSftpServer.qr Copyright 2026 Qore Technologies, s.r.o.
+
+    Permission is hereby granted, free of charge, to any person obtaining a
+    copy of this software and associated documentation files (the "Software"),
+    to deal in the Software without restriction, including without limitation
+    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+    and/or sell copies of the Software, and to permit persons to whom the
+    Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+*/
+
+%requires ../qlib/SftpServerDataProvider
+%requires ../qlib/SshServerAuthProvider
+%requires ssh
+
+string sub getTmpFile(string suffix) {
+    return "/tmp/module-ssh-example-" + string(getpid()) + "-" + string(now_us()) + suffix;
+}
+
+nothing sub cleanupFile(string path) {
+    if (is_readable(path)) {
+        unlink(path);
+    }
+}
+
+nothing sub writeTextFile(string path, string data) {
+    File f();
+    f.open(path, O_WRONLY | O_CREAT | O_TRUNC, 0600);
+    f.write(data);
+    f.close();
+}
+
+string sub makeSftpClientCommand(int port, string batch_path, string stdout_path, string stderr_path) {
+    return sprintf("/usr/bin/sftp"
+        + " -b %s"
+        + " -o BatchMode=yes"
+        + " -o PreferredAuthentications=none"
+        + " -o PubkeyAuthentication=no"
+        + " -o PasswordAuthentication=no"
+        + " -o KbdInteractiveAuthentication=no"
+        + " -o NumberOfPasswordPrompts=0"
+        + " -o StrictHostKeyChecking=no"
+        + " -o UserKnownHostsFile=/dev/null"
+        + " -o LogLevel=ERROR"
+        + " -o ConnectTimeout=5"
+        + " -P %d"
+        + " nobody@127.0.0.1"
+        + " >%s 2>%s", batch_path, port, stdout_path, stderr_path);
+}
+
+SftpServerDataProvider::VirtualSftpExchange exchange(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+    "archive_dir": "/archive",
+    "claim_dir": "/claimed",
+});
+exchange.addOutboundData("hello.txt", binary("hello from a real SshServer-backed virtual exchange\n"), {"kind": "example"});
+
+hash<Qore::Ssh::SshServerConfig> config = <Qore::Ssh::SshServerConfig>{
+    "name": "virtual-example",
+    "listeners": (
+        <Qore::Ssh::SshListenerConfig>{
+            "name": "main",
+            "bind_address": "127.0.0.1",
+            "port": 0,
+            "host_keys": (get_script_dir() + "../test/data/ssh_host_ed25519_key",),
+            "enabled_auth_methods": ("none",),
+            "allow_command_service": False,
+            "allow_sftp_service": True,
+        },
+    ),
+};
+
+/* This example uses the low-level binary-module listener config directly.
+   Connection-provider helpers expose grouped services and limits options. */
+
+config.auth_provider = new SshServerAuthProvider::VirtualSshAuthProvider(
+    <SshServerAuthProvider::VirtualSshAuthProviderOptions>{
+        "methods": ("none",),
+        "none": <SshServerAuthProvider::VirtualSshStaticAuthMethodOptions>{
+            "success_decision": <SshServerAuthProvider::VirtualSshAuthDecisionTemplate>{
+                "principal": "principal:nobody",
+                "command_policy": {
+                    "mode": "subsystem-only",
+                    "allowed_subsystems": ("sftp",),
+                },
+                "sftp_policy": {"mode": "enabled"},
+                "session_data": {"source": "example"},
+            },
+        },
+    });
+
+config.sftp_factory_callback = hash<auto> sub(hash<Qore::Ssh::SftpSessionInfo> info) {
+    return {
+        "backend": exchange,
+        "session_data": {"source": "example", "factory": "virtual"},
+    };
+};
+
+Qore::Ssh::SshServer server(config);
+server.start();
+int port = server.getStatus().listeners[0].bound_port;
+
+string batch_path = getTmpFile(".batch");
+string stdout_path = getTmpFile(".out");
+string stderr_path = getTmpFile(".err");
+string target_path = getTmpFile(".target");
+
+on_exit {
+    cleanupFile(batch_path);
+    cleanupFile(stdout_path);
+    cleanupFile(stderr_path);
+    cleanupFile(target_path);
+}
+
+writeTextFile(batch_path, sprintf("get /outbound/hello.txt %s\nquit\n", target_path));
+
+int sftp_rc = 0;
+Counter done(1);
+background sub() {
+    try {
+        sftp_rc = system(makeSftpClientCommand(port, batch_path, stdout_path, stderr_path));
+    } catch (hash<ExceptionInfo> ex) {
+        sftp_rc = -1;
+    }
+    done.dec();
+}();
+
+Qore::Ssh::SshSession session = server.acceptSession(5000);
+hash<Qore::Ssh::SshAuthDecision> auth = server.authenticateSession(session, 15000);
+Qore::Ssh::SftpSession sftp = server.dispatchSftpSession(session, 15000);
+
+Counter service_done(1);
+background sub() {
+    while (True) {
+        auto msg = sftp.processNextRequest(15000);
+        if (msg == NOTHING) {
+            break;
+        }
+    }
+    service_done.dec();
+}();
+
+done.waitForZero(10s);
+sftp.close();
+service_done.waitForZero(5s);
+session.disconnect();
+server.stop();
+
+printf("Authenticated: %y\n", auth.accepted);
+printf("Exit code: %d\n", sftp_rc);
+printf("Retrieved file:\n%s", ReadOnlyFile::readTextFile(target_path));
+printf("\nFilesystem snapshot:\n");
+hash<SftpServerDataProvider::VirtualSftpSnapshot> snapshot = exchange.getFilesystem().exportSnapshot("/");
+printf("  Directories: %y\n", snapshot.directory_paths);
+printf("  Files: %y\n", snapshot.file_paths);

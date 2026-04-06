@@ -1,0 +1,2066 @@
+/* -*- mode: c++; indent-tabs-mode: nil -*- */
+/** Defines the initial SshServer class and typed hashes. */
+/*
+    QC_SshServer.qpp
+
+    Qore Programming Language
+
+    Copyright (C) 2026 Qore Technologies, s.r.o.
+
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; either
+    version 2.1 of the License, or (at your option) any later version.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+*/
+
+#include "ssh-module.h"
+
+#include <atomic>
+#include <arpa/inet.h>
+#include <condition_variable>
+#include <ctime>
+#include <libssh/server.h>
+#include <mutex>
+#include <netinet/in.h>
+#include <memory>
+#include <set>
+#include <sstream>
+#include <sys/select.h>
+#include <string.h>
+#include <string>
+#include <sys/socket.h>
+#include <unistd.h>
+#include <vector>
+
+static QoreHashNode* ssh_make_exception_info(const char* err, const std::string& desc) {
+    ExceptionSink xs;
+    xs.raiseException(err, "%s", desc.c_str());
+    return xs.getExceptionInfo();
+}
+
+static std::string ssh_get_libssh_error(void* ptr) {
+    const char* err = ssh_get_error(ptr);
+    return err ? std::string(err) : std::string("unknown libssh error");
+}
+
+static int64 ssh_get_bound_port(ssh_bind bind) {
+    socket_t fd = ssh_bind_get_fd(bind);
+    if (fd == SSH_INVALID_SOCKET) {
+        return -1;
+    }
+
+    sockaddr_storage addr;
+    memset(&addr, 0, sizeof(addr));
+    socklen_t addr_len = sizeof(addr);
+    if (getsockname(fd, reinterpret_cast<sockaddr*>(&addr), &addr_len) != 0) {
+        return -1;
+    }
+
+    switch (addr.ss_family) {
+        case AF_INET:
+            return ntohs(reinterpret_cast<const sockaddr_in*>(&addr)->sin_port);
+        case AF_INET6:
+            return ntohs(reinterpret_cast<const sockaddr_in6*>(&addr)->sin6_port);
+        default:
+            return -1;
+    }
+}
+
+static std::string ssh_socket_address_to_string(const sockaddr_storage& addr) {
+    char buf[INET6_ADDRSTRLEN];
+    memset(buf, 0, sizeof(buf));
+
+    switch (addr.ss_family) {
+        case AF_INET:
+            if (!inet_ntop(AF_INET, &(reinterpret_cast<const sockaddr_in*>(&addr)->sin_addr), buf, sizeof(buf))) {
+                return std::string();
+            }
+            return std::string(buf);
+        case AF_INET6:
+            if (!inet_ntop(AF_INET6, &(reinterpret_cast<const sockaddr_in6*>(&addr)->sin6_addr), buf, sizeof(buf))) {
+                return std::string();
+            }
+            return std::string(buf);
+        default:
+            return std::string();
+    }
+}
+
+static int64 ssh_socket_address_port(const sockaddr_storage& addr) {
+    switch (addr.ss_family) {
+        case AF_INET:
+            return ntohs(reinterpret_cast<const sockaddr_in*>(&addr)->sin_port);
+        case AF_INET6:
+            return ntohs(reinterpret_cast<const sockaddr_in6*>(&addr)->sin6_port);
+        default:
+            return -1;
+    }
+}
+
+static int ssh_get_socket_endpoint(socket_t fd, bool peer, std::string& address, int64& port) {
+    sockaddr_storage addr;
+    memset(&addr, 0, sizeof(addr));
+    socklen_t addr_len = sizeof(addr);
+    int rc = peer ? getpeername(fd, reinterpret_cast<sockaddr*>(&addr), &addr_len)
+                  : getsockname(fd, reinterpret_cast<sockaddr*>(&addr), &addr_len);
+    if (rc != 0) {
+        address.clear();
+        port = -1;
+        return -1;
+    }
+
+    address = ssh_socket_address_to_string(addr);
+    port = ssh_socket_address_port(addr);
+    return address.empty() || port < 0 ? -1 : 0;
+}
+
+static void ssh_validate_non_empty_string(const QoreHashNode* h, const char* key, const char* err,
+        ExceptionSink* xsink) {
+    const QoreStringNode* str = h->getKeyValue(key).get<QoreStringNode>();
+    if (!str || !str->strlen()) {
+        xsink->raiseException(err, "the \"%s\" configuration key must be a non-empty string", key);
+    }
+}
+
+static void ssh_validate_logger(const QoreObject* logger, const char* err, ExceptionSink* xsink) {
+    if (!logger) {
+        return;
+    }
+
+    const QoreClass* cls = logger->getClass();
+    if (!cls || !cls->findMethod("info") || !cls->findMethod("warn") || !cls->findMethod("error")
+            || !cls->findMethod("debug")) {
+        xsink->raiseException(err,
+            "logger objects must implement info(), warn(), error(), and debug() methods");
+    }
+}
+
+static void ssh_validate_auth_provider(const QoreObject* auth_provider, const char* err, ExceptionSink* xsink) {
+    if (!auth_provider) {
+        return;
+    }
+
+    const QoreClass* cls = auth_provider->getClass();
+    if (!cls || !cls->findMethod("authenticate")) {
+        xsink->raiseException(err,
+            "auth provider objects must implement authenticate(hash<SshAuthContextInfo>)");
+    }
+}
+
+static void ssh_log_message(QoreObject* logger, const char* method, const std::string& msg) {
+    if (!logger || !method) {
+        return;
+    }
+
+    ExceptionSink xsink;
+    ReferenceHolder<QoreListNode> args(new QoreListNode(autoTypeInfo), &xsink);
+    args->push(new QoreStringNode(msg.c_str()), &xsink);
+    if (xsink) {
+        return;
+    }
+
+    ValueHolder rv(logger->evalMethod(method, *args, &xsink), &xsink);
+}
+
+static bool ssh_string_in_list(const QoreListNode* l, const char* value) {
+    if (!l || !value || !*value) {
+        return false;
+    }
+
+    for (size_t i = 0, e = l->size(); i < e; ++i) {
+        const QoreStringNode* entry = l->retrieveEntry(i).get<QoreStringNode>();
+        if (entry && !strcmp(entry->c_str(), value)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static bool ssh_is_public_key_probe(const QoreHashNode* auth_info) {
+    if (!auth_info) {
+        return false;
+    }
+
+    const QoreStringNode* auth_method = auth_info->getKeyValue("auth_method").get<QoreStringNode>();
+    if (!auth_method || strcmp(auth_method->c_str(), "publickey")) {
+        return false;
+    }
+
+    const QoreHashNode* metadata = auth_info->getKeyValue("metadata").get<QoreHashNode>();
+    if (!metadata) {
+        return false;
+    }
+
+    const QoreStringNode* public_key_state = metadata->getKeyValue("public_key_state").get<QoreStringNode>();
+    return public_key_state && !strcmp(public_key_state->c_str(), "none");
+}
+
+static bool ssh_sftp_operation_is_write(const std::string& operation) {
+    return operation == "upload" || operation == "put" || operation == "write" || operation == "append"
+        || operation == "rename" || operation == "move" || operation == "delete" || operation == "remove"
+        || operation == "mkdir" || operation == "rmdir" || operation == "symlink" || operation == "link"
+        || operation == "chmod" || operation == "chown" || operation == "chgrp" || operation == "setstat"
+        || operation == "lsetstat" || operation == "fsetstat" || operation == "truncate";
+}
+
+static bool ssh_sftp_normalize_virtual_path(const std::string& raw_path, std::string& normalized_path) {
+    if (raw_path.empty()) {
+        return false;
+    }
+
+    std::vector<std::string> components;
+    size_t pos = 0;
+    while (pos <= raw_path.size()) {
+        size_t slash = raw_path.find('/', pos);
+        std::string part = slash == std::string::npos ? raw_path.substr(pos) : raw_path.substr(pos, slash - pos);
+        if (!part.empty() && part != ".") {
+            if (part == "..") {
+                if (components.empty()) {
+                    return false;
+                }
+                components.pop_back();
+            } else {
+                components.push_back(part);
+            }
+        }
+
+        if (slash == std::string::npos) {
+            break;
+        }
+        pos = slash + 1;
+    }
+
+    normalized_path = "/";
+    for (size_t i = 0; i < components.size(); ++i) {
+        if (i) {
+            normalized_path += "/";
+        }
+        normalized_path += components[i];
+    }
+
+    return true;
+}
+
+static std::string ssh_sftp_join_root_path(const std::string& root_dir, const std::string& normalized_path) {
+    if (root_dir.empty()) {
+        return normalized_path;
+    }
+
+    std::string result = root_dir;
+    while (result.size() > 1 && result.back() == '/') {
+        result.pop_back();
+    }
+
+    if (normalized_path == "/") {
+        return result;
+    }
+
+    if (normalized_path.empty()) {
+        return result;
+    }
+
+    if (result == "/") {
+        return normalized_path;
+    }
+
+    return result + normalized_path;
+}
+
+static bool ssh_get_optional_bool(const QoreHashNode* h, const char* key, bool default_value, bool& value,
+        const char* err, ExceptionSink* xsink) {
+    if (!h || h->getKeyValue(key).getType() == NT_NOTHING) {
+        value = default_value;
+        return true;
+    }
+
+    value = h->getKeyValue(key).getAsBool();
+    if (*xsink) {
+        xsink->raiseException(err, "the \"%s\" configuration key must be a boolean when present", key);
+        return false;
+    }
+
+    return true;
+}
+
+static int ssh_listener_auth_methods_from_list(const QoreListNode* methods, ExceptionSink* xsink) {
+    if (!methods) {
+        return SSH_AUTH_METHOD_NONE | SSH_AUTH_METHOD_PASSWORD | SSH_AUTH_METHOD_PUBLICKEY
+            | SSH_AUTH_METHOD_INTERACTIVE;
+    }
+
+    int rv = 0;
+    for (size_t i = 0, e = methods->size(); i < e; ++i) {
+        const QoreStringNode* method = methods->retrieveEntry(i).get<QoreStringNode>();
+        if (!method || !method->strlen()) {
+            xsink->raiseException("SSHLISTENER-CONFIG-ERROR",
+                "enabled auth method entry %zu must be a non-empty string", i);
+            return 0;
+        }
+
+        std::string m = method->c_str();
+        if (m == "none") {
+            rv |= SSH_AUTH_METHOD_NONE;
+        } else if (m == "password") {
+            rv |= SSH_AUTH_METHOD_PASSWORD;
+        } else if (m == "publickey") {
+            rv |= SSH_AUTH_METHOD_PUBLICKEY;
+        } else if (m == "interactive") {
+            rv |= SSH_AUTH_METHOD_INTERACTIVE;
+        } else if (m == "hostbased") {
+            rv |= SSH_AUTH_METHOD_HOSTBASED;
+        } else if (m == "gssapi-mic") {
+            rv |= SSH_AUTH_METHOD_GSSAPI_MIC;
+        } else {
+            xsink->raiseException("SSHLISTENER-CONFIG-ERROR",
+                "unsupported enabled auth method \"%s\"", m.c_str());
+            return 0;
+        }
+    }
+
+    return rv;
+}
+
+static int64 ssh_get_required_int(const QoreHashNode* h, const char* key, const char* err, ExceptionSink* xsink) {
+    int64 value = h->getKeyValue(key).getAsBigInt();
+    if (*xsink) {
+        xsink->raiseException(err, "the \"%s\" configuration key must be an integer", key);
+        return 0;
+    }
+    return value;
+}
+
+static void ssh_validate_listener_config(const QoreHashNode* listener, std::set<std::string>& listener_names,
+        ExceptionSink* xsink) {
+    if (!listener) {
+        xsink->raiseException("SSHLISTENER-CONFIG-ERROR", "listener configuration entries must be hashes");
+        return;
+    }
+
+    ssh_validate_non_empty_string(listener, "name", "SSHLISTENER-CONFIG-ERROR", xsink);
+    if (*xsink) {
+        return;
+    }
+    const QoreStringNode* name = listener->getKeyValue("name").get<QoreStringNode>();
+    std::string listener_name = name->c_str();
+    if (!listener_names.insert(listener_name).second) {
+        xsink->raiseException("SSHLISTENER-CONFIG-ERROR",
+            "duplicate listener name \"%s\" in server configuration", listener_name.c_str());
+        return;
+    }
+
+    ssh_validate_non_empty_string(listener, "bind_address", "SSHLISTENER-CONFIG-ERROR", xsink);
+    if (*xsink) {
+        return;
+    }
+
+    int64 port = ssh_get_required_int(listener, "port", "SSHLISTENER-CONFIG-ERROR", xsink);
+    if (*xsink) {
+        return;
+    }
+    if (port < 0 || port > 65535) {
+        xsink->raiseException("SSHLISTENER-CONFIG-ERROR",
+            "the \"port\" configuration key must be between 0 and 65535 inclusive; got %lld", port);
+        return;
+    }
+
+    QoreValue max_sessions = listener->getKeyValue("max_sessions");
+    if (!max_sessions.isNothing()) {
+        int64 value = max_sessions.getAsBigInt();
+        if (*xsink) {
+            xsink->raiseException("SSHLISTENER-CONFIG-ERROR",
+                "the \"max_sessions\" configuration key must be an integer when present");
+            return;
+        }
+        if (value < 0) {
+            xsink->raiseException("SSHLISTENER-CONFIG-ERROR",
+                "the \"max_sessions\" configuration key must be >= 0; got %lld", value);
+            return;
+        }
+    }
+
+    const QoreListNode* host_keys = listener->getKeyValue("host_keys").get<QoreListNode>();
+    if (!host_keys || !host_keys->size()) {
+        xsink->raiseException("SSHLISTENER-CONFIG-ERROR",
+            "the \"host_keys\" configuration key must be a non-empty list");
+        return;
+    }
+
+    for (size_t i = 0, e = host_keys->size(); i < e; ++i) {
+        const QoreStringNode* host_key = host_keys->retrieveEntry(i).get<QoreStringNode>();
+        if (!host_key || !host_key->strlen()) {
+            xsink->raiseException("SSHLISTENER-CONFIG-ERROR",
+                "the \"host_keys\" list entry at index %zu must be a non-empty string", i);
+            return;
+        }
+    }
+
+    (void)ssh_listener_auth_methods_from_list(listener->getKeyValue("enabled_auth_methods").get<QoreListNode>(), xsink);
+}
+
+static void ssh_validate_server_config(const QoreHashNode* config, ExceptionSink* xsink) {
+    if (!config) {
+        xsink->raiseException("SSHSERVER-CONFIG-ERROR", "server configuration must be a hash");
+        return;
+    }
+
+    ssh_validate_non_empty_string(config, "name", "SSHSERVER-CONFIG-ERROR", xsink);
+    if (*xsink) {
+        return;
+    }
+
+    const QoreListNode* listeners = config->getKeyValue("listeners").get<QoreListNode>();
+    if (!listeners || !listeners->size()) {
+        xsink->raiseException("SSHSERVER-CONFIG-ERROR",
+            "the \"listeners\" configuration key must be a non-empty list");
+        return;
+    }
+
+    std::set<std::string> listener_names;
+    for (size_t i = 0, e = listeners->size(); i < e; ++i) {
+        const QoreHashNode* listener = listeners->retrieveEntry(i).get<QoreHashNode>();
+        ssh_validate_listener_config(listener, listener_names, xsink);
+        if (*xsink) {
+            return;
+        }
+    }
+
+    const QoreObject* auth_provider = config->getKeyValue("auth_provider").get<QoreObject>();
+    if (config->getKeyValue("auth_provider").getType() != NT_NOTHING && !auth_provider) {
+        xsink->raiseException("SSHSERVER-CONFIG-ERROR",
+            "the \"auth_provider\" configuration key must be an object");
+        return;
+    }
+    ssh_validate_auth_provider(auth_provider, "SSHSERVER-CONFIG-ERROR", xsink);
+    if (*xsink) {
+        return;
+    }
+
+    const ResolvedCallReferenceNode* auth_callback = config->getKeyValue("auth_callback").get<const ResolvedCallReferenceNode>();
+    if (config->getKeyValue("auth_callback").getType() != NT_NOTHING && !auth_callback) {
+        xsink->raiseException("SSHSERVER-CONFIG-ERROR",
+            "the \"auth_callback\" configuration key must be a closure or call reference");
+        return;
+    }
+    if (auth_provider && auth_callback) {
+        xsink->raiseException("SSHSERVER-CONFIG-ERROR",
+            "the \"auth_provider\" and \"auth_callback\" configuration keys cannot be used together");
+        return;
+    }
+
+    const ResolvedCallReferenceNode* command_callback
+        = config->getKeyValue("command_callback").get<const ResolvedCallReferenceNode>();
+    if (config->getKeyValue("command_callback").getType() != NT_NOTHING && !command_callback) {
+        xsink->raiseException("SSHSERVER-CONFIG-ERROR",
+            "the \"command_callback\" configuration key must be a closure or call reference");
+        return;
+    }
+
+    const ResolvedCallReferenceNode* sftp_factory_callback
+        = config->getKeyValue("sftp_factory_callback").get<const ResolvedCallReferenceNode>();
+    if (config->getKeyValue("sftp_factory_callback").getType() != NT_NOTHING && !sftp_factory_callback) {
+        xsink->raiseException("SSHSERVER-CONFIG-ERROR",
+            "the \"sftp_factory_callback\" configuration key must be a closure or call reference");
+        return;
+    }
+
+    const QoreHashNode* sftp_config = config->getKeyValue("sftp_config").get<QoreHashNode>();
+    if (config->getKeyValue("sftp_config").getType() != NT_NOTHING && !sftp_config) {
+        xsink->raiseException("SSHSERVER-CONFIG-ERROR",
+            "the \"sftp_config\" configuration key must be a hash when present");
+        return;
+    }
+    if (sftp_config) {
+        const QoreStringNode* root_dir = sftp_config->getKeyValue("root_dir").get<QoreStringNode>();
+        if (sftp_config->getKeyValue("root_dir").getType() != NT_NOTHING && !root_dir) {
+            xsink->raiseException("SSHSERVER-CONFIG-ERROR",
+                "the \"sftp_config.root_dir\" configuration key must be a string when present");
+            return;
+        }
+
+        bool read_only = false;
+        if (!ssh_get_optional_bool(sftp_config, "read_only", false, read_only, "SSHSERVER-CONFIG-ERROR", xsink)) {
+            return;
+        }
+
+        const ResolvedCallReferenceNode* path_policy_callback
+            = sftp_config->getKeyValue("path_policy_callback").get<const ResolvedCallReferenceNode>();
+        if (sftp_config->getKeyValue("path_policy_callback").getType() != NT_NOTHING && !path_policy_callback) {
+            xsink->raiseException("SSHSERVER-CONFIG-ERROR",
+                "the \"sftp_config.path_policy_callback\" configuration key must be a closure or call reference");
+            return;
+        }
+
+        const QoreHashNode* atomic_publish_policy = sftp_config->getKeyValue("atomic_publish_policy").get<QoreHashNode>();
+        if (sftp_config->getKeyValue("atomic_publish_policy").getType() != NT_NOTHING && !atomic_publish_policy) {
+            xsink->raiseException("SSHSERVER-CONFIG-ERROR",
+                "the \"sftp_config.atomic_publish_policy\" configuration key must be a hash when present");
+            return;
+        }
+        if (atomic_publish_policy) {
+            bool enabled = false;
+            if (!ssh_get_optional_bool(atomic_publish_policy, "enabled", false, enabled, "SSHSERVER-CONFIG-ERROR",
+                    xsink)) {
+                return;
+            }
+
+            const QoreStringNode* temporary_suffix
+                = atomic_publish_policy->getKeyValue("temporary_suffix").get<QoreStringNode>();
+            if (atomic_publish_policy->getKeyValue("temporary_suffix").getType() != NT_NOTHING
+                    && (!temporary_suffix || !temporary_suffix->strlen())) {
+                xsink->raiseException("SSHSERVER-CONFIG-ERROR",
+                    "the \"sftp_config.atomic_publish_policy.temporary_suffix\" configuration key must be a "
+                    "non-empty string when present");
+                return;
+            }
+
+            bool publish_by_rename = true;
+            if (!ssh_get_optional_bool(atomic_publish_policy, "publish_by_rename", true, publish_by_rename,
+                    "SSHSERVER-CONFIG-ERROR", xsink)) {
+                return;
+            }
+
+            bool overwrite = false;
+            if (!ssh_get_optional_bool(atomic_publish_policy, "overwrite", false, overwrite, "SSHSERVER-CONFIG-ERROR",
+                    xsink)) {
+                return;
+            }
+
+            bool fsync_before_publish = false;
+            if (!ssh_get_optional_bool(atomic_publish_policy, "fsync_before_publish", false, fsync_before_publish,
+                    "SSHSERVER-CONFIG-ERROR", xsink)) {
+                return;
+            }
+
+            bool preserve_partial_on_error = false;
+            if (!ssh_get_optional_bool(atomic_publish_policy, "preserve_partial_on_error", false,
+                    preserve_partial_on_error, "SSHSERVER-CONFIG-ERROR", xsink)) {
+                return;
+            }
+        }
+    }
+
+    ssh_validate_logger(config->getKeyValue("logger").get<QoreObject>(), "SSHSERVER-CONFIG-ERROR", xsink);
+}
+
+struct SshListenerState {
+    SshListenerState() : port(0), bound_port(0), active_session_counter(new std::atomic<int64>(0)), bind(nullptr),
+            last_error(nullptr), running(false), accept_waiters(0), max_sessions(-1), allow_command_service(true),
+            allow_sftp_service(false), enabled_auth_methods_mask(SSH_AUTH_METHOD_NONE | SSH_AUTH_METHOD_PASSWORD
+                | SSH_AUTH_METHOD_PUBLICKEY | SSH_AUTH_METHOD_INTERACTIVE) {
+    }
+
+    explicit SshListenerState(const QoreHashNode* listener)
+            : port(0), bound_port(0), active_session_counter(new std::atomic<int64>(0)), bind(nullptr),
+            last_error(nullptr), running(false), accept_waiters(0), max_sessions(-1), allow_command_service(true),
+            allow_sftp_service(false), enabled_auth_methods_mask(SSH_AUTH_METHOD_NONE | SSH_AUTH_METHOD_PASSWORD
+                | SSH_AUTH_METHOD_PUBLICKEY | SSH_AUTH_METHOD_INTERACTIVE) {
+        const QoreStringNode* q_name = listener->getKeyValue("name").get<QoreStringNode>();
+        const QoreStringNode* q_bind_address = listener->getKeyValue("bind_address").get<QoreStringNode>();
+
+        name = q_name ? q_name->c_str() : std::string();
+        bind_address = q_bind_address ? q_bind_address->c_str() : std::string();
+        port = listener->getKeyValue("port").getAsBigInt();
+        if (!listener->getKeyValue("max_sessions").isNothing()) {
+            max_sessions = listener->getKeyValue("max_sessions").getAsBigInt();
+        }
+
+        const QoreStringNode* q_banner = listener->getKeyValue("banner").get<QoreStringNode>();
+        if (q_banner) {
+            banner = q_banner->c_str();
+        }
+        QoreValue allow_command = listener->getKeyValue("allow_command_service");
+        if (!allow_command.isNothing()) {
+            allow_command_service = allow_command.getAsBool();
+        }
+        QoreValue allow_sftp = listener->getKeyValue("allow_sftp_service");
+        if (!allow_sftp.isNothing()) {
+            allow_sftp_service = allow_sftp.getAsBool();
+        }
+        ExceptionSink xsink;
+        int methods = ssh_listener_auth_methods_from_list(
+            listener->getKeyValue("enabled_auth_methods").get<QoreListNode>(), &xsink);
+        if (!xsink) {
+            enabled_auth_methods_mask = methods;
+        }
+
+        const QoreListNode* q_host_keys = listener->getKeyValue("host_keys").get<QoreListNode>();
+        if (q_host_keys) {
+            for (size_t i = 0, e = q_host_keys->size(); i < e; ++i) {
+                const QoreStringNode* q_host_key = q_host_keys->retrieveEntry(i).get<QoreStringNode>();
+                if (q_host_key) {
+                    host_keys.push_back(q_host_key->c_str());
+                }
+            }
+        }
+    }
+
+    SshListenerState(SshListenerState&& other) noexcept : name(std::move(other.name)),
+            bind_address(std::move(other.bind_address)), banner(std::move(other.banner)),
+            host_keys(std::move(other.host_keys)), port(other.port), bound_port(other.bound_port),
+            active_session_counter(std::move(other.active_session_counter)), bind(other.bind),
+            last_error(other.last_error), running(other.running), accept_waiters(other.accept_waiters),
+            max_sessions(other.max_sessions),
+            allow_command_service(other.allow_command_service), allow_sftp_service(other.allow_sftp_service),
+            enabled_auth_methods_mask(other.enabled_auth_methods_mask) {
+        other.bind = nullptr;
+        other.last_error = nullptr;
+        other.bound_port = 0;
+        other.running = false;
+        other.accept_waiters = 0;
+    }
+
+    SshListenerState& operator=(SshListenerState&& other) noexcept {
+        if (this != &other) {
+            clear();
+            name = std::move(other.name);
+            bind_address = std::move(other.bind_address);
+            banner = std::move(other.banner);
+            host_keys = std::move(other.host_keys);
+            port = other.port;
+            bound_port = other.bound_port;
+            active_session_counter = std::move(other.active_session_counter);
+            bind = other.bind;
+            last_error = other.last_error;
+            running = other.running;
+            accept_waiters = other.accept_waiters;
+            max_sessions = other.max_sessions;
+            allow_command_service = other.allow_command_service;
+            allow_sftp_service = other.allow_sftp_service;
+            enabled_auth_methods_mask = other.enabled_auth_methods_mask;
+
+            other.bind = nullptr;
+            other.last_error = nullptr;
+            other.bound_port = 0;
+            other.running = false;
+            other.accept_waiters = 0;
+        }
+        return *this;
+    }
+
+    ~SshListenerState() {
+        clear();
+    }
+
+    void clear() {
+        resetRuntimeState();
+        clearLastError();
+    }
+
+    void resetRuntimeState() {
+        if (bind) {
+            ssh_bind_free(bind);
+            bind = nullptr;
+        }
+        bound_port = 0;
+        if (active_session_counter) {
+            active_session_counter->store(0);
+        }
+        running = false;
+    }
+
+    void clearLastError() {
+        if (last_error) {
+            last_error->deref(nullptr);
+            last_error = nullptr;
+        }
+    }
+
+    void setLastError(QoreHashNode* error) {
+        clearLastError();
+        last_error = error;
+    }
+
+    std::string name;
+    std::string bind_address;
+    std::string banner;
+    std::vector<std::string> host_keys;
+    int64 port;
+    int64 bound_port;
+    std::shared_ptr<std::atomic<int64>> active_session_counter;
+    ssh_bind bind;
+    QoreHashNode* last_error;
+    bool running;
+    int accept_waiters;
+    int64 max_sessions;
+    bool allow_command_service;
+    bool allow_sftp_service;
+    int enabled_auth_methods_mask;
+};
+
+class SshServerPriv : public AbstractPrivateData {
+public:
+    explicit SshServerPriv(const QoreHashNode* config) : config(config ? config->copy() : nullptr), running(false),
+            started(nullptr), logger(nullptr) {
+        if (config) {
+            QoreObject* q_logger = config->getKeyValue("logger").get<QoreObject>();
+            logger = q_logger ? q_logger->objectRefSelf() : nullptr;
+        }
+        initListenerStates();
+    }
+
+    ~SshServerPriv() {
+        clearRuntimeState();
+        if (config) {
+            config->deref(nullptr);
+        }
+        if (started) {
+            started->deref(nullptr);
+        }
+        if (logger) {
+            logger->deref(nullptr);
+        }
+    }
+
+    void setLogger(QoreObject* q_logger, ExceptionSink* xsink) {
+        ssh_validate_logger(q_logger, "SSHSERVER-LOGGER-ERROR", xsink);
+        if (*xsink) {
+            return;
+        }
+
+        QoreObject* old_logger = nullptr;
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            old_logger = logger;
+            logger = q_logger ? q_logger->objectRefSelf() : nullptr;
+        }
+        if (old_logger) {
+            old_logger->deref(xsink);
+        }
+    }
+
+    QoreObject* getLogger() const {
+        std::lock_guard<std::mutex> lock(mutex);
+        return logger ? logger->objectRefSelf() : nullptr;
+    }
+
+    void logInfo(const std::string& msg) const {
+        ReferenceHolder<QoreObject> logger_holder(getLogger(), nullptr);
+        if (!logger_holder) {
+            return;
+        }
+        ssh_log_message(*logger_holder, "info", msg);
+    }
+
+    void logWarn(const std::string& msg) const {
+        ReferenceHolder<QoreObject> logger_holder(getLogger(), nullptr);
+        if (!logger_holder) {
+            return;
+        }
+        ssh_log_message(*logger_holder, "warn", msg);
+    }
+
+    QoreHashNode* getStatus(ExceptionSink* xsink) const {
+        std::lock_guard<std::mutex> lock(mutex);
+        ReferenceHolder<QoreHashNode> status(new QoreHashNode(hashdeclSshServerStatus, xsink), xsink);
+        status->setKeyValue("name", config ? config->getKeyValue("name").refSelf() : QoreValue(), xsink);
+        status->setKeyValue("running", running.load(), xsink);
+        status->setKeyValue("listener_count", listenerCount(), xsink);
+        status->setKeyValue("active_session_count", activeSessionCount(), xsink);
+        status->setKeyValue("started", started ? started->refSelf() : QoreValue(), xsink);
+        ReferenceHolder<QoreListNode> listeners(new QoreListNode(hashdeclSshListenerStatus->getTypeInfo(false)), xsink);
+        appendListenerStatuses(listeners.operator->(), xsink);
+        status->setKeyValue("listeners", listeners.release(), xsink);
+        return status.release();
+    }
+
+    void initListenerStates() {
+        listener_states.clear();
+        if (!config) {
+            return;
+        }
+
+        const QoreListNode* configured_listeners = config->getKeyValue("listeners").get<QoreListNode>();
+        if (!configured_listeners) {
+            return;
+        }
+
+        for (size_t i = 0, e = configured_listeners->size(); i < e; ++i) {
+            const QoreHashNode* listener = configured_listeners->retrieveEntry(i).get<QoreHashNode>();
+            if (listener) {
+                listener_states.emplace_back(listener);
+            }
+        }
+    }
+
+    void appendListenerStatuses(QoreListNode* listeners, ExceptionSink* xsink) const {
+        for (const auto& listener : listener_states) {
+            ReferenceHolder<QoreHashNode> status(new QoreHashNode(hashdeclSshListenerStatus, xsink), xsink);
+            status->setKeyValue("name", new QoreStringNode(listener.name.c_str()), xsink);
+            status->setKeyValue("bind_address", new QoreStringNode(listener.bind_address.c_str()), xsink);
+            status->setKeyValue("port", listener.port, xsink);
+            if (listener.bound_port) {
+                status->setKeyValue("bound_port", listener.bound_port, xsink);
+            } else {
+                status->setKeyValue("bound_port", QoreValue(), xsink);
+            }
+            status->setKeyValue("running", listener.running, xsink);
+            status->setKeyValue("active_session_count",
+                listener.active_session_counter ? listener.active_session_counter->load() : 0, xsink);
+            status->setKeyValue("last_error", listener.last_error ? listener.last_error->refSelf() : QoreValue(), xsink);
+            listeners->push(status.release(), xsink);
+            if (*xsink) {
+                return;
+            }
+        }
+    }
+
+    int listenerCount() const {
+        if (!config) {
+            return 0;
+        }
+        const QoreListNode* listeners = config->getKeyValue("listeners").get<QoreListNode>();
+        return listeners ? listeners->size() : 0;
+    }
+
+    int64 activeSessionCount() const {
+        int64 count = 0;
+        for (const auto& listener : listener_states) {
+            count += listener.active_session_counter ? listener.active_session_counter->load() : 0;
+        }
+        return count;
+    }
+
+    void clearRuntimeState() {
+        std::lock_guard<std::mutex> lock(mutex);
+        for (auto& listener : listener_states) {
+            listener.resetRuntimeState();
+        }
+        running.store(false);
+        if (started) {
+            started->deref(nullptr);
+            started = nullptr;
+        }
+    }
+
+    int startListener(SshListenerState& listener, ExceptionSink* xsink) {
+        listener.resetRuntimeState();
+        listener.clearLastError();
+
+        for (const auto& host_key_path : listener.host_keys) {
+            if (access(host_key_path.c_str(), R_OK) != 0) {
+                std::string msg = "cannot read host key file \"" + host_key_path + "\"";
+                listener.setLastError(ssh_make_exception_info("SSHLISTENER-START-ERROR", msg));
+                xsink->raiseErrnoException("SSHLISTENER-START-ERROR", errno, "%s", msg.c_str());
+                return -1;
+            }
+        }
+
+        listener.bind = ssh_bind_new();
+        if (!listener.bind) {
+            std::string msg = "could not allocate libssh bind object for listener \"" + listener.name + "\"";
+            listener.setLastError(ssh_make_exception_info("SSHLISTENER-START-ERROR", msg));
+            xsink->raiseException("SSHLISTENER-START-ERROR", "%s", msg.c_str());
+            return -1;
+        }
+
+        if (ssh_bind_options_set(listener.bind, SSH_BIND_OPTIONS_BINDADDR, listener.bind_address.c_str()) != SSH_OK) {
+            std::string msg = "could not set bind address for listener \"" + listener.name + "\": "
+                + ssh_get_libssh_error(listener.bind);
+            listener.setLastError(ssh_make_exception_info("SSHLISTENER-START-ERROR", msg));
+            xsink->raiseException("SSHLISTENER-START-ERROR", "%s", msg.c_str());
+            return -1;
+        }
+
+        int port = static_cast<int>(listener.port);
+        if (ssh_bind_options_set(listener.bind, SSH_BIND_OPTIONS_BINDPORT, &port) != SSH_OK) {
+            std::string msg = "could not set bind port for listener \"" + listener.name + "\": "
+                + ssh_get_libssh_error(listener.bind);
+            listener.setLastError(ssh_make_exception_info("SSHLISTENER-START-ERROR", msg));
+            xsink->raiseException("SSHLISTENER-START-ERROR", "%s", msg.c_str());
+            return -1;
+        }
+
+        if (!listener.banner.empty()
+                && ssh_bind_options_set(listener.bind, SSH_BIND_OPTIONS_BANNER, listener.banner.c_str()) != SSH_OK) {
+            std::string msg = "could not set banner for listener \"" + listener.name + "\": "
+                + ssh_get_libssh_error(listener.bind);
+            listener.setLastError(ssh_make_exception_info("SSHLISTENER-START-ERROR", msg));
+            xsink->raiseException("SSHLISTENER-START-ERROR", "%s", msg.c_str());
+            return -1;
+        }
+
+        for (const auto& host_key_path : listener.host_keys) {
+            ssh_key key = nullptr;
+            if (ssh_pki_import_privkey_file(host_key_path.c_str(), nullptr, nullptr, nullptr, &key) != SSH_OK) {
+                std::string msg = "could not import host key file \"" + host_key_path + "\" for listener \""
+                    + listener.name + "\"";
+                listener.setLastError(ssh_make_exception_info("SSHLISTENER-START-ERROR", msg));
+                xsink->raiseException("SSHLISTENER-START-ERROR", "%s", msg.c_str());
+                return -1;
+            }
+
+            if (ssh_bind_options_set(listener.bind, SSH_BIND_OPTIONS_IMPORT_KEY, key) != SSH_OK) {
+                std::string msg = "could not apply host key file \"" + host_key_path + "\" for listener \""
+                    + listener.name + "\": " + ssh_get_libssh_error(listener.bind);
+                ssh_key_free(key);
+                listener.setLastError(ssh_make_exception_info("SSHLISTENER-START-ERROR", msg));
+                xsink->raiseException("SSHLISTENER-START-ERROR", "%s", msg.c_str());
+                return -1;
+            }
+        }
+
+        if (ssh_bind_listen(listener.bind) != SSH_OK) {
+            std::string msg = "could not listen on \"" + listener.bind_address + ":" + std::to_string(listener.port)
+                + "\" for listener \"" + listener.name + "\": " + ssh_get_libssh_error(listener.bind);
+            listener.setLastError(ssh_make_exception_info("SSHLISTENER-START-ERROR", msg));
+            xsink->raiseException("SSHLISTENER-START-ERROR", "%s", msg.c_str());
+            return -1;
+        }
+
+        int64 bound_port = ssh_get_bound_port(listener.bind);
+        listener.bound_port = bound_port > 0 ? bound_port : listener.port;
+        listener.running = true;
+        return 0;
+    }
+
+    int start(ExceptionSink* xsink) {
+        std::lock_guard<std::mutex> lock(mutex);
+        if (running.load()) {
+            return 0;
+        }
+
+        for (auto& listener : listener_states) {
+            if (startListener(listener, xsink)) {
+                for (auto& started_listener : listener_states) {
+                    if (&started_listener != &listener) {
+                        started_listener.resetRuntimeState();
+                    }
+                }
+                running.store(false);
+                if (started) {
+                    started->deref(nullptr);
+                    started = nullptr;
+                }
+                return -1;
+            }
+        }
+
+        if (started) {
+            started->deref(nullptr);
+        }
+        started = new DateTimeNode(static_cast<int64>(time(nullptr)));
+        running.store(true);
+        return 0;
+    }
+
+    int acceptSessionIntern(int timeout_ms, ssh_session& accepted_session, QoreHashNode*& accepted_info,
+            std::shared_ptr<std::atomic<int64>>& active_session_counter, ExceptionSink* xsink) {
+        accepted_session = nullptr;
+        accepted_info = nullptr;
+        active_session_counter.reset();
+        if (timeout_ms < 0) {
+            xsink->raiseException("SSHSERVER-ACCEPT-ERROR", "timeout_ms must be >= 0; got %d", timeout_ms);
+            return -1;
+        }
+        if (qore_check_cancel(xsink, "waiting for SSH session")) {
+            return -1;
+        }
+
+        fd_set read_fds;
+        socket_t max_fd = SSH_INVALID_SOCKET;
+        while (true) {
+            // phase 1: collect listener fds under the lock
+            FD_ZERO(&read_fds);
+            max_fd = SSH_INVALID_SOCKET;
+            {
+                std::lock_guard<std::mutex> lock(mutex);
+                if (!running.load()) {
+                    xsink->raiseException("SSHSERVER-STATE-ERROR",
+                        "cannot accept a session when the server is not running");
+                    return -1;
+                }
+
+                for (auto& listener : listener_states) {
+                    if (!listener.running || !listener.bind) {
+                        continue;
+                    }
+
+                    socket_t fd = ssh_bind_get_fd(listener.bind);
+                    if (fd == SSH_INVALID_SOCKET) {
+                        continue;
+                    }
+
+                    FD_SET(fd, &read_fds);
+                    if (max_fd == SSH_INVALID_SOCKET || fd > max_fd) {
+                        max_fd = fd;
+                    }
+                }
+
+                if (max_fd == SSH_INVALID_SOCKET) {
+                    xsink->raiseException("SSHSERVER-STATE-ERROR",
+                        "server has no active listeners to accept sessions");
+                    return -1;
+                }
+            }
+
+            // phase 2: select() without the lock so stop()/getStatus() are not blocked
+            timeval tv;
+            tv.tv_sec = timeout_ms / 1000;
+            tv.tv_usec = static_cast<suseconds_t>((timeout_ms % 1000) * 1000);
+            int select_rc = select(max_fd + 1, &read_fds, nullptr, nullptr, &tv);
+            if (select_rc < 0) {
+                if (errno == EINTR) {
+                    continue;
+                }
+                xsink->raiseErrnoException("SSHSERVER-ACCEPT-ERROR", errno,
+                    "select() failed while waiting for an incoming SSH session");
+                return -1;
+            }
+            if (!select_rc) {
+                return 0;
+            }
+            break;
+        }
+
+        ssh_bind selected_bind = nullptr;
+        std::string selected_listener_name;
+        std::shared_ptr<std::atomic<int64>> selected_active_session_counter;
+        ssize_t selected_listener_index = -1;
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            if (!running.load()) {
+                return 0;
+            }
+
+            for (size_t i = 0, e = listener_states.size(); i < e; ++i) {
+                auto& listener = listener_states[i];
+                if (!listener.running || !listener.bind) {
+                    continue;
+                }
+
+                socket_t fd = ssh_bind_get_fd(listener.bind);
+                if (fd != SSH_INVALID_SOCKET && FD_ISSET(fd, &read_fds)) {
+                    listener.accept_waiters++;
+                    selected_listener_index = static_cast<ssize_t>(i);
+                    selected_bind = listener.bind;
+                    selected_listener_name = listener.name;
+                    selected_active_session_counter = listener.active_session_counter;
+                    break;
+                }
+            }
+        }
+
+        ON_BLOCK_EXIT([this, selected_listener_index]() {
+            if (selected_listener_index < 0) {
+                return;
+            }
+
+            std::lock_guard<std::mutex> lock(mutex);
+            auto& listener = listener_states[static_cast<size_t>(selected_listener_index)];
+            --listener.accept_waiters;
+            cv.notify_all();
+        });
+
+        if (selected_listener_index < 0) {
+            return 0;
+        }
+        if (qore_check_cancel(xsink, "accepting SSH session")) {
+            return -1;
+        }
+
+        ssh_session session = ssh_new();
+        if (!session) {
+            xsink->raiseException("SSHSERVER-ACCEPT-ERROR", "could not allocate libssh session");
+            return -1;
+        }
+
+        if (ssh_bind_accept(selected_bind, session) != SSH_OK) {
+            std::string msg = "could not accept incoming SSH session for listener \"" + selected_listener_name
+                + "\": " + ssh_get_libssh_error(selected_bind);
+            {
+                std::lock_guard<std::mutex> lock(mutex);
+                listener_states[static_cast<size_t>(selected_listener_index)]
+                    .setLastError(ssh_make_exception_info("SSHSERVER-ACCEPT-ERROR", msg));
+            }
+            xsink->raiseException("SSHSERVER-ACCEPT-ERROR", "%s", msg.c_str());
+            ssh_disconnect(session);
+            ssh_free(session);
+            return -1;
+        }
+
+        bool reject_for_max_sessions = false;
+        int64 max_sessions = -1;
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            const auto& listener = listener_states[static_cast<size_t>(selected_listener_index)];
+            max_sessions = listener.max_sessions;
+            if (max_sessions >= 0 && listener.active_session_counter
+                    && listener.active_session_counter->load() + listener.accept_waiters > max_sessions) {
+                reject_for_max_sessions = true;
+            }
+        }
+        if (reject_for_max_sessions) {
+            std::string msg = "listener \"" + selected_listener_name + "\" rejected an incoming SSH session "
+                "because max_sessions=" + std::to_string(static_cast<long long>(max_sessions))
+                + " was reached";
+            logWarn(msg);
+            ssh_disconnect(session);
+            ssh_free(session);
+            return 0;
+        }
+
+        if (qore_check_cancel(xsink, "performing SSH key exchange")) {
+            ssh_disconnect(session);
+            ssh_free(session);
+            return -1;
+        }
+
+        if (ssh_handle_key_exchange(session) != SSH_OK) {
+            std::string msg = "SSH key exchange failed for listener \"" + selected_listener_name + "\": "
+                + ssh_get_libssh_error(session);
+            {
+                std::lock_guard<std::mutex> lock(mutex);
+                listener_states[static_cast<size_t>(selected_listener_index)]
+                    .setLastError(ssh_make_exception_info("SSHSERVER-ACCEPT-ERROR", msg));
+            }
+            xsink->raiseException("SSHSERVER-ACCEPT-ERROR", "%s", msg.c_str());
+            ssh_disconnect(session);
+            ssh_free(session);
+            return -1;
+        }
+
+        socket_t session_fd = ssh_get_fd(session);
+        if (session_fd == SSH_INVALID_SOCKET) {
+            xsink->raiseException("SSHSERVER-ACCEPT-ERROR",
+                "could not get the accepted socket for listener \"%s\"", selected_listener_name.c_str());
+            ssh_disconnect(session);
+            ssh_free(session);
+            return -1;
+        }
+
+        std::string remote_address;
+        std::string local_address;
+        int64 remote_port = -1;
+        int64 local_port = -1;
+        if (ssh_get_socket_endpoint(session_fd, true, remote_address, remote_port) != 0) {
+            xsink->raiseErrnoException("SSHSERVER-ACCEPT-ERROR", errno,
+                "could not get the remote socket address for listener \"%s\"", selected_listener_name.c_str());
+            ssh_disconnect(session);
+            ssh_free(session);
+            return -1;
+        }
+        if (ssh_get_socket_endpoint(session_fd, false, local_address, local_port) != 0) {
+            xsink->raiseErrnoException("SSHSERVER-ACCEPT-ERROR", errno,
+                "could not get the local socket address for listener \"%s\"", selected_listener_name.c_str());
+            ssh_disconnect(session);
+            ssh_free(session);
+            return -1;
+        }
+
+        int64 now = static_cast<int64>(time(nullptr));
+        std::string session_id = selected_listener_name + ":" + std::to_string(static_cast<long long>(now)) + ":"
+            + std::to_string(static_cast<long long>(session_fd));
+        ReferenceHolder<QoreHashNode> info(new QoreHashNode(hashdeclSshSessionInfo, xsink), xsink);
+        info->setKeyValue("session_id", new QoreStringNode(session_id.c_str()), xsink);
+        info->setKeyValue("server_name", config ? config->getKeyValue("name").refSelf() : QoreValue(), xsink);
+        info->setKeyValue("listener_name", new QoreStringNode(selected_listener_name.c_str()), xsink);
+        info->setKeyValue("remote_address", new QoreStringNode(remote_address.c_str()), xsink);
+        info->setKeyValue("remote_port", remote_port, xsink);
+        info->setKeyValue("local_address", new QoreStringNode(local_address.c_str()), xsink);
+        info->setKeyValue("local_port", local_port, xsink);
+        info->setKeyValue("username", QoreValue(), xsink);
+        info->setKeyValue("authenticated", false, xsink);
+        info->setKeyValue("auth_method", QoreValue(), xsink);
+        info->setKeyValue("started", new DateTimeNode(now), xsink);
+        info->setKeyValue("last_activity", new DateTimeNode(now), xsink);
+        if (*xsink) {
+            ssh_disconnect(session);
+            ssh_free(session);
+            return -1;
+        }
+
+        accepted_session = session;
+        accepted_info = info.release();
+        active_session_counter = selected_active_session_counter;
+        return 1;
+    }
+
+    QoreHashNode* callAuthProviderOrCallback(const QoreHashNode* auth_context_info, ExceptionSink* xsink) const {
+        ReferenceHolder<QoreListNode> call_args(new QoreListNode(autoTypeInfo), xsink);
+        call_args->push(auth_context_info->refSelf(), xsink);
+        if (*xsink) {
+            return nullptr;
+        }
+
+        QoreValue rv;
+        if (const QoreObject* auth_provider
+                = config ? config->getKeyValue("auth_provider").get<QoreObject>() : nullptr) {
+            rv = const_cast<QoreObject*>(auth_provider)->evalMethod("authenticate", *call_args, xsink);
+        } else if (const ResolvedCallReferenceNode* auth_callback = config
+                ? config->getKeyValue("auth_callback").get<const ResolvedCallReferenceNode>() : nullptr) {
+            rv = const_cast<ResolvedCallReferenceNode*>(auth_callback)->execValue(*call_args, xsink);
+        } else {
+            xsink->raiseException("SSHSERVER-AUTH-ERROR",
+                "server \"%s\" has no configured auth provider or auth callback",
+                config ? config->getKeyValue("name").get<const QoreStringNode>()->c_str() : "<unknown>");
+            return nullptr;
+        }
+
+        if (*xsink) {
+            return nullptr;
+        }
+
+        const QoreHashNode* decision = rv.get<QoreHashNode>();
+        if (!decision) {
+            rv.discard(xsink);
+            xsink->raiseException("SSHSERVER-AUTH-ERROR",
+                "the auth callback must return a hash<SshAuthDecision>");
+            return nullptr;
+        }
+
+        ReferenceHolder<QoreHashNode> typed_decision(
+            reinterpret_cast<QoreHashNode*>(hashdeclSshAuthDecision->doRuntimeCast(decision, xsink)), xsink);
+        rv.discard(xsink);
+        return *xsink ? nullptr : typed_decision.release();
+    }
+
+    QoreHashNode* callCommandCallback(const QoreHashNode* command_request, ExceptionSink* xsink) const {
+        assert(command_request);
+        const ResolvedCallReferenceNode* command_callback
+            = config ? config->getKeyValue("command_callback").get<const ResolvedCallReferenceNode>() : nullptr;
+        if (!command_callback) {
+            return makeDeniedCommandResult("no command callback configured", xsink);
+        }
+
+        ReferenceHolder<QoreListNode> call_args(new QoreListNode(autoTypeInfo), xsink);
+        call_args->push(command_request->refSelf(), xsink);
+        if (*xsink) {
+            return nullptr;
+        }
+
+        QoreValue rv = const_cast<ResolvedCallReferenceNode*>(command_callback)->execValue(*call_args, xsink);
+        if (*xsink) {
+            return nullptr;
+        }
+
+        const QoreHashNode* result = rv.get<QoreHashNode>();
+        if (!result) {
+            rv.discard(xsink);
+            xsink->raiseException("SSHSERVER-COMMAND-ERROR",
+                "the command callback must return a hash<SshCommandResult>");
+            return nullptr;
+        }
+
+        ReferenceHolder<QoreHashNode> typed_result(
+            reinterpret_cast<QoreHashNode*>(hashdeclSshCommandResult->doRuntimeCast(result, xsink)), xsink);
+        rv.discard(xsink);
+        return *xsink ? nullptr : typed_result.release();
+    }
+
+    QoreHashNode* callSftpFactoryCallback(const QoreHashNode* sftp_session_info, ExceptionSink* xsink) const {
+        assert(sftp_session_info);
+        const ResolvedCallReferenceNode* sftp_factory_callback
+            = config ? config->getKeyValue("sftp_factory_callback").get<const ResolvedCallReferenceNode>() : nullptr;
+        if (!sftp_factory_callback) {
+            return nullptr;
+        }
+
+        ReferenceHolder<QoreListNode> call_args(new QoreListNode(autoTypeInfo), xsink);
+        call_args->push(sftp_session_info->refSelf(), xsink);
+        if (*xsink) {
+            return nullptr;
+        }
+
+        QoreValue rv = const_cast<ResolvedCallReferenceNode*>(sftp_factory_callback)->execValue(*call_args, xsink);
+        if (*xsink) {
+            return nullptr;
+        }
+        if (rv.isNothing()) {
+            return nullptr;
+        }
+
+        const QoreHashNode* result = rv.get<QoreHashNode>();
+        if (!result) {
+            rv.discard(xsink);
+            xsink->raiseException("SSHSERVER-SFTP-ERROR",
+                "the sftp factory callback must return a hash or NOTHING");
+            return nullptr;
+        }
+
+        ReferenceHolder<QoreHashNode> copied_result(reinterpret_cast<QoreHashNode*>(result->copy()), xsink);
+        rv.discard(xsink);
+        return *xsink ? nullptr : copied_result.release();
+    }
+
+    QoreHashNode* callSftpPathPolicyCallback(const QoreHashNode* transfer_request, ExceptionSink* xsink) const {
+        assert(transfer_request);
+        const QoreHashNode* sftp_config = config ? config->getKeyValue("sftp_config").get<QoreHashNode>() : nullptr;
+        const ResolvedCallReferenceNode* path_policy_callback
+            = sftp_config ? sftp_config->getKeyValue("path_policy_callback").get<const ResolvedCallReferenceNode>()
+                          : nullptr;
+        if (!path_policy_callback) {
+            return nullptr;
+        }
+
+        ReferenceHolder<QoreListNode> call_args(new QoreListNode(autoTypeInfo), xsink);
+        call_args->push(transfer_request->refSelf(), xsink);
+        if (*xsink) {
+            return nullptr;
+        }
+
+        QoreValue rv = const_cast<ResolvedCallReferenceNode*>(path_policy_callback)->execValue(*call_args, xsink);
+        if (*xsink) {
+            return nullptr;
+        }
+        if (rv.isNothing()) {
+            return nullptr;
+        }
+
+        const QoreHashNode* result = rv.get<QoreHashNode>();
+        if (!result) {
+            rv.discard(xsink);
+            xsink->raiseException("SSHSERVER-SFTP-ERROR",
+                "the path policy callback must return a hash<SftpTransferDecision> or NOTHING");
+            return nullptr;
+        }
+
+        ReferenceHolder<QoreHashNode> typed_result(reinterpret_cast<QoreHashNode*>(
+            hashdeclSftpTransferDecision->doRuntimeCast(result, xsink)), xsink);
+        rv.discard(xsink);
+        return *xsink ? nullptr : typed_result.release();
+    }
+
+    QoreHashNode* makeDeniedCommandResult(const char* message, ExceptionSink* xsink) const {
+        ReferenceHolder<QoreHashNode> result(new QoreHashNode(hashdeclSshCommandResult, xsink), xsink);
+        result->setKeyValue("accepted", false, xsink);
+        result->setKeyValue("exit_status", QoreValue(), xsink);
+        result->setKeyValue("message", message ? new QoreStringNode(message) : QoreValue(), xsink);
+        result->setKeyValue("stdout", QoreValue(), xsink);
+        result->setKeyValue("stderr", QoreValue(), xsink);
+        result->setKeyValue("result_data", QoreValue(), xsink);
+        return *xsink ? nullptr : result.release();
+    }
+
+    QoreHashNode* makeDefaultSftpTransferDecision(const QoreHashNode* transfer_request, ExceptionSink* xsink) const {
+        assert(transfer_request);
+        const QoreHashNode* session_info = transfer_request->getKeyValue("session_info").get<QoreHashNode>();
+        if (!session_info) {
+            xsink->raiseException("SSHSERVER-SFTP-ERROR",
+                "transfer requests must include typed session_info metadata");
+            return nullptr;
+        }
+
+        const QoreStringNode* operation_node = transfer_request->getKeyValue("operation").get<QoreStringNode>();
+        const QoreStringNode* path_node = transfer_request->getKeyValue("path").get<QoreStringNode>();
+        if (!operation_node || !path_node || !path_node->strlen()) {
+            xsink->raiseException("SSHSERVER-SFTP-ERROR",
+                "transfer requests must include non-empty operation and path values");
+            return nullptr;
+        }
+
+        std::string operation = operation_node->c_str();
+        bool write_operation = ssh_sftp_operation_is_write(operation);
+        bool read_only = session_info->getKeyValue("read_only").getAsBool();
+        if (*xsink) {
+            xsink->raiseException("SSHSERVER-SFTP-ERROR",
+                "transfer session_info.read_only must be a boolean");
+            return nullptr;
+        }
+
+        std::string normalized_path;
+        if (!ssh_sftp_normalize_virtual_path(path_node->c_str(), normalized_path)) {
+            ReferenceHolder<QoreHashNode> denied(new QoreHashNode(hashdeclSftpTransferDecision, xsink), xsink);
+            ReferenceHolder<QoreHashNode> transfer_info(new QoreHashNode(hashdeclSftpTransferInfo, xsink), xsink);
+            transfer_info->setKeyValue("operation", transfer_request->getKeyValue("operation").refSelf(), xsink);
+            transfer_info->setKeyValue("path", transfer_request->getKeyValue("path").refSelf(), xsink);
+            transfer_info->setKeyValue("temporary_path", QoreValue(), xsink);
+            transfer_info->setKeyValue("final_path", QoreValue(), xsink);
+            transfer_info->setKeyValue("size", transfer_request->getKeyValue("size").refSelf(), xsink);
+            transfer_info->setKeyValue("checksum", QoreValue(), xsink);
+            transfer_info->setKeyValue("atomic_publish", false, xsink);
+            transfer_info->setKeyValue("completed", false, xsink);
+            denied->setKeyValue("allowed", false, xsink);
+            denied->setKeyValue("message", new QoreStringNode("path escapes the configured SFTP root"), xsink);
+            denied->setKeyValue("transfer_info", transfer_info.release(), xsink);
+            return *xsink ? nullptr : denied.release();
+        }
+
+        std::string normalized_target_path;
+        const QoreStringNode* target_path_node = transfer_request->getKeyValue("target_path").get<QoreStringNode>();
+        if (target_path_node && target_path_node->strlen()) {
+            if (!ssh_sftp_normalize_virtual_path(target_path_node->c_str(), normalized_target_path)) {
+                ReferenceHolder<QoreHashNode> denied(new QoreHashNode(hashdeclSftpTransferDecision, xsink), xsink);
+                ReferenceHolder<QoreHashNode> transfer_info(new QoreHashNode(hashdeclSftpTransferInfo, xsink), xsink);
+                transfer_info->setKeyValue("operation", transfer_request->getKeyValue("operation").refSelf(), xsink);
+                transfer_info->setKeyValue("path", new QoreStringNode(normalized_path.c_str()), xsink);
+                transfer_info->setKeyValue("temporary_path", QoreValue(), xsink);
+                transfer_info->setKeyValue("final_path", QoreValue(), xsink);
+                transfer_info->setKeyValue("size", transfer_request->getKeyValue("size").refSelf(), xsink);
+                transfer_info->setKeyValue("checksum", QoreValue(), xsink);
+                transfer_info->setKeyValue("atomic_publish", false, xsink);
+                transfer_info->setKeyValue("completed", false, xsink);
+                denied->setKeyValue("allowed", false, xsink);
+                denied->setKeyValue("message",
+                    new QoreStringNode("target path escapes the configured SFTP root"), xsink);
+                denied->setKeyValue("transfer_info", transfer_info.release(), xsink);
+                return *xsink ? nullptr : denied.release();
+            }
+        } else {
+            normalized_target_path = normalized_path;
+        }
+
+        const QoreHashNode* sftp_config = config ? config->getKeyValue("sftp_config").get<QoreHashNode>() : nullptr;
+        const QoreHashNode* atomic_publish_policy
+            = sftp_config ? sftp_config->getKeyValue("atomic_publish_policy").get<QoreHashNode>() : nullptr;
+        bool atomic_publish_enabled = false;
+        if (atomic_publish_policy && atomic_publish_policy->getKeyValue("enabled").getType() != NT_NOTHING) {
+            atomic_publish_enabled = atomic_publish_policy->getKeyValue("enabled").getAsBool();
+            if (*xsink) {
+                xsink->raiseException("SSHSERVER-SFTP-ERROR",
+                    "the atomic publish policy \"enabled\" key must be a boolean");
+                return nullptr;
+            }
+        }
+        atomic_publish_enabled = atomic_publish_enabled && write_operation;
+
+        std::string temporary_suffix(".part");
+        if (atomic_publish_policy) {
+            const QoreStringNode* temporary_suffix_node
+                = atomic_publish_policy->getKeyValue("temporary_suffix").get<QoreStringNode>();
+            if (temporary_suffix_node && temporary_suffix_node->strlen()) {
+                temporary_suffix = temporary_suffix_node->c_str();
+            }
+        }
+
+        std::string normalized_temporary_path;
+        const QoreStringNode* temporary_path_node = transfer_request->getKeyValue("temporary_path").get<QoreStringNode>();
+        if (temporary_path_node && temporary_path_node->strlen()) {
+            if (!ssh_sftp_normalize_virtual_path(temporary_path_node->c_str(), normalized_temporary_path)) {
+                ReferenceHolder<QoreHashNode> denied(new QoreHashNode(hashdeclSftpTransferDecision, xsink), xsink);
+                ReferenceHolder<QoreHashNode> transfer_info(new QoreHashNode(hashdeclSftpTransferInfo, xsink), xsink);
+                transfer_info->setKeyValue("operation", transfer_request->getKeyValue("operation").refSelf(), xsink);
+                transfer_info->setKeyValue("path", new QoreStringNode(normalized_path.c_str()), xsink);
+                transfer_info->setKeyValue("temporary_path", QoreValue(), xsink);
+                transfer_info->setKeyValue("final_path", QoreValue(), xsink);
+                transfer_info->setKeyValue("size", transfer_request->getKeyValue("size").refSelf(), xsink);
+                transfer_info->setKeyValue("checksum", QoreValue(), xsink);
+                transfer_info->setKeyValue("atomic_publish", false, xsink);
+                transfer_info->setKeyValue("completed", false, xsink);
+                denied->setKeyValue("allowed", false, xsink);
+                denied->setKeyValue("message",
+                    new QoreStringNode("temporary path escapes the configured SFTP root"), xsink);
+                denied->setKeyValue("transfer_info", transfer_info.release(), xsink);
+                return *xsink ? nullptr : denied.release();
+            }
+        } else if (atomic_publish_enabled) {
+            normalized_temporary_path = normalized_target_path + temporary_suffix;
+        }
+
+        const QoreStringNode* root_dir_node = session_info->getKeyValue("root_dir").get<QoreStringNode>();
+        std::string root_dir = root_dir_node ? root_dir_node->c_str() : std::string();
+
+        ReferenceHolder<QoreHashNode> transfer_info(new QoreHashNode(hashdeclSftpTransferInfo, xsink), xsink);
+        transfer_info->setKeyValue("operation", new QoreStringNode(operation.c_str()), xsink);
+        transfer_info->setKeyValue("path", new QoreStringNode(normalized_path.c_str()), xsink);
+        transfer_info->setKeyValue("temporary_path",
+            normalized_temporary_path.empty() ? QoreValue() : QoreValue(new QoreStringNode(
+                ssh_sftp_join_root_path(root_dir, normalized_temporary_path).c_str())), xsink);
+        transfer_info->setKeyValue("final_path",
+            new QoreStringNode(ssh_sftp_join_root_path(root_dir, normalized_target_path).c_str()), xsink);
+        transfer_info->setKeyValue("size", transfer_request->getKeyValue("size").refSelf(), xsink);
+        transfer_info->setKeyValue("checksum", QoreValue(), xsink);
+        transfer_info->setKeyValue("atomic_publish", atomic_publish_enabled, xsink);
+        transfer_info->setKeyValue("completed", false, xsink);
+        if (*xsink) {
+            return nullptr;
+        }
+
+        ReferenceHolder<QoreHashNode> decision(new QoreHashNode(hashdeclSftpTransferDecision, xsink), xsink);
+        if (read_only && write_operation) {
+            decision->setKeyValue("allowed", false, xsink);
+            decision->setKeyValue("message", new QoreStringNode("write operation denied for read-only SFTP session"),
+                xsink);
+        } else {
+            decision->setKeyValue("allowed", true, xsink);
+            decision->setKeyValue("message", QoreValue(), xsink);
+        }
+        decision->setKeyValue("transfer_info", transfer_info.release(), xsink);
+        return *xsink ? nullptr : decision.release();
+    }
+
+    QoreHashNode* mergeSftpTransferDecision(const QoreHashNode* base_decision, const QoreHashNode* override_decision,
+            ExceptionSink* xsink) const {
+        assert(base_decision);
+        if (!override_decision) {
+            return reinterpret_cast<QoreHashNode*>(base_decision->copy());
+        }
+
+        ReferenceHolder<QoreHashNode> merged(reinterpret_cast<QoreHashNode*>(
+            hashdeclSftpTransferDecision->doRuntimeCast(base_decision, xsink)), xsink);
+        if (*xsink) {
+            return nullptr;
+        }
+
+        if (override_decision->existsKey("allowed")) {
+            bool allowed = override_decision->getKeyValue("allowed").getAsBool();
+            if (*xsink) {
+                xsink->raiseException("SSHSERVER-SFTP-ERROR",
+                    "the transfer decision \"allowed\" key must be a boolean when present");
+                return nullptr;
+            }
+            merged->setKeyValue("allowed", allowed, xsink);
+        }
+        if (override_decision->existsKey("message")) {
+            merged->setKeyValue("message", override_decision->getKeyValue("message").refSelf(), xsink);
+        }
+        if (override_decision->existsKey("transfer_info")) {
+            const QoreHashNode* transfer_info = override_decision->getKeyValue("transfer_info").get<QoreHashNode>();
+            if (!transfer_info) {
+                xsink->raiseException("SSHSERVER-SFTP-ERROR",
+                    "the transfer decision \"transfer_info\" key must be a hash<SftpTransferInfo> when present");
+                return nullptr;
+            }
+            ReferenceHolder<QoreHashNode> typed_transfer_info(reinterpret_cast<QoreHashNode*>(
+                hashdeclSftpTransferInfo->doRuntimeCast(transfer_info, xsink)), xsink);
+            if (*xsink) {
+                return nullptr;
+            }
+            merged->setKeyValue("transfer_info", typed_transfer_info.release(), xsink);
+        }
+
+        return *xsink ? nullptr : merged.release();
+    }
+
+    const SshListenerState* findListenerState(const char* listener_name) const {
+        if (!listener_name) {
+            return nullptr;
+        }
+
+        for (const auto& listener : listener_states) {
+            if (listener.name == listener_name) {
+                return &listener;
+            }
+        }
+
+        return nullptr;
+    }
+
+    QoreHashNode* authorizeCommandRequest(const QoreHashNode* session_info, const QoreHashNode* command_request,
+            ExceptionSink* xsink) const {
+        assert(session_info);
+        assert(command_request);
+
+        if (!session_info->getKeyValue("authenticated").getAsBool()) {
+            return makeDeniedCommandResult("the session is not authenticated", xsink);
+        }
+        if (*xsink) {
+            xsink->raiseException("SSHSERVER-COMMAND-ERROR",
+                "the session \"authenticated\" key must be a boolean");
+            return nullptr;
+        }
+
+        const QoreHashNode* policy = session_info->getKeyValue("command_policy").get<QoreHashNode>();
+        if (!policy) {
+            return makeDeniedCommandResult("command access is denied by default", xsink);
+        }
+
+        const QoreHashNode* metadata = command_request->getKeyValue("metadata").get<QoreHashNode>();
+        const QoreStringNode* request_type = metadata ? metadata->getKeyValue("request_type").get<QoreStringNode>() : nullptr;
+        const char* request_type_str = request_type ? request_type->c_str() : "exec";
+        const QoreStringNode* listener_name = session_info->getKeyValue("listener_name").get<QoreStringNode>();
+        const SshListenerState* listener = findListenerState(listener_name ? listener_name->c_str() : nullptr);
+        const QoreStringNode* policy_mode = policy->getKeyValue("mode").get<QoreStringNode>();
+        const char* policy_mode_str = policy_mode ? policy_mode->c_str() : nullptr;
+
+        if (!strcmp(request_type_str, "exec")) {
+            if (listener && !listener->allow_command_service) {
+                return makeDeniedCommandResult("the listener does not allow command execution", xsink);
+            }
+            if (!policy_mode_str || (strcmp(policy_mode_str, "command-only")
+                    && strcmp(policy_mode_str, "command-and-subsystem"))) {
+                return makeDeniedCommandResult(
+                    "the session command policy does not allow command execution", xsink);
+            }
+            return callCommandCallback(command_request, xsink);
+        }
+
+        if (strcmp(request_type_str, "subsystem")) {
+            return makeDeniedCommandResult("unsupported channel request type", xsink);
+        }
+
+        if (!policy_mode_str || (strcmp(policy_mode_str, "subsystem-only")
+                && strcmp(policy_mode_str, "command-and-subsystem"))) {
+            return makeDeniedCommandResult(
+                "the session command policy does not allow subsystem execution", xsink);
+        }
+
+        const QoreStringNode* subsystem = metadata ? metadata->getKeyValue("subsystem").get<QoreStringNode>() : nullptr;
+        if (!subsystem || !subsystem->strlen()) {
+            return makeDeniedCommandResult("the subsystem request is missing a subsystem name", xsink);
+        }
+
+        if (listener) {
+            if (!strcmp(subsystem->c_str(), "sftp")) {
+                if (!listener->allow_sftp_service) {
+                    return makeDeniedCommandResult("the listener does not allow the sftp service", xsink);
+                }
+            } else if (!listener->allow_command_service) {
+                return makeDeniedCommandResult("the listener does not allow subsystem execution", xsink);
+            }
+        }
+
+        bool allow_all_subsystems = policy->getKeyValue("allow_all_subsystems").getAsBool();
+        if (*xsink) {
+            xsink->raiseException("SSHSERVER-COMMAND-ERROR",
+                "the session command policy key \"allow_all_subsystems\" must be a boolean when present");
+            return nullptr;
+        }
+
+        const QoreListNode* allowed_subsystems = policy->getKeyValue("allowed_subsystems").get<QoreListNode>();
+        if (!allow_all_subsystems && !ssh_string_in_list(allowed_subsystems, subsystem->c_str())) {
+            return makeDeniedCommandResult("the requested subsystem is not allowed", xsink);
+        }
+
+        return callCommandCallback(command_request, xsink);
+    }
+
+    QoreHashNode* acceptSessionInfo(int timeout_ms, ExceptionSink* xsink) {
+        ssh_session session = nullptr;
+        QoreHashNode* info = nullptr;
+        std::shared_ptr<std::atomic<int64>> active_session_counter;
+        int rc = acceptSessionIntern(timeout_ms, session, info, active_session_counter, xsink);
+        if (rc <= 0) {
+            return nullptr;
+        }
+
+        ON_BLOCK_EXIT([session]() {
+            ssh_disconnect(session);
+            ssh_free(session);
+        });
+        return info;
+    }
+
+    void stop() {
+        {
+            std::unique_lock<std::mutex> lock(mutex);
+            running.store(false);
+            cv.wait(lock, [this]() {
+                for (const auto& listener : listener_states) {
+                    if (listener.accept_waiters) {
+                        return false;
+                    }
+                }
+                return true;
+            });
+            for (auto& listener : listener_states) {
+                listener.resetRuntimeState();
+                listener.clearLastError();
+            }
+            if (started) {
+                started->deref(nullptr);
+                started = nullptr;
+            }
+        }
+        logInfo("SshServer stopped");
+    }
+
+    QoreHashNode* config;
+    std::vector<SshListenerState> listener_states;
+    mutable std::mutex mutex;
+    mutable std::condition_variable cv;
+    std::atomic<bool> running;
+    DateTimeNode* started;
+    QoreObject* logger;
+};
+
+//! Server-side SSH listener manager
+/** This class provides listener configuration validation, libssh bind/listen
+    bootstrap, and status reporting for one or more SSH listeners.
+
+    @since ssh 0.1
+*/
+qclass SshServer [arg=SshServerPriv* priv; ns=Qore::Ssh; dom=NETWORK,FILESYSTEM; flags=final];
+
+//! Creates the SshServer object from a configuration hash
+/** @param config the server configuration hash
+
+    @par Example:
+    @code{.py}
+hash<SshServerConfig> config = <SshServerConfig>{
+    "name": "my-ssh-server",
+    "listeners": (<SshListenerConfig>{
+        "name": "main",
+        "bind_address": "0.0.0.0",
+        "port": 2222,
+        "host_keys": ("/etc/ssh/ssh_host_rsa_key",),
+    },),
+};
+SshServer server(config);
+    @endcode
+ */
+SshServer::constructor(hash<SshServerConfig> config) {
+    ssh_validate_server_config(config, xsink);
+    if (*xsink) {
+        return;
+    }
+    self->setPrivate(CID_SSHSERVER, new SshServerPriv(config));
+}
+
+//! Throws an exception; SshServer objects cannot be copied
+/** @throw SSHSERVER-COPY-ERROR copying SshServer objects is not supported
+ */
+SshServer::copy() {
+    xsink->raiseException("SSHSERVER-COPY-ERROR", "copying SshServer objects is not supported");
+}
+
+//! Destroys the SshServer object
+/** Releases private resources held by the server object.
+ */
+SshServer::destructor() {
+    priv->deref();
+}
+
+//! Starts the SSH server
+/** Starts configured listeners using libssh and marks the server as running.
+
+    @par Example:
+    @code{.py}
+SshServer server(config);
+server.start();
+assertTrue(server.running());
+    @endcode
+
+ */
+nothing SshServer::start() {
+    priv->start(xsink);
+    if (!*xsink && priv->running.load()) {
+        priv->logInfo("SshServer started");
+    }
+}
+
+//! Stops the SSH server
+/** Stops the server and releases all active listener binds.
+
+    @par Example:
+    @code{.py}
+server.stop();
+assertFalse(server.running());
+    @endcode
+
+ */
+nothing SshServer::stop() {
+    priv->stop();
+}
+
+//! Accepts a single inbound SSH transport and returns typed session metadata
+/** Waits up to `timeout_ms` milliseconds for an incoming connection on any
+    active listener, performs `ssh_bind_accept()` and the initial SSH key
+    exchange, then returns a `SshSessionInfo` snapshot for the accepted
+    transport. The transient libssh session is then disconnected and freed.
+
+    @return a `SshSessionInfo` typed hash when a connection is accepted, or
+    `NOTHING` on timeout
+
+    @par Example:
+    @code{.py}
+hash<SshSessionInfo> info = server.acceptSessionInfo(5000);
+printf("accepted %y:%d on %y\n", info.remote_address, info.remote_port, info.listener_name);
+    @endcode
+ */
+*hash<SshSessionInfo> SshServer::acceptSessionInfo(int timeout_ms = 0) {
+    return priv->acceptSessionInfo(timeout_ms, xsink);
+}
+
+//! Accepts a single inbound SSH transport and returns a live SshSession object
+/** Waits up to `timeout_ms` milliseconds for an incoming connection on any
+    active listener, performs `ssh_bind_accept()` and the initial SSH key
+    exchange, then returns a live `SshSession` wrapper for the accepted
+    transport. Returns `NOTHING` on timeout.
+
+    @return a live `SshSession` object or `NOTHING` on timeout
+ */
+*SshSession SshServer::acceptSession(int timeout_ms = 0) {
+    ssh_session session = nullptr;
+    QoreHashNode* info = nullptr;
+    std::shared_ptr<std::atomic<int64>> active_session_counter;
+    int rc = priv->acceptSessionIntern(timeout_ms, session, info, active_session_counter, xsink);
+    if (rc <= 0) {
+        return QoreValue();
+    }
+
+    if (active_session_counter) {
+        active_session_counter->fetch_add(1);
+    }
+    int enabled_auth_methods_mask = SSH_AUTH_METHOD_NONE | SSH_AUTH_METHOD_PASSWORD | SSH_AUTH_METHOD_PUBLICKEY
+        | SSH_AUTH_METHOD_INTERACTIVE;
+    const QoreStringNode* listener_name = info ? info->getKeyValue("listener_name").get<QoreStringNode>() : nullptr;
+    if (listener_name) {
+        const SshListenerState* listener = priv->findListenerState(listener_name->c_str());
+        if (listener) {
+            enabled_auth_methods_mask = listener->enabled_auth_methods_mask;
+        }
+    }
+    ReferenceHolder<QoreObject> logger(priv->getLogger(), xsink);
+    QoreObject* obj = ssh_new_session_object(getProgram(), info, nullptr, logger.release(), session,
+        active_session_counter, enabled_auth_methods_mask, xsink);
+    if (*xsink && active_session_counter) {
+        active_session_counter->fetch_sub(1);
+    }
+    return obj;
+}
+
+//! Authenticates a live session using the configured auth provider or callback
+/** Waits for an authentication request on the session, invokes the configured
+    `auth_provider` or `auth_callback`, applies the returned `SshAuthDecision`
+    to the live auth request, and updates the session's public authentication
+    state.
+
+    @param session the live session to authenticate
+    @param timeout_ms the maximum time in milliseconds to wait for the next
+    authentication request; 0 means wait indefinitely
+    @return the typed authentication decision applied to the session or
+    `NOTHING` on timeout
+ */
+*hash<SshAuthDecision> SshServer::authenticateSession(SshSession session, int timeout_ms = 0) {
+    while (true) {
+        QoreObject* auth = ssh_session_wait_auth_context(session, getProgram(), timeout_ms, xsink);
+        ReferenceHolder<QoreObject> auth_holder(auth, xsink);
+        if (*xsink || !auth) {
+            return QoreValue();
+        }
+
+        ReferenceHolder<QoreHashNode> auth_info(ssh_auth_context_get_info(auth, xsink), xsink);
+        if (*xsink) {
+            return QoreValue();
+        }
+
+        ReferenceHolder<QoreHashNode> decision(priv->callAuthProviderOrCallback(*auth_info, xsink), xsink);
+        if (*xsink) {
+            return QoreValue();
+        }
+
+        bool accepted = decision->getKeyValue("accepted").getAsBool();
+        if (*xsink) {
+            return QoreValue();
+        }
+
+        if (accepted && ssh_is_public_key_probe(*auth_info)) {
+            if (ssh_auth_context_reply_public_key_ok(auth, xsink)) {
+                return QoreValue();
+            }
+
+            std::ostringstream msg;
+            msg << "SshServer authenticateSession session_id="
+                << auth_info->getKeyValue("session_id").get<const QoreStringNode>()->c_str()
+                << " accepted public-key probe";
+            priv->logInfo(msg.str());
+            continue;
+        }
+
+        if (ssh_auth_context_apply_decision(auth, *decision, xsink)) {
+            return QoreValue();
+        }
+        if (ssh_session_apply_auth_decision(session, *auth_info, *decision, xsink)) {
+            return QoreValue();
+        }
+        std::ostringstream msg;
+        msg << "SshServer authenticateSession session_id="
+            << auth_info->getKeyValue("session_id").get<const QoreStringNode>()->c_str()
+            << " accepted=" << (accepted ? "true" : "false");
+        priv->logInfo(msg.str());
+        return decision.release();
+    }
+}
+
+//! Dispatches the next command request on the session
+/** Waits for the next command-style request on the session, enforces the
+    current session command policy, invokes `command_callback` when allowed,
+    applies the resulting `SshCommandResult` to the live channel, and
+    returns the typed result.
+
+    @param session the live authenticated session
+    @param timeout_ms the maximum time in milliseconds to wait for the request;
+    0 means no timeout
+    @return the typed command result applied to the live request or
+    `NOTHING` on timeout
+ */
+*hash<SshCommandResult> SshServer::dispatchCommandSession(SshSession session, int timeout_ms = 0) {
+    QoreObject* command = ssh_session_wait_command_session(session, getProgram(), timeout_ms, xsink);
+    ReferenceHolder<QoreObject> command_holder(command, xsink);
+    if (*xsink || !command) {
+        return QoreValue();
+    }
+
+    ReferenceHolder<QoreHashNode> session_info(ssh_session_get_info(session, xsink), xsink);
+    if (*xsink) {
+        return QoreValue();
+    }
+
+    ReferenceHolder<QoreHashNode> request(ssh_command_session_get_request(command, xsink), xsink);
+    if (*xsink) {
+        return QoreValue();
+    }
+
+    ReferenceHolder<QoreHashNode> result(priv->authorizeCommandRequest(*session_info, *request, xsink), xsink);
+    if (*xsink) {
+        return QoreValue();
+    }
+
+    if (ssh_command_session_apply_result(command, *result, xsink)) {
+        return QoreValue();
+    }
+    std::ostringstream msg;
+    msg << "SshServer dispatchCommandSession session_id="
+        << request->getKeyValue("session_id").get<const QoreStringNode>()->c_str()
+        << " command=" << request->getKeyValue("command").get<const QoreStringNode>()->c_str()
+        << " accepted=" << (result->getKeyValue("accepted").getAsBool() ? "true" : "false");
+    priv->logInfo(msg.str());
+    return result.release();
+}
+
+//! Accepts and initializes the next SFTP subsystem session
+/** Waits for the next `sftp` subsystem request on the session, enforces the
+    current session SFTP policy via `SshSession::waitSftpSession()`, invokes
+    the optional `sftp_factory_callback`, applies any returned metadata
+    overrides to the live `SftpSession`, and returns the live session.
+
+    @param session the live authenticated session
+    @param timeout_ms the maximum time in milliseconds to wait for the request;
+    0 means no timeout
+    @return the live `SftpSession` object or `NOTHING` on
+    timeout
+ */
+*SftpSession SshServer::dispatchSftpSession(SshSession session, int timeout_ms = 0) {
+    QoreObject* sftp = ssh_session_wait_sftp_session(session, getProgram(), timeout_ms, xsink);
+    ReferenceHolder<QoreObject> sftp_holder(sftp, xsink);
+    if (*xsink || !sftp) {
+        return QoreValue();
+    }
+
+    ReferenceHolder<QoreHashNode> sftp_info(ssh_sftp_session_get_info(sftp, xsink), xsink);
+    if (*xsink) {
+        return QoreValue();
+    }
+
+    ReferenceHolder<QoreHashNode> factory_result(priv->callSftpFactoryCallback(*sftp_info, xsink), xsink);
+    if (*xsink) {
+        return QoreValue();
+    }
+    if (factory_result && ssh_sftp_session_apply_factory_result(sftp, *factory_result, xsink)) {
+        return QoreValue();
+    }
+
+    ReferenceHolder<QoreHashNode> updated_info(ssh_sftp_session_get_info(sftp, xsink), xsink);
+    if (*xsink) {
+        return QoreValue();
+    }
+
+    std::ostringstream msg;
+    msg << "SshServer dispatchSftpSession session_id="
+        << updated_info->getKeyValue("session_info").get<QoreHashNode>()->getKeyValue("session_id")
+            .get<const QoreStringNode>()->c_str()
+        << " principal=" << updated_info->getKeyValue("principal").get<const QoreStringNode>()->c_str();
+    priv->logInfo(msg.str());
+    return sftp_holder.release();
+}
+
+//! Evaluates a typed SFTP transfer request against the configured path policy
+/** Builds a default typed transfer decision from the request, invokes the
+    optional `sftp_config.path_policy_callback`, applies the resulting transfer
+    info to the live `SftpSession` when allowed, and returns the final typed
+    decision.
+
+    @param sftp the live authenticated SFTP session
+    @param request the typed transfer request to evaluate
+    @return the final typed `SftpTransferDecision`
+ */
+hash<SftpTransferDecision> SshServer::evaluateSftpTransferRequest(SftpSession sftp,
+        hash<SftpTransferRequest> request) {
+    ReferenceHolder<QoreHashNode> default_decision(priv->makeDefaultSftpTransferDecision(request, xsink), xsink);
+    if (*xsink) {
+        return QoreValue();
+    }
+
+    ReferenceHolder<QoreHashNode> override_decision(priv->callSftpPathPolicyCallback(request, xsink), xsink);
+    if (*xsink) {
+        return QoreValue();
+    }
+
+    ReferenceHolder<QoreHashNode> final_decision(
+        priv->mergeSftpTransferDecision(*default_decision, *override_decision, xsink), xsink);
+    if (*xsink) {
+        return QoreValue();
+    }
+
+    bool allowed = final_decision->getKeyValue("allowed").getAsBool();
+    if (*xsink) {
+        return QoreValue();
+    }
+
+    if (allowed) {
+        const QoreHashNode* transfer_info = final_decision->getKeyValue("transfer_info").get<QoreHashNode>();
+        if (!transfer_info) {
+            xsink->raiseException("SSHSERVER-SFTP-ERROR",
+                "the final transfer decision must contain transfer_info when allowed");
+            return QoreValue();
+        }
+        if (ssh_sftp_session_apply_transfer_info(sftp, transfer_info, xsink)) {
+            return QoreValue();
+        }
+    } else {
+        if (ssh_sftp_session_clear_transfer_info(sftp, xsink)) {
+            return QoreValue();
+        }
+    }
+
+    std::ostringstream msg;
+    msg << "SshServer evaluateSftpTransferRequest path="
+        << request->getKeyValue("path").get<const QoreStringNode>()->c_str()
+        << " allowed=" << (allowed ? "true" : "false");
+    priv->logInfo(msg.str());
+    return final_decision.release();
+}
+
+//! Sets the logger used by the server
+/** @param logger an optional logger object
+ */
+nothing SshServer::setLogger(*object logger) {
+    priv->setLogger(logger, xsink);
+}
+
+//! Returns the configured logger object
+/** @return the configured logger object or `NOTHING`
+ */
+*object SshServer::getLogger() [flags=RET_VALUE_ONLY] {
+    return priv->getLogger();
+}
+
+//! Returns whether the server is running
+/** @return `True` when the server has been started and not yet stopped
+
+    @par Example:
+    @code{.py}
+if (server.running()) {
+    printf("server is active\n");
+}
+    @endcode
+ */
+bool SshServer::running() [flags=CONSTANT] {
+    return priv->running.load();
+}
+
+//! Returns a typed status hash for the current server object
+/** @return a status hash matching `SshServerStatus` with current server state
+
+    @par Example:
+    @code{.py}
+hash<SshServerStatus> status = server.getStatus();
+printf("server %y: running=%y, listeners=%d\n", status.name, status.running, status.listener_count);
+    @endcode
+
+    @note The status hash includes current listener runtime state and active
+    session counters.
+ */
+hash<SshServerStatus> SshServer::getStatus() [flags=RET_VALUE_ONLY] {
+    return priv->getStatus(xsink);
+}
