@@ -701,6 +701,13 @@ class SshServerTest inherits QUnit::Test {
                     },
                 },
             });
+        config.command_callback = hash<SshCommandResult> sub(hash<SshCommandRequest> req) {
+            return <SshCommandResult>{
+                "accepted": True,
+                "exit_status": 0,
+                "message": "auth-only-command-ok",
+            };
+        };
         return config;
     }
 
@@ -725,6 +732,13 @@ class SshServerTest inherits QUnit::Test {
                     },
                 },
             });
+        config.command_callback = hash<SshCommandResult> sub(hash<SshCommandRequest> req) {
+            return <SshCommandResult>{
+                "accepted": True,
+                "exit_status": 0,
+                "message": "auth-only-command-ok",
+            };
+        };
         return config;
     }
 
@@ -1460,6 +1474,13 @@ class SshServerTest inherits QUnit::Test {
                 "sftp_policy": {"mode": "disabled"},
             };
         };
+        config.command_callback = hash<SshCommandResult> sub(hash<SshCommandRequest> req) {
+            return <SshCommandResult>{
+                "accepted": True,
+                "exit_status": 0,
+                "message": "auth-only-command-ok",
+            };
+        };
         Qore::Ssh::SshServer server(config);
         server.start();
         hash<SshServerStatus> status = server.getStatus();
@@ -1535,7 +1556,15 @@ class SshServerTest inherits QUnit::Test {
     }
 
     testAuthenticateSessionCallback() {
-        Qore::Ssh::SshServer server(getAuthCallbackConfig());
+        hash<SshServerConfig> config = getAuthCallbackConfig();
+        config.command_callback = hash<SshCommandResult> sub(hash<SshCommandRequest> req) {
+            return <SshCommandResult>{
+                "accepted": True,
+                "exit_status": 0,
+                "message": "auth-only-command-ok",
+            };
+        };
+        Qore::Ssh::SshServer server(config);
         server.start();
         hash<SshServerStatus> status = server.getStatus();
         int port = status.listeners[0].bound_port;
