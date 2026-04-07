@@ -52,6 +52,10 @@ DLLLOCAL const TypedHashDecl* hashdeclSftpReadRequest;
 DLLLOCAL const TypedHashDecl* hashdeclSftpReadResult;
 DLLLOCAL const TypedHashDecl* hashdeclSftpWriteRequest;
 DLLLOCAL const TypedHashDecl* hashdeclSftpCloseRequest;
+DLLLOCAL const TypedHashDecl* hashdeclSshActiveSessionInfo;
+DLLLOCAL const TypedHashDecl* hashdeclSftpSymlinkRequest;
+DLLLOCAL const TypedHashDecl* hashdeclSftpSetstatRequest;
+DLLLOCAL const TypedHashDecl* hashdeclSftpStatvfsResult;
 
 DLLLOCAL QoreClass* initSshServerClass(QoreNamespace& ns);
 DLLLOCAL QoreClass* initSshSessionClass(QoreNamespace& ns);
@@ -86,6 +90,10 @@ DLLLOCAL TypedHashDecl* init_hashdecl_SftpReadRequest(QoreNamespace& ns);
 DLLLOCAL TypedHashDecl* init_hashdecl_SftpReadResult(QoreNamespace& ns);
 DLLLOCAL TypedHashDecl* init_hashdecl_SftpWriteRequest(QoreNamespace& ns);
 DLLLOCAL TypedHashDecl* init_hashdecl_SftpCloseRequest(QoreNamespace& ns);
+DLLLOCAL TypedHashDecl* init_hashdecl_SshActiveSessionInfo(QoreNamespace& ns);
+DLLLOCAL TypedHashDecl* init_hashdecl_SftpSymlinkRequest(QoreNamespace& ns);
+DLLLOCAL TypedHashDecl* init_hashdecl_SftpSetstatRequest(QoreNamespace& ns);
+DLLLOCAL TypedHashDecl* init_hashdecl_SftpStatvfsResult(QoreNamespace& ns);
 
 static void ssh_module_init(QoreModuleInitContext& ctx, ExceptionSink& xsink) {
     hashdeclSshListenerConfig = init_hashdecl_SshListenerConfig(SshNS);
@@ -115,6 +123,10 @@ static void ssh_module_init(QoreModuleInitContext& ctx, ExceptionSink& xsink) {
     hashdeclSftpReadResult = init_hashdecl_SftpReadResult(SshNS);
     hashdeclSftpWriteRequest = init_hashdecl_SftpWriteRequest(SshNS);
     hashdeclSftpCloseRequest = init_hashdecl_SftpCloseRequest(SshNS);
+    hashdeclSshActiveSessionInfo = init_hashdecl_SshActiveSessionInfo(SshNS);
+    hashdeclSftpSymlinkRequest = init_hashdecl_SftpSymlinkRequest(SshNS);
+    hashdeclSftpSetstatRequest = init_hashdecl_SftpSetstatRequest(SshNS);
+    hashdeclSftpStatvfsResult = init_hashdecl_SftpStatvfsResult(SshNS);
 
     SshNS.addSystemClass(initSshAuthContextClass(SshNS));
     SshNS.addSystemClass(initSshCommandSessionClass(SshNS));

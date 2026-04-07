@@ -41,6 +41,10 @@ DLLLOCAL extern const TypedHashDecl* hashdeclSftpReadRequest;
 DLLLOCAL extern const TypedHashDecl* hashdeclSftpReadResult;
 DLLLOCAL extern const TypedHashDecl* hashdeclSftpWriteRequest;
 DLLLOCAL extern const TypedHashDecl* hashdeclSftpCloseRequest;
+DLLLOCAL extern const TypedHashDecl* hashdeclSshActiveSessionInfo;
+DLLLOCAL extern const TypedHashDecl* hashdeclSftpSymlinkRequest;
+DLLLOCAL extern const TypedHashDecl* hashdeclSftpSetstatRequest;
+DLLLOCAL extern const TypedHashDecl* hashdeclSftpStatvfsResult;
 DLLLOCAL extern qore_classid_t CID_SSHAUTHCONTEXT;
 DLLLOCAL extern QoreClass* QC_SSHAUTHCONTEXT;
 DLLLOCAL extern qore_classid_t CID_SSHSESSION;
@@ -52,7 +56,8 @@ DLLLOCAL extern QoreClass* QC_SFTPSESSION;
 
 DLLLOCAL QoreObject* ssh_new_session_object(QoreProgram* pgm, QoreHashNode* info, QoreHashNode* auth_info,
     QoreObject* logger, ssh_session session, std::shared_ptr<std::atomic<int64>> active_session_counter,
-    int enabled_auth_methods_mask, ExceptionSink* xsink);
+    int enabled_auth_methods_mask, int64 keepalive_interval_seconds, int64 idle_timeout_seconds,
+    ExceptionSink* xsink);
 DLLLOCAL QoreObject* ssh_new_command_session_object(QoreProgram* pgm, QoreHashNode* request, QoreObject* logger,
     ssh_channel channel, ssh_message request_msg, ExceptionSink* xsink);
 DLLLOCAL QoreObject* ssh_new_sftp_session_object(QoreProgram* pgm, QoreHashNode* info, QoreHashNode* transfer_info,
@@ -85,5 +90,6 @@ DLLLOCAL int ssh_sftp_session_apply_factory_result(const QoreObject* sftp_obj, c
 DLLLOCAL int ssh_sftp_session_apply_transfer_info(const QoreObject* sftp_obj, const QoreHashNode* transfer_info,
     ExceptionSink* xsink);
 DLLLOCAL int ssh_sftp_session_clear_transfer_info(const QoreObject* sftp_obj, ExceptionSink* xsink);
+DLLLOCAL int ssh_session_send_banner(const QoreObject* session_obj, const std::string& banner, ExceptionSink* xsink);
 
 #endif

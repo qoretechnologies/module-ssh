@@ -424,10 +424,13 @@ public:
     }
 
     SshSessionPriv(QoreHashNode* info, QoreHashNode* auth_info, QoreObject* logger, ssh_session session,
-            std::shared_ptr<std::atomic<int64>> active_session_counter, int enabled_auth_methods_mask)
+            std::shared_ptr<std::atomic<int64>> active_session_counter, int enabled_auth_methods_mask,
+            int64 keepalive_interval_seconds = -1, int64 idle_timeout_seconds = -1)
             : info(info), auth_info(auth_info), logger(logger), session(session),
             active_session_counter(active_session_counter), enabled_auth_methods_mask(enabled_auth_methods_mask),
-            connected(session != nullptr), io_waiters(0) {
+            connected(session != nullptr), io_waiters(0),
+            keepalive_interval_seconds(keepalive_interval_seconds), idle_timeout_seconds(idle_timeout_seconds),
+            last_activity(std::chrono::steady_clock::now()), last_keepalive_sent(std::chrono::steady_clock::now()) {
     }
 
     ~SshSessionPriv() {
@@ -588,19 +591,20 @@ public:
                 remaining_ms = timeout_ms - static_cast<int>(elapsed_ms);
             }
 
+            if (checkIdleAndKeepalive(current_session, xsink)) {
+                return nullptr;
+            }
+
             ssh_message msg = ssh_message_get(current_session);
             if (!msg) {
+                int effective_ms = getEffectiveSelectTimeout(remaining_ms);
                 fd_set read_fds;
                 FD_ZERO(&read_fds);
                 FD_SET(fd, &read_fds);
                 timeval tv;
-                timeval* tvp = nullptr;
-                if (timeout_ms > 0) {
-                    tv.tv_sec = remaining_ms / 1000;
-                    tv.tv_usec = static_cast<suseconds_t>((remaining_ms % 1000) * 1000);
-                    tvp = &tv;
-                }
-                int select_rc = select(fd + 1, &read_fds, nullptr, nullptr, tvp);
+                tv.tv_sec = effective_ms / 1000;
+                tv.tv_usec = static_cast<suseconds_t>((effective_ms % 1000) * 1000);
+                int select_rc = select(fd + 1, &read_fds, nullptr, nullptr, &tv);
                 if (select_rc < 0) {
                     if (errno == EINTR) {
                         continue;
@@ -612,12 +616,13 @@ public:
                         "select() failed while waiting for an auth request");
                     return nullptr;
                 }
-                if (!select_rc) {
+                if (!select_rc && timeout_ms > 0 && remaining_ms <= 0) {
                     return nullptr;
                 }
                 continue;
             }
 
+            updateLastActivity();
             int type = ssh_message_type(msg);
             if (type == SSH_REQUEST_SERVICE) {
                 const char* msg_service = ssh_message_service_service(msg);
@@ -776,20 +781,20 @@ public:
                 remaining_ms = timeout_ms - static_cast<int>(elapsed_ms);
             }
 
+            if (checkIdleAndKeepalive(current_session, xsink)) {
+                return nullptr;
+            }
+
             ssh_message msg = ssh_message_get(current_session);
             if (!msg) {
+                int effective_ms = getEffectiveSelectTimeout(remaining_ms);
                 fd_set read_fds;
                 FD_ZERO(&read_fds);
                 FD_SET(fd, &read_fds);
                 timeval tv;
-                timeval* tvp = nullptr;
-                if (timeout_ms > 0) {
-                    tv.tv_sec = remaining_ms / 1000;
-                    tv.tv_usec = static_cast<suseconds_t>((remaining_ms % 1000) * 1000);
-                    tvp = &tv;
-                }
-
-                int select_rc = select(fd + 1, &read_fds, nullptr, nullptr, tvp);
+                tv.tv_sec = effective_ms / 1000;
+                tv.tv_usec = static_cast<suseconds_t>((effective_ms % 1000) * 1000);
+                int select_rc = select(fd + 1, &read_fds, nullptr, nullptr, &tv);
                 if (select_rc < 0) {
                     if (errno == EINTR) {
                         continue;
@@ -798,12 +803,13 @@ public:
                         "select() failed while waiting for a command request");
                     return nullptr;
                 }
-                if (!select_rc) {
+                if (!select_rc && timeout_ms > 0 && remaining_ms <= 0) {
                     return nullptr;
                 }
                 continue;
             }
 
+            updateLastActivity();
             int type = ssh_message_type(msg);
             int subtype = ssh_message_subtype(msg);
 
@@ -1005,20 +1011,20 @@ public:
                 remaining_ms = timeout_ms - static_cast<int>(elapsed_ms);
             }
 
+            if (checkIdleAndKeepalive(current_session, xsink)) {
+                return nullptr;
+            }
+
             ssh_message msg = ssh_message_get(current_session);
             if (!msg) {
+                int effective_ms = getEffectiveSelectTimeout(remaining_ms);
                 fd_set read_fds;
                 FD_ZERO(&read_fds);
                 FD_SET(fd, &read_fds);
                 timeval tv;
-                timeval* tvp = nullptr;
-                if (timeout_ms > 0) {
-                    tv.tv_sec = remaining_ms / 1000;
-                    tv.tv_usec = static_cast<suseconds_t>((remaining_ms % 1000) * 1000);
-                    tvp = &tv;
-                }
-
-                int select_rc = select(fd + 1, &read_fds, nullptr, nullptr, tvp);
+                tv.tv_sec = effective_ms / 1000;
+                tv.tv_usec = static_cast<suseconds_t>((effective_ms % 1000) * 1000);
+                int select_rc = select(fd + 1, &read_fds, nullptr, nullptr, &tv);
                 if (select_rc < 0) {
                     if (errno == EINTR) {
                         continue;
@@ -1027,12 +1033,13 @@ public:
                         "select() failed while waiting for an SFTP request");
                     return nullptr;
                 }
-                if (!select_rc) {
+                if (!select_rc && timeout_ms > 0 && remaining_ms <= 0) {
                     return nullptr;
                 }
                 continue;
             }
 
+            updateLastActivity();
             int type = ssh_message_type(msg);
             int subtype = ssh_message_subtype(msg);
 
@@ -1179,6 +1186,88 @@ public:
     int enabled_auth_methods_mask;
     bool connected;
     mutable int io_waiters;
+    int64 keepalive_interval_seconds;
+    int64 idle_timeout_seconds;
+    mutable std::chrono::steady_clock::time_point last_activity;
+    mutable std::chrono::steady_clock::time_point last_keepalive_sent;
+
+    //! Check idle timeout and send keepalive if needed.
+    //! Returns -1 on idle timeout (exception raised), 0 to continue.
+    int checkIdleAndKeepalive(ssh_session current_session, ExceptionSink* xsink) const {
+        auto now = std::chrono::steady_clock::now();
+
+        if (idle_timeout_seconds > 0) {
+            auto idle_seconds = std::chrono::duration_cast<std::chrono::seconds>(now - last_activity).count();
+            if (idle_seconds >= idle_timeout_seconds) {
+                log("warn", "session idle timeout exceeded");
+                xsink->raiseException("SSHSESSION-IDLE-TIMEOUT",
+                    "session idle for %lld seconds (limit: %lld)",
+                    static_cast<long long>(idle_seconds), static_cast<long long>(idle_timeout_seconds));
+                return -1;
+            }
+        }
+
+        if (keepalive_interval_seconds > 0) {
+            auto since_keepalive = std::chrono::duration_cast<std::chrono::seconds>(
+                now - last_keepalive_sent).count();
+            if (since_keepalive >= keepalive_interval_seconds) {
+                ssh_send_keepalive(current_session);
+                last_keepalive_sent = now;
+            }
+        }
+
+        return 0;
+    }
+
+    void updateLastActivity() const {
+        last_activity = std::chrono::steady_clock::now();
+    }
+
+    int sendBanner(const std::string& banner_text, ExceptionSink* xsink) const {
+        std::lock_guard<std::mutex> lock(m);
+        if (!connected || !session) {
+            xsink->raiseException("SSHSESSION-STATE-ERROR", "cannot send banner on a disconnected session");
+            return -1;
+        }
+        ssh_string banner = ssh_string_from_char(banner_text.c_str());
+        if (!banner) {
+            xsink->raiseException("SSHSESSION-ERROR", "could not create SSH string for banner");
+            return -1;
+        }
+        int rc = ssh_send_issue_banner(session, banner);
+        ssh_string_free(banner);
+        if (rc != SSH_OK) {
+            xsink->raiseException("SSHSESSION-ERROR", "could not send auth banner: %s",
+                ssh_get_error(session));
+            return -1;
+        }
+        log("info", "SshSession sent auth banner");
+        return 0;
+    }
+
+    //! Returns the maximum select wait in ms, capped by keepalive/idle timers.
+    int getEffectiveSelectTimeout(int remaining_ms) const {
+        int effective = remaining_ms > 0 ? remaining_ms : 30000;
+
+        if (keepalive_interval_seconds > 0) {
+            int ka_ms = static_cast<int>(keepalive_interval_seconds) * 1000;
+            if (ka_ms < effective) {
+                effective = ka_ms;
+            }
+        }
+        if (idle_timeout_seconds > 0) {
+            auto now = std::chrono::steady_clock::now();
+            auto idle_ms = std::chrono::duration_cast<std::chrono::milliseconds>(now - last_activity).count();
+            int remaining_idle_ms = static_cast<int>(idle_timeout_seconds * 1000 - idle_ms);
+            if (remaining_idle_ms < 1) {
+                remaining_idle_ms = 1;
+            }
+            if (remaining_idle_ms < effective) {
+                effective = remaining_idle_ms;
+            }
+        }
+        return effective;
+    }
 
 private:
     void log(const char* method, const char* msg_text) const {
@@ -1192,7 +1281,8 @@ private:
 
 DLLLOCAL QoreObject* ssh_new_session_object(QoreProgram* pgm, QoreHashNode* info, QoreHashNode* auth_info,
         QoreObject* logger, ssh_session session, std::shared_ptr<std::atomic<int64>> active_session_counter,
-        int enabled_auth_methods_mask, ExceptionSink* xsink) {
+        int enabled_auth_methods_mask, int64 keepalive_interval_seconds, int64 idle_timeout_seconds,
+        ExceptionSink* xsink) {
     ReferenceHolder<QoreHashNode> info_holder(info, xsink);
     ReferenceHolder<QoreHashNode> auth_holder(auth_info, xsink);
     ReferenceHolder<QoreObject> logger_holder(logger, xsink);
@@ -1206,7 +1296,7 @@ DLLLOCAL QoreObject* ssh_new_session_object(QoreProgram* pgm, QoreHashNode* info
     ReferenceHolder<QoreObject> obj(new QoreObject(QC_SSHSESSION, pgm), xsink);
     obj->setPrivate(CID_SSHSESSION,
         new SshSessionPriv(info_holder.release(), auth_holder.release(), logger_holder.release(), session,
-            active_session_counter, enabled_auth_methods_mask));
+            active_session_counter, enabled_auth_methods_mask, keepalive_interval_seconds, idle_timeout_seconds));
     keep_session = true;
     return obj.release();
 }
@@ -1277,6 +1367,16 @@ DLLLOCAL int ssh_session_apply_auth_decision(const QoreObject* session_obj, cons
 
     PrivateDataRefHolder<SshSessionPriv> priv(session_obj, CID_SSHSESSION, xsink);
     return *xsink ? -1 : priv->applyAuthDecision(auth_context_info, decision, xsink);
+}
+
+DLLLOCAL int ssh_session_send_banner(const QoreObject* session_obj, const std::string& banner, ExceptionSink* xsink) {
+    if (!session_obj) {
+        xsink->raiseException("SSHSESSION-STATE-ERROR", "cannot send banner on a null session object");
+        return -1;
+    }
+
+    PrivateDataRefHolder<SshSessionPriv> priv(session_obj, CID_SSHSESSION, xsink);
+    return *xsink ? -1 : priv->sendBanner(banner, xsink);
 }
 
 DLLLOCAL QoreHashNode* ssh_auth_context_get_info(const QoreObject* auth_obj, ExceptionSink* xsink) {

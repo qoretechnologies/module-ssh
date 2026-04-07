@@ -49,6 +49,7 @@ class SshServerAuthProviderTest inherits QUnit::Test {
         addTestCase("virtual auth provider supports validator-backed generic methods", \testGenericMethodValidators());
         addTestCase("virtual auth provider accepts LoggerInterface and logs auth outcomes", \testLoggerSupport());
         addTestCase("custom auth providers implement the same interface", \testCustomAuthProvider());
+        addTestCase("multi-factor auth requires all methods to complete", \testMultiFactorAuth());
         set_return_value(main());
     }
 
@@ -221,5 +222,73 @@ class SshServerAuthProviderTest inherits QUnit::Test {
         assertEq(True, decision.accepted);
         assertEq("custom:carol", decision.principal);
         assertEq("custom", decision.session_data.provider);
+    }
+
+    testMultiFactorAuth() {
+        # Require both "none" and "password" to succeed
+        SshServerAuthProvider::VirtualSshAuthProvider provider(<SshServerAuthProvider::VirtualSshAuthProviderOptions>{
+            "methods": ("none", "password"),
+            "required_methods": ("none", "password"),
+            "none": <SshServerAuthProvider::VirtualSshStaticAuthMethodOptions>{
+                "allowed_usernames": ("alice",),
+            },
+            "password": <SshServerAuthProvider::VirtualSshPasswordAuthOptions>{
+                "users": (
+                    <SshServerAuthProvider::VirtualSshPasswordUserInfo>{
+                        "username": "alice",
+                        "password": "secret",
+                    },
+                ),
+            },
+        });
+
+        # Step 1: none auth succeeds but returns partial (password still needed)
+        hash<Qore::Ssh::SshAuthContextInfo> none_ctx = getAuthContext("none", "alice");
+        hash<Qore::Ssh::SshAuthDecision> none_decision = provider.authenticate(none_ctx);
+        assertEq(True, none_decision.accepted);
+        assertEq(True, none_decision.partial);
+        assertEq(("password",), none_decision.allowed_auth_methods);
+        assertTrue(none_decision.session_data{SshServerAuthProvider::SessionDataCompletedMethodsKey}.size() > 0);
+
+        # Step 2: password with session_data from partial decision completes MFA
+        hash<Qore::Ssh::SshAuthContextInfo> pw_ctx = getAuthContext("password", "alice");
+        pw_ctx.password = "secret";
+        pw_ctx.metadata = {"session_data": none_decision.session_data};
+        hash<Qore::Ssh::SshAuthDecision> pw_decision = provider.authenticate(pw_ctx);
+        assertEq(True, pw_decision.accepted);
+        assertFalse(pw_decision.partial ?? False);
+
+        # Failure case: wrong password, multi-factor rejects
+        hash<Qore::Ssh::SshAuthContextInfo> fail_ctx = getAuthContext("password", "alice");
+        fail_ctx.password = "wrong";
+        hash<Qore::Ssh::SshAuthDecision> fail_decision = provider.authenticate(fail_ctx);
+        assertFalse(fail_decision.accepted);
+        assertFalse(fail_decision.partial ?? False);
+
+        # Same method twice doesn't satisfy a different required method
+        hash<Qore::Ssh::SshAuthContextInfo> double_ctx = getAuthContext("none", "alice");
+        double_ctx.metadata = {"session_data": none_decision.session_data};
+        hash<Qore::Ssh::SshAuthDecision> double_decision = provider.authenticate(double_ctx);
+        assertEq(True, double_decision.accepted);
+        assertEq(True, double_decision.partial);
+        assertEq(("password",), double_decision.allowed_auth_methods);
+
+        # Single-method mode: no required_methods → no partial
+        SshServerAuthProvider::VirtualSshAuthProvider single_provider(<SshServerAuthProvider::VirtualSshAuthProviderOptions>{
+            "methods": ("password",),
+            "password": <SshServerAuthProvider::VirtualSshPasswordAuthOptions>{
+                "users": (
+                    <SshServerAuthProvider::VirtualSshPasswordUserInfo>{
+                        "username": "bob",
+                        "password": "pass",
+                    },
+                ),
+            },
+        });
+        hash<Qore::Ssh::SshAuthContextInfo> single_ctx = getAuthContext("password", "bob");
+        single_ctx.password = "pass";
+        hash<Qore::Ssh::SshAuthDecision> single_decision = single_provider.authenticate(single_ctx);
+        assertEq(True, single_decision.accepted);
+        assertFalse(single_decision.partial ?? False);
     }
 }

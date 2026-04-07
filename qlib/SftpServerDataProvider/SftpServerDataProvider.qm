@@ -24,6 +24,7 @@
 
 %requires qore >= 2.0
 %requires ssh
+%requires json
 %requires(reexport) DataProvider
 %requires(reexport) Logger
 %modern

@@ -11,15 +11,28 @@
     The current API shape and design direction are documented in the source
     tree in <tt>design/api-spec.md</tt>.
 
-    Current release highlights include:
+    Features include:
     - typed server-side SSH and SFTP contracts in
       @ref Qore::Ssh "Qore::Ssh"
     - live SSH command and SFTP server flows through
       @ref Qore::Ssh::SshServer "SshServer"
     - helper/service logger support through @c Qore::Logger::LoggerInterface
     - strongly typed virtual SFTP helper, backend, and provider APIs
-    - generic local-server @c ConnectionProvider infrastructure
+    - full SFTP protocol support including symlink, readlink, setstat, and the
+      @c statvfs\@openssh.com extension
+    - configurable cipher, KEX, MAC, and host-key algorithm restrictions
+    - per-listener IP allow/deny filtering with CIDR support
+    - server-side keepalive probes and idle session timeouts
+    - RFC 4252 pre-authentication banner support
+    - multi-factor / partial authentication with configurable required methods
+    - active session enumeration through
+      @ref Qore::Ssh::SshServer::listActiveSessions() "SshServer::listActiveSessions()"
+    - SFTP read-ahead pipelining through
+      @ref Qore::Ssh::SftpSession::processRequests() "SftpSession::processRequests()"
+    - generic local-server @c ConnectionProvider infrastructure with grouped
+      security options
     - generic SFTP exchange @c DataProvider infrastructure with inbound events
+    - virtual filesystem persistence with snapshot and write-through modes
     - repository-standard directory-module layout for all qlib user modules
 
     The intended public binary-module namespace is:
@@ -221,6 +234,10 @@
     <tr><td>@ref Qore::Ssh::SftpWriteRequest "Qore::Ssh::SftpWriteRequest"</td><td>typed streamed write request hash</td></tr>
     <tr><td>@ref Qore::Ssh::SftpCloseRequest "Qore::Ssh::SftpCloseRequest"</td><td>typed close request hash</td></tr>
     <tr><td>@ref Qore::Ssh::SftpOperationResult "Qore::Ssh::SftpOperationResult"</td><td>typed operation result hash</td></tr>
+    <tr><td>@ref Qore::Ssh::SftpSymlinkRequest "Qore::Ssh::SftpSymlinkRequest"</td><td>typed symlink request hash</td></tr>
+    <tr><td>@ref Qore::Ssh::SftpSetstatRequest "Qore::Ssh::SftpSetstatRequest"</td><td>typed setstat request hash</td></tr>
+    <tr><td>@ref Qore::Ssh::SftpStatvfsResult "Qore::Ssh::SftpStatvfsResult"</td><td>typed statvfs result hash</td></tr>
+    <tr><td>@ref Qore::Ssh::SshActiveSessionInfo "Qore::Ssh::SshActiveSessionInfo"</td><td>typed active session info hash</td></tr>
     </table>
 
     @subsection sshtypedcontractflags Binary-Module Restriction And Flag Targets
@@ -605,6 +622,6 @@
 
     @section sshreleasenotes Release Notes
 
-    @subsection sshv010 Ssh Module Version 0.1.0
+    @subsection sshv100 Ssh Module Version 1.0.0
     - initial release of the module
 */

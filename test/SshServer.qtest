@@ -647,6 +647,7 @@ class SshServerTest inherits QUnit::Test {
         addTestCase("getStatus reflects config name", \testGetStatusName());
         addTestCase("getStatus reflects listener count", \testGetStatusListenerCount());
         addTestCase("getStatus includes listener entries", \testGetStatusListeners());
+        addTestCase("listActiveSessions returns typed list", \testListActiveSessions());
         addTestCase("copy throws exception", \testCopyDenied());
         set_return_value(main());
     }
@@ -5255,6 +5256,19 @@ class SshServerTest inherits QUnit::Test {
         hash<SshListenerStatus> stopped_listener_status = stopped_status.listeners[0];
         assertFalse(stopped_listener_status.running);
         assertEq(NOTHING, stopped_listener_status.bound_port);
+    }
+
+    testListActiveSessions() {
+        Qore::Ssh::SshServer server(getTestConfig());
+        # Before start, listActiveSessions returns an empty list
+        list<hash<SshActiveSessionInfo>> empty_list = server.listActiveSessions();
+        assertEq(0, empty_list.size());
+
+        # After start with no connections, still empty
+        server.start();
+        on_exit server.stop();
+        list<hash<SshActiveSessionInfo>> running_list = server.listActiveSessions();
+        assertEq(0, running_list.size());
     }
 
     testCopyDenied() {

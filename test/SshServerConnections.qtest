@@ -53,6 +53,7 @@ class SshServerConnectionsTest inherits QUnit::Test {
         addTestCase("SFTP server connection exposes the generic data provider bridge", \testSftpConnectionProvider());
         addTestCase("SFTP server connection exposes inbound submission events", \testSftpConnectionEvents());
         addTestCase("host_keys option is required", \testHostKeysRequired());
+        addTestCase("connection security options project deterministically", \testConnectionSecurityOptions());
         addTestCase("connection get starts and stops the server", \testServerStartStop());
         set_return_value(main());
     }
@@ -431,6 +432,45 @@ class SshServerConnectionsTest inherits QUnit::Test {
                 "opts": {},
             });
         });
+    }
+
+    testConnectionSecurityOptions() {
+        SshServerConnections::SftpServerConnection conn({
+            "name": "secure-conn",
+            "url": "sftpsrv://127.0.0.1:0",
+            "opts": {
+                "host_keys": (getHostKeyPath(),),
+                "security": <SshServerConnections::SshServerConnectionSecurity>{
+                    "allowed_ciphers": "aes256-ctr,aes128-ctr",
+                    "allowed_kex": "curve25519-sha256",
+                    "allowed_macs": "hmac-sha2-256",
+                    "allowed_hostkey_algorithms": "ssh-ed25519",
+                    "allowed_addresses": ("10.0.0.0/8", "192.168.1.0/24"),
+                    "denied_addresses": ("10.0.0.1",),
+                },
+            },
+        });
+
+        hash<Qore::Ssh::SshListenerConfig> listener = conn.getListenerConfig();
+        assertEq("aes256-ctr,aes128-ctr", listener.allowed_ciphers);
+        assertEq("curve25519-sha256", listener.allowed_kex);
+        assertEq("hmac-sha2-256", listener.allowed_macs);
+        assertEq("ssh-ed25519", listener.allowed_hostkey_algorithms);
+        assertEq(("10.0.0.0/8", "192.168.1.0/24"), listener.allowed_addresses);
+        assertEq(("10.0.0.1",), listener.denied_addresses);
+
+        # no security options → fields are NOTHING
+        SshServerConnections::SftpServerConnection conn2({
+            "name": "no-security-conn",
+            "url": "sftpsrv://127.0.0.1:0",
+            "opts": {
+                "host_keys": (getHostKeyPath(),),
+            },
+        });
+        hash<Qore::Ssh::SshListenerConfig> listener2 = conn2.getListenerConfig();
+        assertEq(NOTHING, listener2.allowed_ciphers);
+        assertEq(NOTHING, listener2.allowed_addresses);
+        assertEq(NOTHING, listener2.denied_addresses);
     }
 
     testServerStartStop() {

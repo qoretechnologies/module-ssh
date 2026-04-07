@@ -9,6 +9,15 @@ public hashdecl SshServerConnectionServices {
     *bool allow_sftp_service;
 }
 
+public hashdecl SshServerConnectionSecurity {
+    *string allowed_ciphers;
+    *string allowed_kex;
+    *string allowed_macs;
+    *string allowed_hostkey_algorithms;
+    *list<string> allowed_addresses;
+    *list<string> denied_addresses;
+}
+
 /** Base ConnectionProvider implementation for managed local
     @ref Qore::Ssh::SshServer "Qore::Ssh::SshServer" instances.
 
@@ -169,6 +178,36 @@ public class AbstractSshServerConnection inherits ConnectionProvider::AbstractCo
                 "type": "object",
                 "desc": "Optional `LoggerInterface` object passed to `Qore::Ssh::SshServerConfig.logger`.",
             },
+            "keepalive_interval_seconds": <ConnectionOptionInfo>{
+                "display_name": "Keepalive Interval",
+                "short_desc": "Interval in seconds between server-side keepalive probes",
+                "type": "int",
+                "desc": "Interval in seconds between SSH keepalive probes sent by the server. "
+                    "Helps detect dead connections over unreliable networks.",
+            },
+            "idle_timeout_seconds": <ConnectionOptionInfo>{
+                "display_name": "Idle Timeout",
+                "short_desc": "Maximum idle time in seconds before disconnecting a session",
+                "type": "int",
+                "desc": "Maximum idle time in seconds before the server disconnects the session. "
+                    "Measured from the last message received from the client.",
+            },
+            "auth_banner": <ConnectionOptionInfo>{
+                "display_name": "Auth Banner",
+                "short_desc": "RFC 4252 pre-authentication banner message",
+                "type": "string",
+                "desc": "Pre-authentication banner sent to the client via `SSH_MSG_USERAUTH_BANNER` "
+                    "before the auth exchange begins. Distinct from the SSH identification `banner` "
+                    "which is set during the initial handshake.",
+            },
+            "security": <ConnectionOptionInfo>{
+                "display_name": "Security Options",
+                "short_desc": "Grouped security options for ciphers, KEX, MACs, and IP filtering",
+                "type": "hash",
+                "desc": "Grouped typed security options. Supports `allowed_ciphers`, `allowed_kex`, "
+                    "`allowed_macs`, `allowed_hostkey_algorithms` (comma-separated algorithm names), "
+                    "and `allowed_addresses` / `denied_addresses` (CIDR or bare IP lists).",
+            },
         };
     }
 
@@ -225,6 +264,36 @@ public class AbstractSshServerConnection inherits ConnectionProvider::AbstractCo
         }
         if (opts.server_options) {
             listener.server_options = cast<hash<auto>>(opts.server_options);
+        }
+        if (exists opts.keepalive_interval_seconds) {
+            listener.keepalive_interval_seconds = opts.keepalive_interval_seconds;
+        }
+        if (exists opts.idle_timeout_seconds) {
+            listener.idle_timeout_seconds = opts.idle_timeout_seconds;
+        }
+        if (opts.auth_banner) {
+            listener.auth_banner = opts.auth_banner;
+        }
+        *hash<SshServerConnectionSecurity> security = getConnectionSecurityOptions();
+        if (security) {
+            if (security.allowed_ciphers) {
+                listener.allowed_ciphers = security.allowed_ciphers;
+            }
+            if (security.allowed_kex) {
+                listener.allowed_kex = security.allowed_kex;
+            }
+            if (security.allowed_macs) {
+                listener.allowed_macs = security.allowed_macs;
+            }
+            if (security.allowed_hostkey_algorithms) {
+                listener.allowed_hostkey_algorithms = security.allowed_hostkey_algorithms;
+            }
+            if (security.allowed_addresses) {
+                listener.allowed_addresses = security.allowed_addresses;
+            }
+            if (security.denied_addresses) {
+                listener.denied_addresses = security.denied_addresses;
+            }
         }
         return listener;
     }
@@ -292,6 +361,19 @@ public class AbstractSshServerConnection inherits ConnectionProvider::AbstractCo
             throw "CONNECTION-OPTION-ERROR",
                 sprintf("connection %y option %y must be a hash compatible with "
                     "SshServerConnections::SshServerConnectionServices", name, "services");
+        }
+    }
+
+    private *hash<SshServerConnectionSecurity> getConnectionSecurityOptions() {
+        if (!opts.security) {
+            return NOTHING;
+        }
+        try {
+            return cast<hash<SshServerConnectionSecurity>>(cast<hash<auto>>(opts.security));
+        } catch (auto e) {
+            throw "CONNECTION-OPTION-ERROR",
+                sprintf("connection %y option %y must be a hash compatible with "
+                    "SshServerConnections::SshServerConnectionSecurity", name, "security");
         }
     }
 

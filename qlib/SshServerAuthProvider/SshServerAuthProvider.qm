@@ -109,6 +109,8 @@ public namespace SshServerAuthProvider {
 
     public hashdecl VirtualSshAuthProviderOptions {
         *list<string> methods;
+        #! ordered list of methods that must ALL succeed for multi-factor auth
+        *list<string> required_methods;
         *hash<VirtualSshStaticAuthMethodOptions> none;
         *hash<VirtualSshPasswordAuthOptions> password;
         *hash<VirtualSshPublicKeyAuthOptions> publickey;
@@ -118,6 +120,9 @@ public namespace SshServerAuthProvider {
         *hash<VirtualSshAuthDecisionTemplate> default_failure_decision;
         *LoggerInterface logger;
     }
+
+    #! session_data key used to track completed auth methods across partial auth rounds
+    public const SessionDataCompletedMethodsKey = "__completed_auth_methods";
 
     /** Base auth-provider abstraction for object-driven SSH authentication.
 
@@ -201,9 +206,16 @@ public namespace SshServerAuthProvider {
                     break;
             }
 
+            # Multi-factor: if required_methods is set and this single method succeeded,
+            # check whether all required methods are now satisfied
+            if (decision.accepted && options.required_methods) {
+                decision = evaluateMultiFactor(decision, ctx);
+            }
+
             if (decision.accepted) {
-                logInfo(sprintf("ssh auth accepted method=%s username=%s principal=%s",
-                    ctx.auth_method, ctx.username, decision.principal ?? ctx.username));
+                logInfo(sprintf("ssh auth accepted method=%s username=%s principal=%s partial=%s",
+                    ctx.auth_method, ctx.username, decision.principal ?? ctx.username,
+                    decision.partial ? "true" : "false"));
             } else {
                 logWarn(sprintf("ssh auth rejected method=%s username=%s: %s",
                     ctx.auth_method, ctx.username, decision.message ?? "authentication rejected"));
@@ -324,6 +336,45 @@ public namespace SshServerAuthProvider {
                 return cast<hash<Qore::Ssh::SshAuthDecision>>(validator(ctx));
             }
             return makeAcceptedDecision(method.success_decision, ctx.username);
+        }
+
+        private hash<Qore::Ssh::SshAuthDecision> evaluateMultiFactor(
+                hash<Qore::Ssh::SshAuthDecision> single_decision,
+                hash<Qore::Ssh::SshAuthContextInfo> ctx) {
+            # Get previously completed methods from session_data (passed back from prior partial decisions)
+            list<string> completed = ();
+            if (ctx.metadata.session_data{SessionDataCompletedMethodsKey}) {
+                completed = cast<list<string>>(ctx.metadata.session_data{SessionDataCompletedMethodsKey});
+            }
+
+            # Add the current method if not already present
+            if (!inlist(ctx.auth_method, completed)) {
+                completed += (ctx.auth_method,);
+            }
+
+            # Check if all required methods are satisfied
+            list<string> remaining = ();
+            foreach string required in (options.required_methods) {
+                if (!inlist(required, completed)) {
+                    remaining += (required,);
+                }
+            }
+
+            if (remaining.empty()) {
+                # All methods satisfied — return full acceptance
+                single_decision.partial = False;
+                return single_decision;
+            }
+
+            # Still need more methods — return partial success
+            single_decision.partial = True;
+            single_decision.allowed_auth_methods = remaining;
+            if (!single_decision.session_data) {
+                single_decision.session_data = {};
+            }
+            single_decision.session_data{SessionDataCompletedMethodsKey} = completed;
+            single_decision.message = sprintf("partial auth success, remaining: %y", remaining);
+            return single_decision;
         }
 
         private hash<Qore::Ssh::SshAuthDecision> makeAcceptedDecision(

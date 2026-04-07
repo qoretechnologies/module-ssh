@@ -20,6 +20,15 @@ TypedHashDecl* init_hashdecl_SshListenerConfig(QoreNamespace& ns) {
     hd->addMember("allow_command_service", boolOrNothingTypeInfo, QoreValue());
     hd->addMember("allow_sftp_service", boolOrNothingTypeInfo, QoreValue());
     hd->addMember("server_options", autoHashOrNothingTypeInfo, QoreValue());
+    hd->addMember("keepalive_interval_seconds", bigIntOrNothingTypeInfo, QoreValue());
+    hd->addMember("idle_timeout_seconds", bigIntOrNothingTypeInfo, QoreValue());
+    hd->addMember("allowed_ciphers", stringOrNothingTypeInfo, QoreValue());
+    hd->addMember("allowed_kex", stringOrNothingTypeInfo, QoreValue());
+    hd->addMember("allowed_macs", stringOrNothingTypeInfo, QoreValue());
+    hd->addMember("allowed_hostkey_algorithms", stringOrNothingTypeInfo, QoreValue());
+    hd->addMember("allowed_addresses", qore_get_complex_list_or_nothing_type(stringTypeInfo), QoreValue());
+    hd->addMember("denied_addresses", qore_get_complex_list_or_nothing_type(stringTypeInfo), QoreValue());
+    hd->addMember("auth_banner", stringOrNothingTypeInfo, QoreValue());
     ns.addSystemHashDecl(hd);
     return hd;
 }
@@ -227,6 +236,8 @@ TypedHashDecl* init_hashdecl_SftpPathInfo(QoreNamespace& ns) {
     hd->addMember("path", stringOrNothingTypeInfo, QoreValue());
     hd->addMember("exists", boolOrNothingTypeInfo, QoreValue());
     hd->addMember("directory", boolOrNothingTypeInfo, QoreValue());
+    hd->addMember("symlink", boolOrNothingTypeInfo, QoreValue());
+    hd->addMember("target_path", stringOrNothingTypeInfo, QoreValue());
     hd->addMember("size", bigIntOrNothingTypeInfo, QoreValue());
     hd->addMember("permissions", bigIntOrNothingTypeInfo, QoreValue());
     hd->addMember("metadata", autoHashOrNothingTypeInfo, QoreValue());
@@ -366,6 +377,69 @@ TypedHashDecl* init_hashdecl_SftpCloseRequest(QoreNamespace& ns) {
     hd->addMember("open_result", hashdeclSftpOpenResult->getTypeInfo(true), QoreValue());
     hd->addMember("data", binaryOrNothingTypeInfo, QoreValue());
     hd->addMember("metadata", autoHashOrNothingTypeInfo, QoreValue());
+    ns.addSystemHashDecl(hd);
+    return hd;
+}
+
+TypedHashDecl* init_hashdecl_SshActiveSessionInfo(QoreNamespace& ns) {
+    TypedHashDecl* hd = new TypedHashDecl("SshActiveSessionInfo", "::Qore::Ssh::SshActiveSessionInfo");
+    hd->addMember("session_id", stringTypeInfo, QoreValue());
+    hd->addMember("remote_address", stringTypeInfo, QoreValue());
+    hd->addMember("remote_port", bigIntTypeInfo, QoreValue());
+    hd->addMember("username", stringOrNothingTypeInfo, QoreValue());
+    hd->addMember("principal", stringOrNothingTypeInfo, QoreValue());
+    hd->addMember("auth_method", stringOrNothingTypeInfo, QoreValue());
+    hd->addMember("started", dateTypeInfo, QoreValue());
+    hd->addMember("last_activity", dateTypeInfo, QoreValue());
+    hd->addMember("bytes_read", bigIntTypeInfo, QoreValue());
+    hd->addMember("bytes_written", bigIntTypeInfo, QoreValue());
+    hd->addMember("sftp_operations", bigIntTypeInfo, QoreValue());
+    ns.addSystemHashDecl(hd);
+    return hd;
+}
+
+TypedHashDecl* init_hashdecl_SftpSymlinkRequest(QoreNamespace& ns) {
+    TypedHashDecl* hd = new TypedHashDecl("SftpSymlinkRequest", "::Qore::Ssh::SftpSymlinkRequest");
+    hd->addMember("session_info", hashdeclSftpSessionInfo->getTypeInfo(true), QoreValue());
+    hd->addMember("link_path", stringTypeInfo, QoreValue());
+    hd->addMember("target_path", stringTypeInfo, QoreValue());
+    hd->addMember("operation", stringOrNothingTypeInfo, QoreValue());
+    hd->addMember("metadata", autoHashOrNothingTypeInfo, QoreValue());
+    ns.addSystemHashDecl(hd);
+    return hd;
+}
+
+TypedHashDecl* init_hashdecl_SftpSetstatRequest(QoreNamespace& ns) {
+    TypedHashDecl* hd = new TypedHashDecl("SftpSetstatRequest", "::Qore::Ssh::SftpSetstatRequest");
+    hd->addMember("session_info", hashdeclSftpSessionInfo->getTypeInfo(true), QoreValue());
+    hd->addMember("path", stringTypeInfo, QoreValue());
+    hd->addMember("handle", stringOrNothingTypeInfo, QoreValue());
+    hd->addMember("operation", stringTypeInfo, QoreValue());
+    hd->addMember("size", bigIntOrNothingTypeInfo, QoreValue());
+    hd->addMember("uid", bigIntOrNothingTypeInfo, QoreValue());
+    hd->addMember("gid", bigIntOrNothingTypeInfo, QoreValue());
+    hd->addMember("permissions", bigIntOrNothingTypeInfo, QoreValue());
+    hd->addMember("atime", bigIntOrNothingTypeInfo, QoreValue());
+    hd->addMember("mtime", bigIntOrNothingTypeInfo, QoreValue());
+    hd->addMember("attr_flags", bigIntTypeInfo, QoreValue());
+    hd->addMember("metadata", autoHashOrNothingTypeInfo, QoreValue());
+    ns.addSystemHashDecl(hd);
+    return hd;
+}
+
+TypedHashDecl* init_hashdecl_SftpStatvfsResult(QoreNamespace& ns) {
+    TypedHashDecl* hd = new TypedHashDecl("SftpStatvfsResult", "::Qore::Ssh::SftpStatvfsResult");
+    hd->addMember("f_bsize", bigIntTypeInfo, QoreValue());
+    hd->addMember("f_frsize", bigIntTypeInfo, QoreValue());
+    hd->addMember("f_blocks", bigIntTypeInfo, QoreValue());
+    hd->addMember("f_bfree", bigIntTypeInfo, QoreValue());
+    hd->addMember("f_bavail", bigIntTypeInfo, QoreValue());
+    hd->addMember("f_files", bigIntTypeInfo, QoreValue());
+    hd->addMember("f_ffree", bigIntTypeInfo, QoreValue());
+    hd->addMember("f_favail", bigIntTypeInfo, QoreValue());
+    hd->addMember("f_fsid", bigIntTypeInfo, QoreValue());
+    hd->addMember("f_flag", bigIntTypeInfo, QoreValue());
+    hd->addMember("f_namemax", bigIntTypeInfo, QoreValue());
     ns.addSystemHashDecl(hd);
     return hd;
 }

@@ -56,10 +56,22 @@ public namespace SftpServerDataProvider {
     public const InboundRejectPrincipalDenied = "principal-denied";
     public const InboundRejectPrincipalNotAllowed = "principal-not-allowed";
 
+    public hashdecl VirtualSftpPersistenceOptions {
+        #! local directory for snapshot files
+        *string persistence_dir;
+        #! persistence mode: "snapshot" or "write-through"
+        *string persistence_mode;
+        #! interval in seconds between periodic snapshots (snapshot mode only)
+        *int snapshot_interval_seconds;
+        #! restore state from persistence dir on construction
+        *bool restore_on_construct;
+    }
+
     public hashdecl VirtualSftpFilesystemOptions {
         *int default_file_permissions;
         *int default_directory_permissions;
         *string archive_dir;
+        *hash<VirtualSftpPersistenceOptions> persistence;
         *LoggerInterface logger;
     }
 
@@ -259,6 +271,8 @@ public namespace SftpServerDataProvider {
         string filename;
         string long_name;
         bool directory;
+        *bool symlink;
+        *string target_path;
         int size;
         *string checksum;
         *string checksum_algorithm;

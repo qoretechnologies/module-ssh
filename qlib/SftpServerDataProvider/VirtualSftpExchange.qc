@@ -450,6 +450,62 @@ public namespace SftpServerDataProvider {
             return result;
         }
 
+        hash<auto> symlink(hash<auto> req) {
+            hash<auto> resolved = copyHash(req);
+            *hash<Qore::Ssh::SftpSessionInfo> session_info = getRequestSessionInfo(resolved);
+            *string visible_link = resolved.link_path;
+            *string visible_target = resolved.target_path;
+            if (*string link = resolved.link_path) {
+                resolved.link_path = translateInboundPathForSession(link, session_info, True, "symlink link");
+            }
+            if (*string target = resolved.target_path) {
+                resolved.target_path = translateInboundPathForSession(target, session_info, False, "symlink target");
+            }
+            hash<auto> result = vfs.symlink(resolved);
+            if (visible_link) {
+                result.path = visible_link;
+            }
+            return result;
+        }
+
+        hash<auto> readlink(hash<auto> req) {
+            hash<auto> resolved = copyHash(req);
+            *hash<Qore::Ssh::SftpSessionInfo> session_info = getRequestSessionInfo(resolved);
+            *string visible_path = resolved.path;
+            if (*string req_path = resolved.path) {
+                resolved.path = translateInboundPathForSession(req_path, session_info, False, "readlink");
+            }
+            hash<auto> result = vfs.readlink(resolved);
+            if (visible_path) {
+                result.path = visible_path;
+            }
+            return result;
+        }
+
+        hash<auto> setstat(hash<auto> req) {
+            hash<auto> resolved = copyHash(req);
+            *hash<Qore::Ssh::SftpSessionInfo> session_info = getRequestSessionInfo(resolved);
+            *string visible_path = resolved.path;
+            if (*string req_path = resolved.path) {
+                resolved.path = translateInboundPathForSession(req_path, session_info, False, "setstat");
+            }
+            hash<auto> result = vfs.setstat(resolved);
+            if (visible_path) {
+                result.path = visible_path;
+            }
+            return result;
+        }
+
+        hash<auto> statvfs(hash<auto> req) {
+            hash<auto> resolved = copyHash(req);
+            *hash<Qore::Ssh::SftpSessionInfo> session_info = getRequestSessionInfo(resolved);
+            *string visible_path = resolved.path;
+            if (*string req_path = resolved.path) {
+                resolved.path = translateInboundPathForSession(req_path, session_info, False, "statvfs");
+            }
+            return vfs.statvfs(resolved);
+        }
+
         hash<auto> submit(hash<auto> req) {
             hash<auto> resolved = copyHash(req);
             *hash<Qore::Ssh::SftpSessionInfo> session_info = getRequestSessionInfo(resolved);
@@ -710,6 +766,22 @@ public namespace SftpServerDataProvider {
 
         hash<Qore::Ssh::SftpOperationResult> rmdir(hash<Qore::Ssh::SftpPathRequest> req) {
             return cast<hash<Qore::Ssh::SftpOperationResult>>(rmdir(copyTypedRequest(req)));
+        }
+
+        hash<Qore::Ssh::SftpOperationResult> symlink(hash<Qore::Ssh::SftpSymlinkRequest> req) {
+            return cast<hash<Qore::Ssh::SftpOperationResult>>(symlink(copyTypedRequest(req)));
+        }
+
+        hash<auto> readlink(hash<Qore::Ssh::SftpPathRequest> req) {
+            return readlink(copyTypedRequest(req));
+        }
+
+        hash<Qore::Ssh::SftpOperationResult> setstat(hash<Qore::Ssh::SftpSetstatRequest> req) {
+            return cast<hash<Qore::Ssh::SftpOperationResult>>(setstat(copyTypedRequest(req)));
+        }
+
+        hash<auto> statvfs(hash<Qore::Ssh::SftpPathRequest> req) {
+            return statvfs(copyTypedRequest(req));
         }
 
         private string normalizeDirectory(string path, string operation) {

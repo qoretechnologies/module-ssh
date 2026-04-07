@@ -29,6 +29,7 @@
 #include <condition_variable>
 #include <ctime>
 #include <libssh/server.h>
+#include <map>
 #include <mutex>
 #include <netinet/in.h>
 #include <memory>
@@ -552,18 +553,98 @@ static void ssh_validate_server_config(const QoreHashNode* config, ExceptionSink
     ssh_validate_logger(config->getKeyValue("logger").get<QoreObject>(), "SSHSERVER-CONFIG-ERROR", xsink);
 }
 
+struct SshCidrEntry {
+    uint32_t addr;
+    uint32_t mask;
+};
+
+static bool ssh_parse_ipv4(const std::string& ip_str, uint32_t& addr) {
+    struct in_addr in;
+    if (inet_pton(AF_INET, ip_str.c_str(), &in) != 1) {
+        return false;
+    }
+    addr = ntohl(in.s_addr);
+    return true;
+}
+
+static bool ssh_parse_cidr(const std::string& cidr, SshCidrEntry& entry) {
+    size_t slash = cidr.find('/');
+    if (slash == std::string::npos) {
+        // Bare IP address — /32 mask
+        if (!ssh_parse_ipv4(cidr, entry.addr)) {
+            return false;
+        }
+        entry.mask = 0xffffffff;
+        return true;
+    }
+    std::string ip_part = cidr.substr(0, slash);
+    std::string mask_part = cidr.substr(slash + 1);
+    if (!ssh_parse_ipv4(ip_part, entry.addr)) {
+        return false;
+    }
+    int prefix_len = atoi(mask_part.c_str());
+    if (prefix_len < 0 || prefix_len > 32) {
+        return false;
+    }
+    entry.mask = prefix_len == 0 ? 0 : ~((1u << (32 - prefix_len)) - 1);
+    entry.addr &= entry.mask;
+    return true;
+}
+
+static bool ssh_ip_matches_cidr_list(const std::string& ip, const std::vector<SshCidrEntry>& list) {
+    uint32_t addr = 0;
+    if (!ssh_parse_ipv4(ip, addr)) {
+        return false;
+    }
+    for (const auto& entry : list) {
+        if ((addr & entry.mask) == entry.addr) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static std::vector<SshCidrEntry> ssh_parse_cidr_list(const QoreListNode* list, const char* field_name,
+        ExceptionSink* xsink) {
+    std::vector<SshCidrEntry> result;
+    if (!list) {
+        return result;
+    }
+    for (size_t i = 0, e = list->size(); i < e; ++i) {
+        const QoreStringNode* entry_str = list->retrieveEntry(i).get<QoreStringNode>();
+        if (!entry_str) {
+            continue;
+        }
+        SshCidrEntry entry;
+        if (!ssh_parse_cidr(entry_str->c_str(), entry)) {
+            xsink->raiseException("SSHLISTENER-CONFIG-ERROR",
+                "invalid CIDR entry \"%s\" in \"%s\" at index %zu", entry_str->c_str(), field_name, i);
+            return {};
+        }
+        result.push_back(entry);
+    }
+    return result;
+}
+
+static std::string ssh_get_optional_string(const QoreHashNode* config, const char* key) {
+    const QoreStringNode* val = config->getKeyValue(key).get<QoreStringNode>();
+    return val ? std::string(val->c_str()) : std::string();
+}
+
 struct SshListenerState {
     SshListenerState() : port(0), bound_port(0), active_session_counter(new std::atomic<int64>(0)), bind(nullptr),
             last_error(nullptr), running(false), accept_waiters(0), max_sessions(-1), allow_command_service(true),
             allow_sftp_service(false), enabled_auth_methods_mask(SSH_AUTH_METHOD_NONE | SSH_AUTH_METHOD_PASSWORD
-                | SSH_AUTH_METHOD_PUBLICKEY | SSH_AUTH_METHOD_INTERACTIVE) {
+                | SSH_AUTH_METHOD_PUBLICKEY | SSH_AUTH_METHOD_INTERACTIVE),
+            keepalive_interval_seconds(-1), idle_timeout_seconds(-1) {
     }
 
     explicit SshListenerState(const QoreHashNode* listener)
             : port(0), bound_port(0), active_session_counter(new std::atomic<int64>(0)), bind(nullptr),
             last_error(nullptr), running(false), accept_waiters(0), max_sessions(-1), allow_command_service(true),
             allow_sftp_service(false), enabled_auth_methods_mask(SSH_AUTH_METHOD_NONE | SSH_AUTH_METHOD_PASSWORD
-                | SSH_AUTH_METHOD_PUBLICKEY | SSH_AUTH_METHOD_INTERACTIVE) {
+                | SSH_AUTH_METHOD_PUBLICKEY | SSH_AUTH_METHOD_INTERACTIVE),
+            keepalive_interval_seconds(-1), idle_timeout_seconds(-1) {
         const QoreStringNode* q_name = listener->getKeyValue("name").get<QoreStringNode>();
         const QoreStringNode* q_bind_address = listener->getKeyValue("bind_address").get<QoreStringNode>();
 
@@ -602,6 +683,26 @@ struct SshListenerState {
                 }
             }
         }
+
+        allowed_ciphers = ssh_get_optional_string(listener, "allowed_ciphers");
+        allowed_kex = ssh_get_optional_string(listener, "allowed_kex");
+        allowed_macs = ssh_get_optional_string(listener, "allowed_macs");
+        allowed_hostkey_algorithms = ssh_get_optional_string(listener, "allowed_hostkey_algorithms");
+
+        ExceptionSink cidr_xsink;
+        allowed_addresses = ssh_parse_cidr_list(
+            listener->getKeyValue("allowed_addresses").get<QoreListNode>(), "allowed_addresses", &cidr_xsink);
+        denied_addresses = ssh_parse_cidr_list(
+            listener->getKeyValue("denied_addresses").get<QoreListNode>(), "denied_addresses", &cidr_xsink);
+
+        auth_banner = ssh_get_optional_string(listener, "auth_banner");
+
+        if (!listener->getKeyValue("keepalive_interval_seconds").isNothing()) {
+            keepalive_interval_seconds = listener->getKeyValue("keepalive_interval_seconds").getAsBigInt();
+        }
+        if (!listener->getKeyValue("idle_timeout_seconds").isNothing()) {
+            idle_timeout_seconds = listener->getKeyValue("idle_timeout_seconds").getAsBigInt();
+        }
     }
 
     SshListenerState(SshListenerState&& other) noexcept : name(std::move(other.name)),
@@ -611,7 +712,15 @@ struct SshListenerState {
             last_error(other.last_error), running(other.running), accept_waiters(other.accept_waiters),
             max_sessions(other.max_sessions),
             allow_command_service(other.allow_command_service), allow_sftp_service(other.allow_sftp_service),
-            enabled_auth_methods_mask(other.enabled_auth_methods_mask) {
+            enabled_auth_methods_mask(other.enabled_auth_methods_mask),
+            allowed_ciphers(std::move(other.allowed_ciphers)), allowed_kex(std::move(other.allowed_kex)),
+            allowed_macs(std::move(other.allowed_macs)),
+            allowed_hostkey_algorithms(std::move(other.allowed_hostkey_algorithms)),
+            allowed_addresses(std::move(other.allowed_addresses)),
+            denied_addresses(std::move(other.denied_addresses)),
+            auth_banner(std::move(other.auth_banner)),
+            keepalive_interval_seconds(other.keepalive_interval_seconds),
+            idle_timeout_seconds(other.idle_timeout_seconds) {
         other.bind = nullptr;
         other.last_error = nullptr;
         other.bound_port = 0;
@@ -637,6 +746,15 @@ struct SshListenerState {
             allow_command_service = other.allow_command_service;
             allow_sftp_service = other.allow_sftp_service;
             enabled_auth_methods_mask = other.enabled_auth_methods_mask;
+            allowed_ciphers = std::move(other.allowed_ciphers);
+            allowed_kex = std::move(other.allowed_kex);
+            allowed_macs = std::move(other.allowed_macs);
+            allowed_hostkey_algorithms = std::move(other.allowed_hostkey_algorithms);
+            allowed_addresses = std::move(other.allowed_addresses);
+            denied_addresses = std::move(other.denied_addresses);
+            auth_banner = std::move(other.auth_banner);
+            keepalive_interval_seconds = other.keepalive_interval_seconds;
+            idle_timeout_seconds = other.idle_timeout_seconds;
 
             other.bind = nullptr;
             other.last_error = nullptr;
@@ -695,6 +813,15 @@ struct SshListenerState {
     bool allow_command_service;
     bool allow_sftp_service;
     int enabled_auth_methods_mask;
+    std::string allowed_ciphers;
+    std::string allowed_kex;
+    std::string allowed_macs;
+    std::string allowed_hostkey_algorithms;
+    std::vector<SshCidrEntry> allowed_addresses;
+    std::vector<SshCidrEntry> denied_addresses;
+    std::string auth_banner;
+    int64 keepalive_interval_seconds;
+    int64 idle_timeout_seconds;
 };
 
 class SshServerPriv : public AbstractPrivateData {
@@ -840,6 +967,12 @@ public:
             started->deref(nullptr);
             started = nullptr;
         }
+        for (auto& pair : active_sessions) {
+            if (pair.second) {
+                pair.second->deref(nullptr);
+            }
+        }
+        active_sessions.clear();
     }
 
     int startListener(SshListenerState& listener, ExceptionSink* xsink) {
@@ -887,6 +1020,54 @@ public:
             listener.setLastError(ssh_make_exception_info("SSHLISTENER-START-ERROR", msg));
             xsink->raiseException("SSHLISTENER-START-ERROR", "%s", msg.c_str());
             return -1;
+        }
+
+        if (!listener.allowed_ciphers.empty()) {
+            if (ssh_bind_options_set(listener.bind, SSH_BIND_OPTIONS_CIPHERS_C_S,
+                    listener.allowed_ciphers.c_str()) != SSH_OK
+                    || ssh_bind_options_set(listener.bind, SSH_BIND_OPTIONS_CIPHERS_S_C,
+                        listener.allowed_ciphers.c_str()) != SSH_OK) {
+                std::string msg = "could not set allowed ciphers for listener \"" + listener.name + "\": "
+                    + ssh_get_libssh_error(listener.bind);
+                listener.setLastError(ssh_make_exception_info("SSHLISTENER-START-ERROR", msg));
+                xsink->raiseException("SSHLISTENER-START-ERROR", "%s", msg.c_str());
+                return -1;
+            }
+        }
+
+        if (!listener.allowed_macs.empty()) {
+            if (ssh_bind_options_set(listener.bind, SSH_BIND_OPTIONS_HMAC_C_S,
+                    listener.allowed_macs.c_str()) != SSH_OK
+                    || ssh_bind_options_set(listener.bind, SSH_BIND_OPTIONS_HMAC_S_C,
+                        listener.allowed_macs.c_str()) != SSH_OK) {
+                std::string msg = "could not set allowed MACs for listener \"" + listener.name + "\": "
+                    + ssh_get_libssh_error(listener.bind);
+                listener.setLastError(ssh_make_exception_info("SSHLISTENER-START-ERROR", msg));
+                xsink->raiseException("SSHLISTENER-START-ERROR", "%s", msg.c_str());
+                return -1;
+            }
+        }
+
+        if (!listener.allowed_kex.empty()) {
+            if (ssh_bind_options_set(listener.bind, SSH_BIND_OPTIONS_KEY_EXCHANGE,
+                    listener.allowed_kex.c_str()) != SSH_OK) {
+                std::string msg = "could not set allowed KEX algorithms for listener \"" + listener.name + "\": "
+                    + ssh_get_libssh_error(listener.bind);
+                listener.setLastError(ssh_make_exception_info("SSHLISTENER-START-ERROR", msg));
+                xsink->raiseException("SSHLISTENER-START-ERROR", "%s", msg.c_str());
+                return -1;
+            }
+        }
+
+        if (!listener.allowed_hostkey_algorithms.empty()) {
+            if (ssh_bind_options_set(listener.bind, SSH_BIND_OPTIONS_HOSTKEY_ALGORITHMS,
+                    listener.allowed_hostkey_algorithms.c_str()) != SSH_OK) {
+                std::string msg = "could not set allowed host key algorithms for listener \"" + listener.name + "\": "
+                    + ssh_get_libssh_error(listener.bind);
+                listener.setLastError(ssh_make_exception_info("SSHLISTENER-START-ERROR", msg));
+                xsink->raiseException("SSHLISTENER-START-ERROR", "%s", msg.c_str());
+                return -1;
+            }
         }
 
         for (const auto& host_key_path : listener.host_keys) {
@@ -1109,26 +1290,7 @@ public:
             return 0;
         }
 
-        if (qore_check_cancel(xsink, "performing SSH key exchange")) {
-            ssh_disconnect(session);
-            ssh_free(session);
-            return -1;
-        }
-
-        if (ssh_handle_key_exchange(session) != SSH_OK) {
-            std::string msg = "SSH key exchange failed for listener \"" + selected_listener_name + "\": "
-                + ssh_get_libssh_error(session);
-            {
-                std::lock_guard<std::mutex> lock(mutex);
-                listener_states[static_cast<size_t>(selected_listener_index)]
-                    .setLastError(ssh_make_exception_info("SSHSERVER-ACCEPT-ERROR", msg));
-            }
-            xsink->raiseException("SSHSERVER-ACCEPT-ERROR", "%s", msg.c_str());
-            ssh_disconnect(session);
-            ssh_free(session);
-            return -1;
-        }
-
+        // Extract remote address before key exchange for IP filtering
         socket_t session_fd = ssh_get_fd(session);
         if (session_fd == SSH_INVALID_SOCKET) {
             xsink->raiseException("SSHSERVER-ACCEPT-ERROR",
@@ -1152,6 +1314,48 @@ public:
         if (ssh_get_socket_endpoint(session_fd, false, local_address, local_port) != 0) {
             xsink->raiseErrnoException("SSHSERVER-ACCEPT-ERROR", errno,
                 "could not get the local socket address for listener \"%s\"", selected_listener_name.c_str());
+            ssh_disconnect(session);
+            ssh_free(session);
+            return -1;
+        }
+
+        // IP allow/deny filtering — before key exchange to minimize resource consumption
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            const auto& listener = listener_states[static_cast<size_t>(selected_listener_index)];
+            if (!listener.denied_addresses.empty()
+                    && ssh_ip_matches_cidr_list(remote_address, listener.denied_addresses)) {
+                logWarn("listener \"" + selected_listener_name + "\" rejected connection from denied address "
+                    + remote_address);
+                ssh_disconnect(session);
+                ssh_free(session);
+                return 0;
+            }
+            if (!listener.allowed_addresses.empty()
+                    && !ssh_ip_matches_cidr_list(remote_address, listener.allowed_addresses)) {
+                logWarn("listener \"" + selected_listener_name + "\" rejected connection from non-allowed address "
+                    + remote_address);
+                ssh_disconnect(session);
+                ssh_free(session);
+                return 0;
+            }
+        }
+
+        if (qore_check_cancel(xsink, "performing SSH key exchange")) {
+            ssh_disconnect(session);
+            ssh_free(session);
+            return -1;
+        }
+
+        if (ssh_handle_key_exchange(session) != SSH_OK) {
+            std::string msg = "SSH key exchange failed for listener \"" + selected_listener_name + "\": "
+                + ssh_get_libssh_error(session);
+            {
+                std::lock_guard<std::mutex> lock(mutex);
+                listener_states[static_cast<size_t>(selected_listener_index)]
+                    .setLastError(ssh_make_exception_info("SSHSERVER-ACCEPT-ERROR", msg));
+            }
+            xsink->raiseException("SSHSERVER-ACCEPT-ERROR", "%s", msg.c_str());
             ssh_disconnect(session);
             ssh_free(session);
             return -1;
@@ -1182,6 +1386,7 @@ public:
         accepted_session = session;
         accepted_info = info.release();
         active_session_counter = selected_active_session_counter;
+        registerActiveSession(session_id, accepted_info, xsink);
         return 1;
     }
 
@@ -1664,6 +1869,57 @@ public:
         logInfo("SshServer stopped");
     }
 
+    void registerActiveSession(const std::string& session_id, QoreHashNode* session_info, ExceptionSink* xsink) {
+        std::lock_guard<std::mutex> lock(mutex);
+        if (active_sessions.find(session_id) != active_sessions.end()) {
+            return;
+        }
+        active_sessions[session_id] = session_info ? session_info->hashRefSelf() : nullptr;
+    }
+
+    void unregisterActiveSession(const std::string& session_id) {
+        QoreHashNode* old_info = nullptr;
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            auto it = active_sessions.find(session_id);
+            if (it != active_sessions.end()) {
+                old_info = it->second;
+                active_sessions.erase(it);
+            }
+        }
+        if (old_info) {
+            old_info->deref(nullptr);
+        }
+    }
+
+    QoreListNode* listActiveSessions(ExceptionSink* xsink) {
+        std::lock_guard<std::mutex> lock(mutex);
+        ReferenceHolder<QoreListNode> result(
+            new QoreListNode(hashdeclSshActiveSessionInfo->getTypeInfo(false)), xsink);
+        for (const auto& pair : active_sessions) {
+            if (!pair.second) {
+                continue;
+            }
+            ReferenceHolder<QoreHashNode> entry(new QoreHashNode(hashdeclSshActiveSessionInfo, xsink), xsink);
+            entry->setKeyValue("session_id", pair.second->getKeyValue("session_id").refSelf(), xsink);
+            entry->setKeyValue("remote_address", pair.second->getKeyValue("remote_address").refSelf(), xsink);
+            entry->setKeyValue("remote_port", pair.second->getKeyValue("remote_port").refSelf(), xsink);
+            entry->setKeyValue("username", pair.second->getKeyValue("username").refSelf(), xsink);
+            entry->setKeyValue("principal", pair.second->getKeyValue("principal").refSelf(), xsink);
+            entry->setKeyValue("auth_method", pair.second->getKeyValue("auth_method").refSelf(), xsink);
+            entry->setKeyValue("started", pair.second->getKeyValue("started").refSelf(), xsink);
+            entry->setKeyValue("last_activity", pair.second->getKeyValue("last_activity").refSelf(), xsink);
+            entry->setKeyValue("bytes_read", (int64)0, xsink);
+            entry->setKeyValue("bytes_written", (int64)0, xsink);
+            entry->setKeyValue("sftp_operations", (int64)0, xsink);
+            if (*xsink) {
+                return nullptr;
+            }
+            result->push(entry.release(), xsink);
+        }
+        return result.release();
+    }
+
     QoreHashNode* config;
     std::vector<SshListenerState> listener_states;
     mutable std::mutex mutex;
@@ -1671,6 +1927,7 @@ public:
     std::atomic<bool> running;
     DateTimeNode* started;
     QoreObject* logger;
+    std::map<std::string, QoreHashNode*> active_sessions;
 };
 
 //! Server-side SSH listener manager
@@ -1793,16 +2050,20 @@ printf("accepted %y:%d on %y\n", info.remote_address, info.remote_port, info.lis
     }
     int enabled_auth_methods_mask = SSH_AUTH_METHOD_NONE | SSH_AUTH_METHOD_PASSWORD | SSH_AUTH_METHOD_PUBLICKEY
         | SSH_AUTH_METHOD_INTERACTIVE;
+    int64 keepalive_interval = -1;
+    int64 idle_timeout = -1;
     const QoreStringNode* listener_name = info ? info->getKeyValue("listener_name").get<QoreStringNode>() : nullptr;
     if (listener_name) {
         const SshListenerState* listener = priv->findListenerState(listener_name->c_str());
         if (listener) {
             enabled_auth_methods_mask = listener->enabled_auth_methods_mask;
+            keepalive_interval = listener->keepalive_interval_seconds;
+            idle_timeout = listener->idle_timeout_seconds;
         }
     }
     ReferenceHolder<QoreObject> logger(priv->getLogger(), xsink);
     QoreObject* obj = ssh_new_session_object(getProgram(), info, nullptr, logger.release(), session,
-        active_session_counter, enabled_auth_methods_mask, xsink);
+        active_session_counter, enabled_auth_methods_mask, keepalive_interval, idle_timeout, xsink);
     if (*xsink && active_session_counter) {
         active_session_counter->fetch_sub(1);
     }
@@ -1822,6 +2083,25 @@ printf("accepted %y:%d on %y\n", info.remote_address, info.remote_port, info.lis
     `NOTHING` on timeout
  */
 *hash<SshAuthDecision> SshServer::authenticateSession(SshSession session, int timeout_ms = 0) {
+    // Send auth banner if configured for the session's listener
+    {
+        ReferenceHolder<QoreHashNode> session_info(ssh_session_get_info(session, xsink), xsink);
+        if (!*xsink && session_info) {
+            const QoreStringNode* listener_name = session_info->getKeyValue("listener_name").get<QoreStringNode>();
+            if (listener_name) {
+                const SshListenerState* listener = priv->findListenerState(listener_name->c_str());
+                if (listener && !listener->auth_banner.empty()) {
+                    ssh_session_send_banner(session, listener->auth_banner, xsink);
+                    if (*xsink) {
+                        return QoreValue();
+                    }
+                }
+            }
+        }
+        if (*xsink) {
+            return QoreValue();
+        }
+    }
     while (true) {
         QoreObject* auth = ssh_session_wait_auth_context(session, getProgram(), timeout_ms, xsink);
         ReferenceHolder<QoreObject> auth_holder(auth, xsink);
@@ -1857,9 +2137,25 @@ printf("accepted %y:%d on %y\n", info.remote_address, info.remote_port, info.lis
             continue;
         }
 
+        bool partial = decision->getKeyValue("partial").getAsBool();
+
         if (ssh_auth_context_apply_decision(auth, *decision, xsink)) {
             return QoreValue();
         }
+
+        // For partial auth success, continue the loop to collect the next auth method
+        if (accepted && partial) {
+            if (ssh_session_apply_auth_decision(session, *auth_info, *decision, xsink)) {
+                return QoreValue();
+            }
+            std::ostringstream msg;
+            msg << "SshServer authenticateSession session_id="
+                << auth_info->getKeyValue("session_id").get<const QoreStringNode>()->c_str()
+                << " partial auth success, continuing";
+            priv->logInfo(msg.str());
+            continue;
+        }
+
         if (ssh_session_apply_auth_decision(session, *auth_info, *decision, xsink)) {
             return QoreValue();
         }
@@ -2063,4 +2359,11 @@ printf("server %y: running=%y, listeners=%d\n", status.name, status.running, sta
  */
 hash<SshServerStatus> SshServer::getStatus() [flags=RET_VALUE_ONLY] {
     return priv->getStatus(xsink);
+}
+
+//! Returns a list of all currently active sessions
+/** @return a list of @ref SshActiveSessionInfo typed hashes, one per active session
+ */
+list<hash<SshActiveSessionInfo>> SshServer::listActiveSessions() [flags=RET_VALUE_ONLY] {
+    return priv->listActiveSessions(xsink);
 }

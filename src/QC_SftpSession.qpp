@@ -352,6 +352,75 @@ static void ssh_sftp_write_u32_be(std::string& out, uint32_t value) {
     out.push_back(static_cast<char>(value & 0xff));
 }
 
+static void ssh_sftp_write_u64_be(std::string& out, uint64_t value) {
+    ssh_sftp_write_u32_be(out, static_cast<uint32_t>(value >> 32));
+    ssh_sftp_write_u32_be(out, static_cast<uint32_t>(value & 0xffffffff));
+}
+
+// SFTP attrs flags (RFC 4251 / draft-ietf-secsh-filexfer)
+#define SSH_FILEXFER_ATTR_SIZE        0x00000001
+#define SSH_FILEXFER_ATTR_UIDGID      0x00000002
+#define SSH_FILEXFER_ATTR_PERMISSIONS 0x00000004
+#define SSH_FILEXFER_ATTR_ACMODTIME   0x00000008
+
+// Parse SFTP attrs block from raw payload bytes
+// Returns true on success, false if the payload is too short
+static bool ssh_sftp_parse_attrs(const unsigned char* ptr, size_t size, size_t& offset,
+        uint32_t& flags, int64_t& file_size, uint32_t& uid, uint32_t& gid,
+        uint32_t& permissions, uint32_t& atime, uint32_t& mtime) {
+    flags = 0;
+    file_size = -1;
+    uid = 0;
+    gid = 0;
+    permissions = 0;
+    atime = 0;
+    mtime = 0;
+
+    if (offset + 4 > size) {
+        return false;
+    }
+    flags = ssh_sftp_read_u32_be(ptr + offset);
+    offset += 4;
+
+    if (flags & SSH_FILEXFER_ATTR_SIZE) {
+        if (offset + 8 > size) {
+            return false;
+        }
+        file_size = static_cast<int64_t>(ssh_sftp_read_u64_be(ptr + offset));
+        offset += 8;
+    }
+
+    if (flags & SSH_FILEXFER_ATTR_UIDGID) {
+        if (offset + 8 > size) {
+            return false;
+        }
+        uid = ssh_sftp_read_u32_be(ptr + offset);
+        offset += 4;
+        gid = ssh_sftp_read_u32_be(ptr + offset);
+        offset += 4;
+    }
+
+    if (flags & SSH_FILEXFER_ATTR_PERMISSIONS) {
+        if (offset + 4 > size) {
+            return false;
+        }
+        permissions = ssh_sftp_read_u32_be(ptr + offset);
+        offset += 4;
+    }
+
+    if (flags & SSH_FILEXFER_ATTR_ACMODTIME) {
+        if (offset + 8 > size) {
+            return false;
+        }
+        atime = ssh_sftp_read_u32_be(ptr + offset);
+        offset += 4;
+        mtime = ssh_sftp_read_u32_be(ptr + offset);
+        offset += 4;
+    }
+
+    return true;
+}
+
 static const char* ssh_sftp_packet_type_name(uint8_t type) {
     switch (type) {
         case SSH_FXP_INIT:
@@ -731,17 +800,30 @@ public:
             return -1;
         }
 
+        // Build SSH_FXP_VERSION body: type(1) + version(4) + extension pairs
+        std::string body;
+        body.reserve(64);
+        body.push_back(static_cast<char>(SSH_FXP_VERSION));
+        ssh_sftp_write_u32_be(body, static_cast<uint32_t>(version));
+
+        // Advertise statvfs@openssh.com extension
+        const std::string ext_name = "statvfs@openssh.com";
+        const std::string ext_version = "2";
+        ssh_sftp_write_u32_be(body, static_cast<uint32_t>(ext_name.size()));
+        body.append(ext_name);
+        ssh_sftp_write_u32_be(body, static_cast<uint32_t>(ext_version.size()));
+        body.append(ext_version);
+
         std::string packet;
-        packet.reserve(9);
-        ssh_sftp_write_u32_be(packet, 5);
-        packet.push_back(static_cast<char>(SSH_FXP_VERSION));
-        ssh_sftp_write_u32_be(packet, static_cast<uint32_t>(version));
+        packet.reserve(4 + body.size());
+        ssh_sftp_write_u32_be(packet, static_cast<uint32_t>(body.size()));
+        packet.append(body);
         if (writeChannelAll(packet, xsink, "SSH_FXP_VERSION")) {
             return -1;
         }
 
         std::ostringstream os;
-        os << "SftpSession sent version=" << version;
+        os << "SftpSession sent version=" << version << " with statvfs extension";
         log("info", os.str().c_str());
         return 0;
     }
@@ -1641,15 +1723,48 @@ public:
         return sendBackendAttrs(request_id, *metadata, xsink);
     }
 
-    int handleBackendFsetstat(int request_id, const std::string& handle, ExceptionSink* xsink) {
+    int buildSetstatRequest(QoreHashNode* typed_req, const std::string& operation,
+            const unsigned char* attrs_ptr, size_t attrs_size, size_t& attrs_offset, ExceptionSink* xsink) {
+        uint32_t flags = 0;
+        int64_t file_size = -1;
+        uint32_t uid = 0, gid = 0, permissions = 0, atime = 0, mtime = 0;
+
+        if (!ssh_sftp_parse_attrs(attrs_ptr, attrs_size, attrs_offset, flags, file_size, uid, gid,
+                permissions, atime, mtime)) {
+            xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR", "malformed SFTP attrs block in %s", operation.c_str());
+            return -1;
+        }
+
+        typed_req->setKeyValue("operation", new QoreStringNode(operation.c_str()), xsink);
+        typed_req->setKeyValue("attr_flags", static_cast<int64>(flags), xsink);
+        if (flags & SSH_FILEXFER_ATTR_SIZE) {
+            typed_req->setKeyValue("size", file_size, xsink);
+        }
+        if (flags & SSH_FILEXFER_ATTR_UIDGID) {
+            typed_req->setKeyValue("uid", static_cast<int64>(uid), xsink);
+            typed_req->setKeyValue("gid", static_cast<int64>(gid), xsink);
+        }
+        if (flags & SSH_FILEXFER_ATTR_PERMISSIONS) {
+            typed_req->setKeyValue("permissions", static_cast<int64>(permissions), xsink);
+        }
+        if (flags & SSH_FILEXFER_ATTR_ACMODTIME) {
+            typed_req->setKeyValue("atime", static_cast<int64>(atime), xsink);
+            typed_req->setKeyValue("mtime", static_cast<int64>(mtime), xsink);
+        }
+        return *xsink ? -1 : 0;
+    }
+
+    int handleBackendFsetstat(int request_id, const std::string& handle,
+            const unsigned char* attrs_ptr, size_t attrs_size, size_t attrs_offset, ExceptionSink* xsink) {
+        std::string path;
         bool invalid = false;
         {
             std::lock_guard<std::mutex> lock(m);
             auto i = file_handles.find(handle);
-            if (i == file_handles.end()) {
+            if (i == file_handles.end() || !i->second) {
                 invalid = true;
-            } else if (!i->second) {
-                invalid = true;
+            } else {
+                path = i->second->path;
             }
         }
 
@@ -1657,19 +1772,55 @@ public:
             return sendStatus(request_id, SSH_FX_INVALID_HANDLE, "invalid file handle", "en", xsink);
         }
 
-        return sendStatus(request_id, SSH_FX_OK, "attributes updated", "en", xsink);
-    }
+        if (!backendHasMethod("setstat")) {
+            return sendStatus(request_id, SSH_FX_OK, "attributes updated", "en", xsink);
+        }
 
-    int handleBackendSetstat(int request_id, const std::string& normalized_path, ExceptionSink* xsink) {
-        ReferenceHolder<QoreObject> backend_holder(getBackend(), xsink);
-        if (*xsink) {
+        ReferenceHolder<QoreHashNode> typed_req(new QoreHashNode(hashdeclSftpSetstatRequest, xsink), xsink);
+        typed_req->setKeyValue("session_info", getInfo(xsink), xsink);
+        typed_req->setKeyValue("path", new QoreStringNode(path.c_str()), xsink);
+        typed_req->setKeyValue("handle", new QoreStringNode(handle.c_str()), xsink);
+        if (buildSetstatRequest(*typed_req, "fsetstat", attrs_ptr, attrs_size, attrs_offset, xsink)) {
             return -1;
         }
-        if (!backend_holder) {
+
+        ReferenceHolder<QoreHashNode> backend_result(callBackendMethodDirectTyped("setstat", *typed_req, xsink), xsink);
+        if (*xsink) {
+            sendStatus(request_id, SSH_FX_FAILURE, "backend operation failed", "en", xsink);
+            xsink->clear();
+            return -1;
+        }
+        if (!backend_result) {
+            return 0;
+        }
+
+        return sendBackendOperationStatus(request_id, *backend_result, "attributes updated", false, xsink);
+    }
+
+    int handleBackendSetstat(int request_id, const std::string& normalized_path,
+            const unsigned char* attrs_ptr, size_t attrs_size, size_t attrs_offset, ExceptionSink* xsink) {
+        if (!backendHasMethod("setstat")) {
             return sendStatus(request_id, SSH_FX_OP_UNSUPPORTED, "setstat is not supported", "en", xsink);
         }
 
-        return sendStatus(request_id, SSH_FX_OK, "attributes updated", "en", xsink);
+        ReferenceHolder<QoreHashNode> typed_req(new QoreHashNode(hashdeclSftpSetstatRequest, xsink), xsink);
+        typed_req->setKeyValue("session_info", getInfo(xsink), xsink);
+        typed_req->setKeyValue("path", new QoreStringNode(normalized_path.c_str()), xsink);
+        if (buildSetstatRequest(*typed_req, "setstat", attrs_ptr, attrs_size, attrs_offset, xsink)) {
+            return -1;
+        }
+
+        ReferenceHolder<QoreHashNode> backend_result(callBackendMethodDirectTyped("setstat", *typed_req, xsink), xsink);
+        if (*xsink) {
+            sendStatus(request_id, SSH_FX_FAILURE, "backend operation failed", "en", xsink);
+            xsink->clear();
+            return -1;
+        }
+        if (!backend_result) {
+            return 0;
+        }
+
+        return sendBackendOperationStatus(request_id, *backend_result, "attributes updated", false, xsink);
     }
 
     int handleBackendPathOperation(const char* method, int request_id, const std::string& normalized_path,
@@ -1729,6 +1880,136 @@ public:
         }
 
         return sendBackendOperationStatus(request_id, *backend_result, "renamed", false, xsink);
+    }
+
+    int handleBackendSymlink(int request_id, const std::string& link_path, const std::string& target_path,
+            ExceptionSink* xsink) {
+        if (!backendHasMethod("symlink")) {
+            return sendStatus(request_id, SSH_FX_OP_UNSUPPORTED, "symlink is not supported", "en", xsink);
+        }
+
+        ReferenceHolder<QoreHashNode> typed_backend_req(new QoreHashNode(hashdeclSftpSymlinkRequest, xsink), xsink);
+        typed_backend_req->setKeyValue("session_info", getInfo(xsink), xsink);
+        typed_backend_req->setKeyValue("link_path", new QoreStringNode(link_path.c_str()), xsink);
+        typed_backend_req->setKeyValue("target_path", new QoreStringNode(target_path.c_str()), xsink);
+        typed_backend_req->setKeyValue("operation", new QoreStringNode("symlink"), xsink);
+        if (*xsink) {
+            return -1;
+        }
+
+        ReferenceHolder<QoreHashNode> backend_result(callBackendMethodDirectTyped("symlink", *typed_backend_req, xsink),
+            xsink);
+        if (*xsink) {
+            sendStatus(request_id, SSH_FX_FAILURE, "backend operation failed", "en", xsink);
+            xsink->clear();
+            return -1;
+        }
+        if (!backend_result) {
+            return 0;
+        }
+
+        return sendBackendOperationStatus(request_id, *backend_result, "symlink created", false, xsink);
+    }
+
+    int handleBackendReadlink(int request_id, const std::string& normalized_path, ExceptionSink* xsink) {
+        if (!backendHasMethod("readlink")) {
+            return sendStatus(request_id, SSH_FX_OP_UNSUPPORTED, "readlink is not supported", "en", xsink);
+        }
+
+        ReferenceHolder<QoreHashNode> typed_backend_req(new QoreHashNode(hashdeclSftpPathRequest, xsink), xsink);
+        typed_backend_req->setKeyValue("session_info", getInfo(xsink), xsink);
+        typed_backend_req->setKeyValue("path", new QoreStringNode(normalized_path.c_str()), xsink);
+        typed_backend_req->setKeyValue("follow_symlinks", false, xsink);
+        typed_backend_req->setKeyValue("operation", new QoreStringNode("readlink"), xsink);
+        if (*xsink) {
+            return -1;
+        }
+
+        ReferenceHolder<QoreHashNode> backend_result(callBackendMethodDirectTyped("readlink", *typed_backend_req, xsink),
+            xsink);
+        if (*xsink) {
+            sendStatus(request_id, SSH_FX_FAILURE, "backend operation failed", "en", xsink);
+            xsink->clear();
+            return -1;
+        }
+        if (!backend_result) {
+            return 0;
+        }
+
+        bool exists = ssh_sftp_get_hash_bool(*backend_result, "exists", true, xsink);
+        if (*xsink) {
+            xsink->clear();
+            return sendStatus(request_id, SSH_FX_FAILURE, "backend result is invalid", "en", xsink);
+        }
+        if (!exists) {
+            return sendStatus(request_id, SSH_FX_NO_SUCH_FILE, "not found", "en", xsink);
+        }
+
+        QoreValue target_val = backend_result->getKeyValue("target_path");
+        if (target_val.getType() != NT_STRING) {
+            return sendStatus(request_id, SSH_FX_FAILURE, "backend did not return target_path", "en", xsink);
+        }
+        std::string target = target_val.get<const QoreStringNode>()->c_str();
+        return sendName(request_id, target, target, xsink);
+    }
+
+    int sendExtendedReply(int request_id, const std::string& payload_data, ExceptionSink* xsink) {
+        if (request_id < 0) {
+            xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR", "the SFTP request id must be >= 0");
+            return -1;
+        }
+
+        std::string body;
+        body.reserve(1 + 4 + payload_data.size());
+        body.push_back(static_cast<char>(SSH_FXP_EXTENDED_REPLY));
+        ssh_sftp_write_u32_be(body, static_cast<uint32_t>(request_id));
+        body.append(payload_data);
+
+        std::string packet;
+        packet.reserve(4 + body.size());
+        ssh_sftp_write_u32_be(packet, static_cast<uint32_t>(body.size()));
+        packet.append(body);
+        return writeChannelAll(packet, xsink, "SSH_FXP_EXTENDED_REPLY");
+    }
+
+    int handleBackendStatvfs(int request_id, const std::string& normalized_path, ExceptionSink* xsink) {
+        if (!backendHasMethod("statvfs")) {
+            return sendStatus(request_id, SSH_FX_OP_UNSUPPORTED, "statvfs is not supported", "en", xsink);
+        }
+
+        ReferenceHolder<QoreHashNode> typed_backend_req(new QoreHashNode(hashdeclSftpPathRequest, xsink), xsink);
+        typed_backend_req->setKeyValue("session_info", getInfo(xsink), xsink);
+        typed_backend_req->setKeyValue("path", new QoreStringNode(normalized_path.c_str()), xsink);
+        typed_backend_req->setKeyValue("follow_symlinks", true, xsink);
+        typed_backend_req->setKeyValue("operation", new QoreStringNode("statvfs"), xsink);
+        if (*xsink) {
+            return -1;
+        }
+
+        ReferenceHolder<QoreHashNode> backend_result(callBackendMethodDirectTyped("statvfs", *typed_backend_req, xsink),
+            xsink);
+        if (*xsink) {
+            sendStatus(request_id, SSH_FX_FAILURE, "backend operation failed", "en", xsink);
+            xsink->clear();
+            return -1;
+        }
+        if (!backend_result) {
+            return 0;
+        }
+
+        // Pack the 11 uint64 fields as per the OpenSSH statvfs@openssh.com extension
+        std::string reply_data;
+        reply_data.reserve(88);
+        static const char* statvfs_fields[] = {
+            "f_bsize", "f_frsize", "f_blocks", "f_bfree", "f_bavail",
+            "f_files", "f_ffree", "f_favail", "f_fsid", "f_flag", "f_namemax"
+        };
+        for (int i = 0; i < 11; ++i) {
+            int64 val = backend_result->getKeyValue(statvfs_fields[i]).getAsBigInt();
+            ssh_sftp_write_u64_be(reply_data, static_cast<uint64_t>(val));
+        }
+
+        return sendExtendedReply(request_id, reply_data, xsink);
     }
 
     QoreHashNode* processNextRequest(int timeout_ms, ExceptionSink* xsink) {
@@ -2147,7 +2428,8 @@ public:
                 return nullptr;
             }
 
-            if (handleBackendFsetstat(request_id, handle, xsink)) {
+            if (handleBackendFsetstat(request_id, handle,
+                    reinterpret_cast<const unsigned char*>(payload->getPtr()), payload->size(), offset, xsink)) {
                 return nullptr;
             }
             return msg.release();
@@ -2178,7 +2460,8 @@ public:
                 return msg.release();
             }
 
-            if (handleBackendSetstat(request_id, normalized_path, xsink)) {
+            if (handleBackendSetstat(request_id, normalized_path,
+                    reinterpret_cast<const unsigned char*>(payload->getPtr()), payload->size(), offset, xsink)) {
                 return nullptr;
             }
             return msg.release();
@@ -2310,10 +2593,193 @@ public:
             }
         }
 
+        // NOTE: OpenSSH reverses the argument order for SSH_FXP_SYMLINK (first=target, second=link)
+        if (type == SSH_FXP_SYMLINK) {
+            const BinaryNode* payload = msg->getKeyValue("payload").get<BinaryNode>();
+            if (!payload || payload->size() < 12) {
+                xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR",
+                    "received a malformed SSH_FXP_SYMLINK payload");
+                return nullptr;
+            }
+
+            size_t offset = 4;
+            std::string raw_target_path;
+            std::string raw_link_path;
+            if (!ssh_sftp_read_string_field(reinterpret_cast<const char*>(payload->getPtr()), payload->size(),
+                    offset, raw_target_path)) {
+                xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR",
+                    "received a malformed SSH_FXP_SYMLINK target path field");
+                return nullptr;
+            }
+            if (!ssh_sftp_read_string_field(reinterpret_cast<const char*>(payload->getPtr()), payload->size(),
+                    offset, raw_link_path)) {
+                xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR",
+                    "received a malformed SSH_FXP_SYMLINK link path field");
+                return nullptr;
+            }
+
+            std::string normalized_link_path;
+            std::string normalized_target_path;
+            if (!ssh_sftp_normalize_virtual_path(raw_link_path, normalized_link_path)
+                    || !ssh_sftp_normalize_virtual_path(raw_target_path, normalized_target_path)) {
+                if (sendStatus(request_id, SSH_FX_NO_SUCH_PATH, "path escapes the configured SFTP root", "en", xsink)) {
+                    return nullptr;
+                }
+                return msg.release();
+            }
+
+            ReferenceHolder<QoreObject> backend_holder(getBackend(), xsink);
+            if (*xsink) {
+                return nullptr;
+            }
+            if (backend_holder) {
+                if (handleBackendSymlink(request_id, normalized_link_path, normalized_target_path, xsink)) {
+                    return nullptr;
+                }
+                return msg.release();
+            }
+        }
+
+        if (type == SSH_FXP_READLINK) {
+            const BinaryNode* payload = msg->getKeyValue("payload").get<BinaryNode>();
+            if (!payload || payload->size() < 8) {
+                xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR",
+                    "received a malformed SSH_FXP_READLINK payload");
+                return nullptr;
+            }
+
+            size_t offset = 4;
+            std::string raw_path;
+            if (!ssh_sftp_read_string_field(reinterpret_cast<const char*>(payload->getPtr()), payload->size(),
+                    offset, raw_path)) {
+                xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR",
+                    "received a malformed SSH_FXP_READLINK path field");
+                return nullptr;
+            }
+
+            std::string normalized_path;
+            if (!ssh_sftp_normalize_virtual_path(raw_path, normalized_path)) {
+                if (sendStatus(request_id, SSH_FX_NO_SUCH_PATH, "path escapes the configured SFTP root", "en", xsink)) {
+                    return nullptr;
+                }
+                return msg.release();
+            }
+
+            ReferenceHolder<QoreObject> backend_holder(getBackend(), xsink);
+            if (*xsink) {
+                return nullptr;
+            }
+            if (backend_holder) {
+                if (handleBackendReadlink(request_id, normalized_path, xsink)) {
+                    return nullptr;
+                }
+                return msg.release();
+            }
+        }
+
+        if (type == SSH_FXP_EXTENDED) {
+            const BinaryNode* payload = msg->getKeyValue("payload").get<BinaryNode>();
+            if (!payload || payload->size() < 8) {
+                xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR",
+                    "received a malformed SSH_FXP_EXTENDED payload");
+                return nullptr;
+            }
+
+            size_t offset = 4;
+            std::string ext_name;
+            if (!ssh_sftp_read_string_field(reinterpret_cast<const char*>(payload->getPtr()), payload->size(),
+                    offset, ext_name)) {
+                xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR",
+                    "received a malformed SSH_FXP_EXTENDED extension name field");
+                return nullptr;
+            }
+
+            if (ext_name == "statvfs@openssh.com") {
+                std::string raw_path;
+                if (!ssh_sftp_read_string_field(reinterpret_cast<const char*>(payload->getPtr()), payload->size(),
+                        offset, raw_path)) {
+                    xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR",
+                        "received a malformed statvfs@openssh.com path field");
+                    return nullptr;
+                }
+
+                std::string normalized_path;
+                if (!ssh_sftp_normalize_virtual_path(raw_path, normalized_path)) {
+                    if (sendStatus(request_id, SSH_FX_NO_SUCH_PATH,
+                            "path escapes the configured SFTP root", "en", xsink)) {
+                        return nullptr;
+                    }
+                    return msg.release();
+                }
+
+                ReferenceHolder<QoreObject> backend_holder(getBackend(), xsink);
+                if (*xsink) {
+                    return nullptr;
+                }
+                if (backend_holder) {
+                    if (handleBackendStatvfs(request_id, normalized_path, xsink)) {
+                        return nullptr;
+                    }
+                    return msg.release();
+                }
+            }
+
+            // Unknown extension
+            if (sendStatus(request_id, SSH_FX_OP_UNSUPPORTED,
+                    "unsupported extension", "en", xsink)) {
+                return nullptr;
+            }
+            return msg.release();
+        }
+
         if (sendStatus(request_id, SSH_FX_OP_UNSUPPORTED, "unsupported", "en", xsink)) {
             return nullptr;
         }
         return msg.release();
+    }
+
+    int64 processRequests(int timeout_ms, int64 max_batch, ExceptionSink* xsink) {
+        int64 processed = 0;
+
+        // First request uses the full timeout
+        ReferenceHolder<QoreHashNode> first(processNextRequest(timeout_ms, xsink), xsink);
+        if (*xsink || !first) {
+            return processed;
+        }
+        ++processed;
+
+        if (max_batch > 0 && processed >= max_batch) {
+            return processed;
+        }
+
+        // Read-ahead: process additional requests while data is available on the channel
+        while (true) {
+            ssh_channel current_channel = nullptr;
+            {
+                std::lock_guard<std::mutex> lock(m);
+                current_channel = channel;
+            }
+            if (!current_channel) {
+                break;
+            }
+
+            int avail = ssh_channel_poll(current_channel, 0);
+            if (avail <= 0) {
+                break;
+            }
+
+            ReferenceHolder<QoreHashNode> msg(processNextRequest(1, xsink), xsink);
+            if (*xsink || !msg) {
+                break;
+            }
+            ++processed;
+
+            if (max_batch > 0 && processed >= max_batch) {
+                break;
+            }
+        }
+
+        return processed;
     }
 
     QoreHashNode* listAvailable(const QoreHashNode* q_req, ExceptionSink* xsink) {
@@ -3184,7 +3650,9 @@ nothing SftpSession::clearTransferInfo() {
 }
 
 //! Sends an `SSH_FXP_VERSION` reply on the live subsystem channel
-/** @param version the server-side SFTP protocol version to advertise
+/** Advertises the \c statvfs\@openssh.com extension in the version reply.
+
+    @param version the server-side SFTP protocol version to advertise
  */
 nothing SftpSession::sendVersion(int version = 3) {
     priv->sendVersion(version, xsink);
@@ -3204,8 +3672,11 @@ nothing SftpSession::sendStatus(int request_id, int status_code, string message 
 /** Handles the initial `SSH_FXP_INIT` handshake by replying with
     `SSH_FXP_VERSION`, handles `SSH_FXP_REALPATH` using the module's virtual
     path normalization rules, handles rooted `SSH_FXP_STAT` / `SSH_FXP_LSTAT`
-    lookups with `SSH_FXP_ATTRS` replies, and replies to unsupported requests
-    with `SSH_FXP_STATUS` / `SSH_FX_OP_UNSUPPORTED`.
+    lookups with `SSH_FXP_ATTRS` replies, dispatches `SSH_FXP_SYMLINK`,
+    `SSH_FXP_READLINK`, `SSH_FXP_SETSTAT`, `SSH_FXP_FSETSTAT`, and
+    `SSH_FXP_EXTENDED` (including \c statvfs\@openssh.com) to the backend when
+    available, and replies to unsupported requests with `SSH_FXP_STATUS` /
+    `SSH_FX_OP_UNSUPPORTED`.
 
     @param timeout_ms the maximum time in milliseconds to wait for packet data;
     0 means wait indefinitely
@@ -3214,6 +3685,22 @@ nothing SftpSession::sendStatus(int request_id, int status_code, string message 
  */
 *hash<SftpProtocolMessage> SftpSession::processNextRequest(int timeout_ms = 0) {
     return priv->processNextRequest(timeout_ms, xsink);
+}
+
+//! Processes multiple SFTP requests in a read-ahead batch
+/** Processes the first request using the full timeout, then continues
+    processing additional requests as long as data is available on the
+    channel without blocking. This reduces round-trip latency for clients
+    that pipeline multiple requests.
+
+    @param timeout_ms the maximum time in milliseconds to wait for the first
+    request; 0 means wait indefinitely
+    @param max_batch the maximum number of requests to process in a single
+    batch; 0 means no limit (process all available)
+    @return the number of requests processed
+ */
+int SftpSession::processRequests(int timeout_ms = 0, int max_batch = 0) {
+    return priv->processRequests(timeout_ms, max_batch, xsink);
 }
 
 //! Submits content through the backend atomic-exchange helper
