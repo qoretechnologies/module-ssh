@@ -69,13 +69,76 @@ module SshServerConnections {
     - connection-owned @c DataProvider bridging for generic SFTP exchange
       backends
 
-    The following typed hashes are currently provided:
+    @section sshserverconnectionsschemes Registered Connection Schemes
+
+    The module registers the following connection schemes on load:
+
+    <table>
+    <tr><th>Scheme</th><th>Alias</th><th>Connection Class</th><th>Description</th></tr>
+    <tr><td><tt>sshsrv</tt></td><td><tt>sshserver</tt></td>
+        <td>@ref SshServerConnections::SshCommandServerConnection</td>
+        <td>Managed local SSH command server</td></tr>
+    <tr><td><tt>sftpsrv</tt></td><td><tt>sftpserver</tt></td>
+        <td>@ref SshServerConnections::SftpServerConnection</td>
+        <td>Managed local SFTP server with optional DataProvider bridging</td></tr>
+    </table>
+
+    @section sshserverconnectionsoptions Typed Option Groups
+
+    Connection options are organized into three typed hashdecl groups that map
+    directly to @ref Qore::Ssh::SshListenerConfig fields.
+
     @anchor sshserverconnections-sshserverconnectionlimits
+    @subsection sshserverconnectionslimits SshServerConnectionLimits
+
+    Operational listener caps passed through the @c limits option:
+    - @c max_sessions (@c *int) -- maximum number of concurrently accepted
+      sessions per listener; when unset, no cap is enforced
+
     @anchor sshserverconnections-sshserverconnectionservices
+    @subsection sshserverconnectionsservices SshServerConnectionServices
+
+    Authentication and service controls passed through the @c services option:
+    - @c enabled_auth_methods (@c *list&lt;string&gt;) -- list of permitted SSH
+      authentication methods (e.g. @c "password", @c "publickey")
+    - @c allow_command_service (@c *bool) -- enable or disable the SSH command
+      (exec) service on the listener
+    - @c allow_sftp_service (@c *bool) -- enable or disable the SFTP subsystem
+      on the listener
+
     @anchor sshserverconnections-sshserverconnectionsecurity
-    - @ref sshserverconnections-sshserverconnectionlimits "SshServerConnectionLimits" — grouped operational listener caps
-    - @ref sshserverconnections-sshserverconnectionservices "SshServerConnectionServices" — grouped listener service controls
-    - @ref sshserverconnections-sshserverconnectionsecurity "SshServerConnectionSecurity" — grouped cipher/KEX/MAC/IP security options
+    @subsection sshserverconnectionssecurity SshServerConnectionSecurity
+
+    Cipher, key-exchange, MAC, host-key algorithm, and IP address filtering
+    options passed through the @c security option:
+    - @c allowed_ciphers (@c *string) -- comma-separated list of permitted ciphers
+    - @c allowed_kex (@c *string) -- comma-separated list of permitted key-exchange algorithms
+    - @c allowed_macs (@c *string) -- comma-separated list of permitted MAC algorithms
+    - @c allowed_hostkey_algorithms (@c *string) -- comma-separated list of permitted host-key algorithms
+    - @c allowed_addresses (@c *list&lt;string&gt;) -- CIDR or bare IP allow list
+    - @c denied_addresses (@c *list&lt;string&gt;) -- CIDR or bare IP deny list
+
+    @section sshserverconnectionsexample Minimal Working Example
+
+    @code{.py}
+    %requires ssh
+    %requires SshServerConnections
+
+    SftpServerConnection conn({
+        "name": "my-sftp",
+        "desc": "test SFTP server",
+        "url": "sftpsrv://127.0.0.1:2222",
+        "opts": {"host_keys": ("/path/to/ssh_host_rsa_key",)},
+    });
+    Qore::Ssh::SshServer server = conn.get(True);
+    # server is now listening on 127.0.0.1:2222
+    server.stop();
+    @endcode
+
+    @section sshserverconnectionsseemore See Also
+
+    - @ref sshauthguide for authentication configuration details
+    - @ref sshcookbook for additional usage examples
 
     The following classes are currently provided:
     - @ref SshServerConnections::AbstractSshServerConnection

@@ -1,0 +1,184 @@
+/** @page sshauthguide Authentication Guide
+
+    @tableofcontents
+
+    @section sshauthflow Authentication Flow Overview
+
+    Every SSH authentication attempt passes through a well-defined pipeline:
+
+    -# The listener's @ref Qore::Ssh::SshListenerConfig "SshListenerConfig.enabled_auth_methods"
+       list filters which methods the session will accept.  Disabled methods are
+       rejected at the transport layer and never reach the auth provider.
+    -# If @ref Qore::Ssh::SshListenerConfig "SshListenerConfig.auth_banner" is
+       set, the server sends the banner text to the client before the first auth
+       exchange.
+    -# @ref Qore::Ssh::SshServer::authenticateSession() "SshServer::authenticateSession()"
+       waits for the client's auth request, builds a
+       @ref Qore::Ssh::SshAuthContextInfo "SshAuthContextInfo", and calls the
+       configured @c auth_provider or @c auth_callback.
+    -# The provider returns a @ref Qore::Ssh::SshAuthDecision "SshAuthDecision".
+       When @c accepted is @c True and @c partial is @c False the session is
+       fully authenticated and the decision's @c command_policy, @c sftp_policy,
+       and @c session_data are attached to the session.
+    -# When @c partial is @c True the server loops back to step 3, allowing the
+       client to satisfy additional auth methods (multi-factor).
+
+    @section sshauthmethods Supported Authentication Methods
+
+    The module recognises six method names that correspond to standard SSH
+    authentication types:
+
+    | Method        | Description                                    |
+    |---------------|------------------------------------------------|
+    | @c none       | No credentials required                        |
+    | @c password   | Username and password                          |
+    | @c publickey  | Public-key signature verification              |
+    | @c interactive| Keyboard-interactive challenge-response        |
+    | @c hostbased  | Host-based authentication                      |
+    | @c gssapi-mic | GSSAPI with MIC (Kerberos)                     |
+
+    Only methods listed in
+    @ref Qore::Ssh::SshListenerConfig "SshListenerConfig.enabled_auth_methods"
+    are offered to clients.  When the field is unset the default set is
+    @c none, @c password, @c publickey, and @c interactive.
+
+    @section sshauthconfigdriven Config-Driven Authentication with VirtualSshAuthProvider
+
+    @ref SshServerAuthProvider::VirtualSshAuthProvider "VirtualSshAuthProvider"
+    provides a declarative, config-driven auth provider.  Configure it through
+    @c VirtualSshAuthProviderOptions
+    and attach it to the server via
+    @ref Qore::Ssh::SshServerConfig "SshServerConfig.auth_provider".
+
+    @subsection sshauthpassword Password Authentication Example
+
+    @code{.py}
+VirtualSshAuthProvider provider(<VirtualSshAuthProviderOptions>{
+    "methods": ("password",),
+    "password": <VirtualSshPasswordAuthOptions>{
+        "users": (
+            <VirtualSshPasswordUserInfo>{
+                "username": "alice",
+                "password": "secret",
+                "decision": <VirtualSshAuthDecisionTemplate>{
+                    "principal": "principal:alice",
+                },
+            },
+        ),
+    },
+});
+    @endcode
+
+    Each method section supports @c allowed_usernames / @c denied_usernames
+    filtering and an optional @c validator callback for app-level logic.
+
+    @subsection sshauthpubkey Public-Key Authentication Example
+
+    @code{.py}
+VirtualSshAuthProvider provider(<VirtualSshAuthProviderOptions>{
+    "methods": ("publickey",),
+    "publickey": <VirtualSshPublicKeyAuthOptions>{
+        "authorized_keys": (
+            <VirtualSshAuthorizedKeyInfo>{
+                "username": "bob",
+                "public_key": key_data,
+                "public_key_type": "ssh-ed25519",
+            },
+        ),
+    },
+});
+    @endcode
+
+    @section sshauthmfa Multi-Factor Authentication
+
+    Set @ref SshServerAuthProvider::VirtualSshAuthProviderOptions "VirtualSshAuthProviderOptions.required_methods"
+    to an ordered list of methods that must all succeed.  After each
+    individual method succeeds, @ref SshServerAuthProvider::VirtualSshAuthProvider "VirtualSshAuthProvider"
+    checks whether all required methods have been completed:
+
+    - If methods remain, the decision is returned with @c partial = @c True,
+      @c allowed_auth_methods listing the remaining methods, and the
+      @c session_data key @c "__completed_auth_methods" tracking progress.
+    - When the final method succeeds, @c partial is cleared and the session
+      is fully authenticated.
+
+    The server's @c authenticateSession() loop drives the partial-auth
+    handshake automatically -- each partial decision causes it to wait for
+    the next client auth request.
+
+    @code{.py}
+VirtualSshAuthProvider provider(<VirtualSshAuthProviderOptions>{
+    "methods": ("none", "password"),
+    "required_methods": ("none", "password"),
+    "none": <VirtualSshStaticAuthMethodOptions>{
+        "allowed_usernames": ("alice",),
+    },
+    "password": <VirtualSshPasswordAuthOptions>{
+        "users": (
+            <VirtualSshPasswordUserInfo>{
+                "username": "alice",
+                "password": "secret",
+            },
+        ),
+    },
+});
+    @endcode
+
+    @section sshauthbanner Pre-Authentication Banners
+
+    Set @ref Qore::Ssh::SshListenerConfig "SshListenerConfig.auth_banner" to
+    display a message to the client before the first authentication exchange.
+    The banner is sent automatically by @c authenticateSession() when
+    configured.
+
+    @code{.py}
+hash<SshListenerConfig> listener = <SshListenerConfig>{
+    "name": "main",
+    "bind_address": "0.0.0.0",
+    "port": 2222,
+    "host_keys": ("/etc/ssh/host_key",),
+    "auth_banner": "Authorized access only.\n",
+};
+    @endcode
+
+    @section sshauthcustom Custom Auth Providers
+
+    For full control, subclass
+    @ref SshServerAuthProvider::AbstractSshAuthProvider "AbstractSshAuthProvider"
+    and implement the @c authenticate() method.  The method receives a
+    @ref Qore::Ssh::SshAuthContextInfo "SshAuthContextInfo" hash and must
+    return a @ref Qore::Ssh::SshAuthDecision "SshAuthDecision".
+
+    @code{.py}
+class MyAuthProvider inherits AbstractSshAuthProvider {
+    hash<SshAuthDecision> authenticate(hash<SshAuthContextInfo> ctx) {
+        bool ok = check_credentials(ctx.username, ctx.password);
+        return <SshAuthDecision>{
+            "accepted": ok,
+            "principal": ok ? ctx.username : NOTHING,
+            "message": ok ? "welcome" : "access denied",
+        };
+    }
+}
+    @endcode
+
+    Attach the provider to the server through
+    @ref Qore::Ssh::SshServerConfig "SshServerConfig.auth_provider".
+
+    @section sshauthlogging Authentication Logging
+
+    When a @c LoggerInterface is attached (via
+    @ref SshServerAuthProvider::VirtualSshAuthProviderOptions "VirtualSshAuthProviderOptions.logger"
+    or @ref Qore::Ssh::SshServerConfig "SshServerConfig.logger"), the
+    provider emits messages at three levels:
+
+    | Level    | What is logged                                          |
+    |----------|---------------------------------------------------------|
+    | @c detail| Every auth attempt: method name and username             |
+    | @c info  | Accepted authentications: method, username, principal, partial flag |
+    | @c warn  | Rejected authentications: method, username, rejection reason |
+
+    The server-level @c authenticateSession() method additionally logs
+    public-key probe acceptances and final accept/reject outcomes at the
+    @c info level.
+*/

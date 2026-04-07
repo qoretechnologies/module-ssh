@@ -1,0 +1,200 @@
+/** @page sshsftpbackendguide SFTP Backend Guide
+
+    @tableofcontents
+
+    @section sshsftpbackendoverview Backend Overview
+
+    @ref Qore::Ssh::SftpSession "SftpSession" delegates all SFTP protocol
+    operations to a pluggable backend object. The binary module handles packet
+    encoding/decoding, handle bookkeeping, and channel lifecycle; the backend
+    controls the visible path namespace, metadata, and content.
+
+    A backend is attached by passing an \c sftp_factory_callback closure in
+    @ref Qore::Ssh::SshServerConfig "SshServerConfig" (returns a backend per
+    session) or by calling
+    @ref Qore::Ssh::SftpSession::setBackend() "SftpSession::setBackend()".
+
+    @section sshsftpbackendcontract Backend Contract
+
+    A backend must implement at least \c stat() and \c list(). All other
+    methods are optional; \c SftpSession uses \c backendHasMethod() to gate
+    dispatch. When a method is absent, the module replies with
+    \c SSH_FX_OP_UNSUPPORTED.
+
+    <b>Required Methods</b>
+
+    <table>
+    <tr><th>Method</th><th>Request Type</th><th>Result Type</th><th>Purpose</th></tr>
+    <tr><td>\c stat()</td><td>@ref Qore::Ssh::SftpPathRequest "SftpPathRequest"</td><td>@ref Qore::Ssh::SftpPathInfo "SftpPathInfo"</td><td>Return file or directory metadata for a path</td></tr>
+    <tr><td>\c list()</td><td>@ref Qore::Ssh::SftpPathRequest "SftpPathRequest"</td><td>@ref Qore::Ssh::SftpListResult "SftpListResult"</td><td>Return directory listing entries</td></tr>
+    </table>
+
+    <b>Optional Methods</b>
+
+    <table>
+    <tr><th>Method</th><th>Request Type</th><th>Purpose</th></tr>
+    <tr><td>\c openRead()</td><td>@ref Qore::Ssh::SftpOpenRequest "SftpOpenRequest"</td><td>Open a file for reading</td></tr>
+    <tr><td>\c read()</td><td>@ref Qore::Ssh::SftpReadRequest "SftpReadRequest"</td><td>Streamed read chunk</td></tr>
+    <tr><td>\c closeRead()</td><td>@ref Qore::Ssh::SftpCloseRequest "SftpCloseRequest"</td><td>Finalize a streamed read</td></tr>
+    <tr><td>\c openWrite()</td><td>@ref Qore::Ssh::SftpOpenRequest "SftpOpenRequest"</td><td>Open a file for writing</td></tr>
+    <tr><td>\c write()</td><td>@ref Qore::Ssh::SftpWriteRequest "SftpWriteRequest"</td><td>Streamed write chunk</td></tr>
+    <tr><td>\c closeWrite()</td><td>@ref Qore::Ssh::SftpCloseRequest "SftpCloseRequest"</td><td>Finalize a write</td></tr>
+    <tr><td>\c removePath()</td><td>@ref Qore::Ssh::SftpPathRequest "SftpPathRequest"</td><td>Remove a file or symlink</td></tr>
+    <tr><td>\c rename()</td><td>@ref Qore::Ssh::SftpRenameRequest "SftpRenameRequest"</td><td>Rename or move a path</td></tr>
+    <tr><td>\c mkdir()</td><td>@ref Qore::Ssh::SftpPathRequest "SftpPathRequest"</td><td>Create a directory</td></tr>
+    <tr><td>\c rmdir()</td><td>@ref Qore::Ssh::SftpPathRequest "SftpPathRequest"</td><td>Remove a directory</td></tr>
+    <tr><td>\c symlink()</td><td>@ref Qore::Ssh::SftpSymlinkRequest "SftpSymlinkRequest"</td><td>Create a symbolic link</td></tr>
+    <tr><td>\c readlink()</td><td>@ref Qore::Ssh::SftpPathRequest "SftpPathRequest"</td><td>Read a symbolic link target</td></tr>
+    <tr><td>\c setstat()</td><td>@ref Qore::Ssh::SftpSetstatRequest "SftpSetstatRequest"</td><td>Set file attributes</td></tr>
+    <tr><td>\c statvfs()</td><td>@ref Qore::Ssh::SftpPathRequest "SftpPathRequest"</td><td>Filesystem statistics (\c statvfs\@openssh.com)</td></tr>
+    </table>
+
+    @section sshsftpbackendstreaming Streamed vs Buffered Dispatch
+
+    The \c openRead() return value controls the dispatch mode:
+
+    - <b>Buffered</b>: \c openRead() returns \c data in
+      @ref Qore::Ssh::SftpOpenResult "SftpOpenResult". The session sends the
+      data immediately; no \c read() or \c closeRead() calls are made.
+    - <b>Streamed</b>: \c openRead() returns a \c backend_handle without
+      \c data. The session routes \c SSH_FXP_READ packets through \c read()
+      and calls \c closeRead() on handle close. Both methods must be present.
+
+    The same model applies to writes: a \c backend_handle from \c openWrite()
+    enables streamed \c write() dispatch; otherwise the session accumulates the
+    upload and passes complete data to \c closeWrite().
+
+    @section sshsftpbackendvfs VirtualSftpFilesystem
+
+    @ref SftpServerDataProvider::VirtualSftpFilesystem "VirtualSftpFilesystem"
+    is an in-memory backend implementing the full contract, suitable for
+    testing, serving generated content, and building virtual namespaces.
+
+    Key features:
+    - In-memory file/directory storage with configurable default permissions
+    - Symlink support (\c symlink(), \c readlink(), symlink-aware \c stat())
+    - Helpers: \c addFile(), \c addTextFile(), \c addDirectory(),
+      \c getFileData(), \c getFileText(), \c getFilePaths()
+    - Atomic exchange: \c submit(), \c listAvailable(), \c retrieve(),
+      \c completeRetrieve()
+    - Optional persistence and snapshot export/import
+
+    @code
+    SftpServerDataProvider::VirtualSftpFilesystem vfs();
+    vfs.addDirectory("/reports");
+    vfs.addTextFile("/reports/summary.txt", "Q1 results\n");
+    # attach to an SftpSession
+    session.setBackend(vfs);
+    @endcode
+
+    @section sshsftpbackendexchange VirtualSftpExchange
+
+    @ref SftpServerDataProvider::VirtualSftpExchange "VirtualSftpExchange"
+    extends @ref SftpServerDataProvider::VirtualSftpFilesystem "VirtualSftpFilesystem"
+    with explicit inbound/outbound exchange semantics for managed file
+    submission workflows, policy-enforced uploads, outbound claim/archive
+    lifecycle, and event-driven integration.
+
+    Key features:
+    - Configurable layout (\c inbound_dir, \c outbound_dir, \c archive_dir,
+      \c claim_dir)
+    - Inbound policy via
+      @ref SftpServerDataProvider::VirtualSftpInboundPolicy "VirtualSftpInboundPolicy"
+      (glob/regex, size limits, content prefix, per-principal, custom callbacks)
+    - Outbound helpers: \c addOutboundData(), \c listOutbound(),
+      \c claimOutbound(), \c archiveOutbound(), \c deleteOutbound()
+    - Event listeners, retention policies, live upload policy enforcement
+
+    @code
+    SftpServerDataProvider::VirtualSftpExchange exchange(
+        <SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "archive_dir": "/archive",
+            "inbound_policy": <SftpServerDataProvider::VirtualSftpInboundPolicy>{
+                "accept_filename_glob": "*.csv",
+                "max_size": 10485760,
+            },
+        }
+    );
+    exchange.addOutboundData("report.csv", binary("a,b,c\n"));
+    session.setBackend(exchange);
+    @endcode
+
+    @section sshsftpbackendrecordstore VirtualSftpExchangeRecordStore
+
+    @ref SftpServerDataProvider::VirtualSftpExchangeRecordStore "VirtualSftpExchangeRecordStore"
+    wraps a @ref SftpServerDataProvider::VirtualSftpExchange "VirtualSftpExchange"
+    with record-oriented queue methods for integration code that works with named
+    records and payloads rather than virtual filesystem paths.
+
+    Key features:
+    - Submit: \c submitInboundRecord(), \c submitInboundTextRecord()
+    - List: \c listInboundRecords(), \c listOutboundRecords()
+    - Retrieve and complete: \c retrieveInboundRecord(),
+      \c claimOutboundRecord(), \c archiveOutboundRecord()
+    - Records typed as
+      @ref SftpServerDataProvider::VirtualSftpRecordInfo "VirtualSftpRecordInfo"
+
+    @code
+    SftpServerDataProvider::VirtualSftpExchangeRecordStore store();
+    store.submitInboundRecord("order.json", binary("{\"id\": 1}"));
+    list<hash<SftpServerDataProvider::VirtualSftpRecordInfo>> records
+        = store.listInboundRecords();
+    @endcode
+
+    @section sshsftpbackendcustom Implementing a Custom Backend
+
+    Define a class with at least \c stat() and \c list(); add optional methods
+    for the operations you need.
+
+    @code
+    class MyReadOnlyBackend {
+        hash<auto> stat(hash<auto> req) {
+            return {"path": req.path, "exists": True, "directory": req.path == "/",
+                "size": 1024, "permissions": 0100444,
+                "mtime": now_us().epochSeconds(), "atime": now_us().epochSeconds()};
+        }
+        hash<auto> list(hash<auto> req) {
+            return {"path": req.path, "exists": True, "entries": ({
+                "filename": "data.bin", "directory": False, "size": 1024,
+                "long_name": "-r--r--r-- 1 root root 1024 Jan 01 00:00 data.bin",
+                "permissions": 0100444, "metadata": {},
+                "mtime": now_us().epochSeconds(), "atime": now_us().epochSeconds(),
+            },)};
+        }
+        hash<auto> openRead(hash<auto> req) {
+            return {"path": req.path, "exists": True,
+                "data": binary("file content"), "size": 12, "permissions": 0100444};
+        }
+    }
+    session.setBackend(new MyReadOnlyBackend());
+    @endcode
+
+    Any absent method causes \c SSH_FX_OP_UNSUPPORTED for the corresponding
+    operation. In this example, write, remove, rename, mkdir, rmdir, symlink,
+    readlink, setstat, and statvfs are all unsupported.
+
+    @section sshsftpbackendpersistence Persistence
+
+    @ref SftpServerDataProvider::VirtualSftpPersistenceBackend "VirtualSftpPersistenceBackend"
+    provides durable state for VirtualSftpFilesystem. Configure via
+    @ref SftpServerDataProvider::VirtualSftpPersistenceOptions "VirtualSftpPersistenceOptions":
+
+    - \c persistence_dir -- local directory for snapshot files
+    - \c persistence_mode -- \c "snapshot" (periodic bulk saves) or
+      \c "write-through" (save after every mutation)
+    - \c snapshot_interval_seconds -- periodic snapshot interval (default 60)
+    - \c restore_on_construct -- restore state on construction
+
+    Snapshots use JSON
+    (@ref SftpServerDataProvider::VirtualSftpSnapshot "VirtualSftpSnapshot")
+    with atomic writes (write to \c .tmp, then rename) to prevent corruption.
+    @code
+    SftpServerDataProvider::VirtualSftpFilesystem vfs(
+        <SftpServerDataProvider::VirtualSftpFilesystemOptions>{"persistence":
+            <SftpServerDataProvider::VirtualSftpPersistenceOptions>{
+                "persistence_dir": "/var/lib/myapp/sftp-state",
+                "persistence_mode": "write-through",
+                "restore_on_construct": True,
+            }});
+    @endcode
+*/

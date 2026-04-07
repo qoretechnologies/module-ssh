@@ -274,7 +274,7 @@ public:
         }
     }
 
-    void setLogger(QoreObject* q_logger, ExceptionSink* xsink) {
+    void setLogger(const QoreObject* q_logger, ExceptionSink* xsink) {
         ssh_session_validate_logger(q_logger, "SSHAUTHCONTEXT-LOGGER-ERROR", xsink);
         if (*xsink) {
             return;
@@ -446,7 +446,7 @@ public:
         }
     }
 
-    void setLogger(QoreObject* q_logger, ExceptionSink* xsink) {
+    void setLogger(const QoreObject* q_logger, ExceptionSink* xsink) {
         ssh_session_validate_logger(q_logger, "SSHSESSION-LOGGER-ERROR", xsink);
         if (*xsink) {
             return;
@@ -1280,12 +1280,12 @@ private:
 };
 
 DLLLOCAL QoreObject* ssh_new_session_object(QoreProgram* pgm, QoreHashNode* info, QoreHashNode* auth_info,
-        QoreObject* logger, ssh_session session, std::shared_ptr<std::atomic<int64>> active_session_counter,
+        const QoreObject* logger, ssh_session session, std::shared_ptr<std::atomic<int64>> active_session_counter,
         int enabled_auth_methods_mask, int64 keepalive_interval_seconds, int64 idle_timeout_seconds,
         ExceptionSink* xsink) {
     ReferenceHolder<QoreHashNode> info_holder(info, xsink);
     ReferenceHolder<QoreHashNode> auth_holder(auth_info, xsink);
-    ReferenceHolder<QoreObject> logger_holder(logger, xsink);
+    ReferenceHolder<QoreObject> logger_holder(logger ? logger->objectRefSelf() : nullptr, xsink);
     bool keep_session = false;
     ON_BLOCK_EXIT([&keep_session, session]() {
         if (!keep_session && session) {
@@ -1322,7 +1322,7 @@ DLLLOCAL QoreObject* ssh_session_wait_auth_context(const QoreObject* session_obj
     return *xsink ? nullptr : priv->waitAuthContext(pgm, timeout_ms, xsink);
 }
 
-DLLLOCAL int ssh_session_set_logger(const QoreObject* session_obj, QoreObject* logger, ExceptionSink* xsink) {
+DLLLOCAL int ssh_session_set_logger(const QoreObject* session_obj, const QoreObject* logger, ExceptionSink* xsink) {
     if (!session_obj) {
         xsink->raiseException("SSHSESSION-STATE-ERROR", "cannot set logger on a null session object");
         return -1;
@@ -1389,7 +1389,7 @@ DLLLOCAL QoreHashNode* ssh_auth_context_get_info(const QoreObject* auth_obj, Exc
     return *xsink ? nullptr : priv->getInfo(xsink);
 }
 
-DLLLOCAL int ssh_auth_context_set_logger(const QoreObject* auth_obj, QoreObject* logger, ExceptionSink* xsink) {
+DLLLOCAL int ssh_auth_context_set_logger(const QoreObject* auth_obj, const QoreObject* logger, ExceptionSink* xsink) {
     if (!auth_obj) {
         xsink->raiseException("SSHAUTHCONTEXT-STATE-ERROR", "cannot set logger on a null auth context object");
         return -1;
@@ -1511,14 +1511,14 @@ nothing SshAuthContext::applyDecision(hash<SshAuthDecision> decision) {
 //! Sets the logger object used by the authentication context
 /** @param logger an optional logger object
  */
-nothing SshAuthContext::setLogger(*object logger) {
+nothing SshAuthContext::setLogger(*LoggerInterfaceBase logger) {
     priv->setLogger(logger, xsink);
 }
 
 //! Returns the configured logger object
 /** @return the configured logger object or `NOTHING`
  */
-*object SshAuthContext::getLogger() [flags=RET_VALUE_ONLY] {
+*LoggerInterfaceBase SshAuthContext::getLogger() [flags=RET_VALUE_ONLY] {
     return priv->getLogger();
 }
 
@@ -1639,14 +1639,14 @@ if (ctx) {
 //! Sets the logger object used by the session
 /** @param logger an optional logger object
  */
-nothing SshSession::setLogger(*object logger) {
+nothing SshSession::setLogger(*LoggerInterfaceBase logger) {
     priv->setLogger(logger, xsink);
 }
 
 //! Returns the configured logger object
 /** @return the configured logger object or `NOTHING`
  */
-*object SshSession::getLogger() [flags=RET_VALUE_ONLY] {
+*LoggerInterfaceBase SshSession::getLogger() [flags=RET_VALUE_ONLY] {
     return priv->getLogger();
 }
 

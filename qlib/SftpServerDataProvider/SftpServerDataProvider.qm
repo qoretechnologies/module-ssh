@@ -266,6 +266,46 @@ module SftpServerDataProvider {
     - @ref SftpServerDataProvider::VirtualSftpExchange
     - @ref SftpServerDataProvider::VirtualSftpExchangeRecordStore
 
+    @subsection sftpserverdataproviderhelpers Helper Class Comparison
+
+    The three helper classes serve different use cases:
+
+    - @ref SftpServerDataProvider::VirtualSftpFilesystem -- simple in-memory filesystem for testing,
+      generated content, and simple virtual namespaces; supports persistence via snapshot or
+      write-through modes
+    - @ref SftpServerDataProvider::VirtualSftpExchange -- inbound/outbound exchange workflow with
+      archive/claim lifecycle, inbound policy enforcement, observable events, and configurable
+      retention policies
+    - @ref SftpServerDataProvider::VirtualSftpExchangeRecordStore -- record-oriented queue API on top
+      of exchanges for name-based submit/claim workflows; wraps an exchange instance and provides a
+      simplified interface for programmatic file exchange without dealing with filesystem paths
+
+    @subsection sftpserverdataproviderlayer DataProvider Layer Overview
+
+    The module registers a @c sftpserver DataProvider factory and a corresponding @c SftpServerExchange
+    application through the standard DataProvider registration API. The provider exposes exchange
+    actions including @c submit-inbound, @c list-outbound, @c retrieve-outbound, @c claim-outbound,
+    @c archive-outbound, @c delete-outbound, and @c cleanup-expired. It also exposes observable events
+    (@c inbound-file-accepted, @c inbound-file-rejected, @c outbound-file-claimed,
+    @c outbound-file-archived, and @c outbound-file-deleted) that can be used to drive reactive
+    integration workflows.
+
+    @subsection sftpserverdataproviderinboundpolicy Inbound Policy Overview
+
+    The @ref SftpServerDataProvider::VirtualSftpInboundPolicy "VirtualSftpInboundPolicy" hashdecl
+    provides a declarative inbound acceptance policy that supports filename glob and regex matching,
+    minimum and maximum size bounds, overwrite control, duplicate detection (by name, size, or
+    content hash), file-count and total-byte quotas, concurrent upload limits, content-prefix and
+    content-type-hint filtering, custom validation callbacks, and principal-aware allow/deny lists
+    with per-principal policy overrides and routing rules. Per-subdirectory policy overrides are also
+    supported via @ref SftpServerDataProvider::VirtualSftpInboundDirectoryPolicy
+    "VirtualSftpInboundDirectoryPolicy".
+
+    @subsection sftpserverdataproviderxref Cross-Reference
+
+    See @ref sshsftpbackendguide for the full backend guide covering backend types, custom backends,
+    and persistence, and @ref sshcookbook for complete typed code examples covering common scenarios.
+
     @section sftpserverdataprovidertypes Typed Helper Contracts
 
     The following anchors provide stable documentation targets for the typed

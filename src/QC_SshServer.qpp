@@ -848,7 +848,7 @@ public:
         }
     }
 
-    void setLogger(QoreObject* q_logger, ExceptionSink* xsink) {
+    void setLogger(const QoreObject* q_logger, ExceptionSink* xsink) {
         ssh_validate_logger(q_logger, "SSHSERVER-LOGGER-ERROR", xsink);
         if (*xsink) {
             return;
@@ -2320,14 +2320,14 @@ hash<SftpTransferDecision> SshServer::evaluateSftpTransferRequest(SftpSession sf
 //! Sets the logger used by the server
 /** @param logger an optional logger object
  */
-nothing SshServer::setLogger(*object logger) {
+nothing SshServer::setLogger(*LoggerInterfaceBase logger) {
     priv->setLogger(logger, xsink);
 }
 
 //! Returns the configured logger object
 /** @return the configured logger object or `NOTHING`
  */
-*object SshServer::getLogger() [flags=RET_VALUE_ONLY] {
+*LoggerInterfaceBase SshServer::getLogger() [flags=RET_VALUE_ONLY] {
     return priv->getLogger();
 }
 

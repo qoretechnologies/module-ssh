@@ -108,7 +108,7 @@ public:
         return input_closed;
     }
 
-    void setLogger(QoreObject* q_logger, ExceptionSink* xsink) {
+    void setLogger(const QoreObject* q_logger, ExceptionSink* xsink) {
         ssh_command_validate_logger(q_logger, "SSHCOMMANDSESSION-LOGGER-ERROR", xsink);
         if (*xsink) {
             return;
@@ -371,14 +371,14 @@ nothing SshCommandSession::applyResult(hash<SshCommandResult> result) {
 //! Sets the logger object used by the command session
 /** @param logger an optional logger object
  */
-nothing SshCommandSession::setLogger(*object logger) {
+nothing SshCommandSession::setLogger(*LoggerInterfaceBase logger) {
     priv->setLogger(logger, xsink);
 }
 
 //! Returns the configured logger object
 /** @return the configured logger object or `NOTHING`
  */
-*object SshCommandSession::getLogger() [flags=RET_VALUE_ONLY] {
+*LoggerInterfaceBase SshCommandSession::getLogger() [flags=RET_VALUE_ONLY] {
     return priv->getLogger();
 }
 
@@ -396,10 +396,10 @@ bool SshCommandSession::inputClosed() [flags=CONSTANT] {
     return priv->isInputClosed();
 }
 
-DLLLOCAL QoreObject* ssh_new_command_session_object(QoreProgram* pgm, QoreHashNode* request, QoreObject* logger,
+DLLLOCAL QoreObject* ssh_new_command_session_object(QoreProgram* pgm, QoreHashNode* request, const QoreObject* logger,
         ssh_channel channel, ssh_message request_msg, ExceptionSink* xsink) {
     ReferenceHolder<QoreHashNode> request_holder(request, xsink);
-    ReferenceHolder<QoreObject> logger_holder(logger, xsink);
+    ReferenceHolder<QoreObject> logger_holder(logger ? logger->objectRefSelf() : nullptr, xsink);
     bool keep_resources = false;
     ON_BLOCK_EXIT([&keep_resources, channel, request_msg]() {
         if (!keep_resources && request_msg) {
@@ -435,7 +435,7 @@ DLLLOCAL QoreHashNode* ssh_command_session_get_request(const QoreObject* command
     return *xsink ? nullptr : priv->getRequest(xsink);
 }
 
-DLLLOCAL int ssh_command_session_set_logger(const QoreObject* command_obj, QoreObject* logger, ExceptionSink* xsink) {
+DLLLOCAL int ssh_command_session_set_logger(const QoreObject* command_obj, const QoreObject* logger, ExceptionSink* xsink) {
     if (!command_obj) {
         xsink->raiseException("SSHCOMMANDSESSION-STATE-ERROR",
             "cannot set logger on a null command session object");

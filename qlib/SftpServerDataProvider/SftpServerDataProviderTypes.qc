@@ -56,6 +56,7 @@ public namespace SftpServerDataProvider {
     public const InboundRejectPrincipalDenied = "principal-denied";
     public const InboundRejectPrincipalNotAllowed = "principal-not-allowed";
 
+    #! virtual filesystem persistence configuration options
     public hashdecl VirtualSftpPersistenceOptions {
         #! local directory for snapshot files
         *string persistence_dir;
@@ -67,6 +68,7 @@ public namespace SftpServerDataProvider {
         *bool restore_on_construct;
     }
 
+    #! virtual filesystem configuration options
     public hashdecl VirtualSftpFilesystemOptions {
         *int default_file_permissions;
         *int default_directory_permissions;
@@ -75,6 +77,7 @@ public namespace SftpServerDataProvider {
         *LoggerInterface logger;
     }
 
+    #! SFTP file exchange configuration with inbound/outbound directories and policies
     public hashdecl VirtualSftpExchangeOptions inherits VirtualSftpFilesystemOptions {
         *string inbound_dir;
         *string outbound_dir;
@@ -87,10 +90,12 @@ public namespace SftpServerDataProvider {
         *bool generate_inbound_checksum;
     }
 
+    #! file retention policy with age-based expiration
     public hashdecl VirtualSftpRetentionPolicy {
         *int max_age_seconds;
     }
 
+    #! request data passed to inbound file validation callbacks
     public hashdecl VirtualSftpInboundValidationRequest {
         string name;
         string path;
@@ -108,12 +113,14 @@ public namespace SftpServerDataProvider {
         *string scope_principal;
     }
 
+    #! result of inbound file validation indicating acceptance or rejection
     public hashdecl VirtualSftpInboundValidationResult {
         bool accepted = True;
         *string reason_code;
         *string reason_desc;
     }
 
+    #! inbound file acceptance policy configuration
     public hashdecl VirtualSftpInboundPolicy {
         *string accept_filename_glob;
         *string reject_filename_glob;
@@ -142,6 +149,7 @@ public namespace SftpServerDataProvider {
         *list<hash<VirtualSftpInboundDirectoryPolicy>> directory_policies;
     }
 
+    #! reusable inbound policy rule for directory or principal-level overrides
     public hashdecl VirtualSftpInboundPolicyRule {
         *string accept_filename_glob;
         *string reject_filename_glob;
@@ -165,37 +173,44 @@ public namespace SftpServerDataProvider {
         *bool allow_hidden_files;
     }
 
+    #! per-subdirectory inbound policy override
     public hashdecl VirtualSftpInboundDirectoryPolicy {
         string subdir;
         hash<VirtualSftpInboundPolicyRule> policy;
     }
 
+    #! mapping from a principal to an inbound subdirectory
     public hashdecl VirtualSftpPrincipalRoute {
         string principal;
         string inbound_subdir;
     }
 
+    #! per-principal inbound policy override
     public hashdecl VirtualSftpPrincipalPolicy {
         string principal;
         hash<VirtualSftpInboundPolicyRule> policy;
     }
 
+    #! base request type with path and session info
     public hashdecl VirtualSftpPathRequest {
         string path;
         *hash<Qore::Ssh::SftpSessionInfo> session_info;
         *hash<auto> metadata;
     }
 
+    #! file submission request with optional data payload
     public hashdecl VirtualSftpSubmissionRequest inherits VirtualSftpPathRequest {
         *binary data;
         *string source_path;
     }
 
+    #! file completion request with optional target path and completion mode
     public hashdecl VirtualSftpCompletionRequest inherits VirtualSftpPathRequest {
         *string target_path;
         *string completion_mode;
     }
 
+    #! request to run retention cleanup on a specific queue
     public hashdecl VirtualSftpRetentionCleanupRequest {
         string queue;
         *int now_s;
@@ -203,6 +218,7 @@ public namespace SftpServerDataProvider {
         *bool remove_empty_directories;
     }
 
+    #! base result type for virtual filesystem operations
     public hashdecl VirtualSftpOperationResult {
         *string path;
         bool available;
@@ -212,6 +228,7 @@ public namespace SftpServerDataProvider {
         *hash<Qore::Ssh::SftpTransferInfo> transfer_info;
     }
 
+    #! built-in file state tracking for archive and claim lifecycle
     public hashdecl VirtualSftpBuiltinState {
         bool archived = False;
         bool claimed = False;
@@ -220,16 +237,19 @@ public namespace SftpServerDataProvider {
         *string exchange_role;
     }
 
+    #! directory listing result with entry details
     public hashdecl VirtualSftpListResult inherits VirtualSftpOperationResult {
         list<hash<VirtualSftpEntryInfo>> entries = ();
     }
 
+    #! file retrieval result with data payload, size, and permissions
     public hashdecl VirtualSftpRetrieveResult inherits VirtualSftpOperationResult {
         *binary data;
         *int size;
         *int permissions;
     }
 
+    #! file or directory stat result with metadata and state
     public hashdecl VirtualSftpStatResult inherits VirtualSftpOperationResult {
         bool directory = False;
         *int size;
@@ -240,14 +260,17 @@ public namespace SftpServerDataProvider {
         *hash<auto> metadata;
     }
 
+    #! result of opening a file for reading, including stat info and data
     public hashdecl VirtualSftpOpenReadResult inherits VirtualSftpStatResult {
         *binary data;
     }
 
+    #! result of opening a file for writing
     public hashdecl VirtualSftpOpenWriteResult inherits VirtualSftpOperationResult {
         *int permissions;
     }
 
+    #! serializable snapshot of a single file's data, metadata, and state
     public hashdecl VirtualSftpFileSnapshot {
         int size;
         binary data;
@@ -260,6 +283,7 @@ public namespace SftpServerDataProvider {
         int atime;
     }
 
+    #! complete filesystem snapshot for persistence and restore
     public hashdecl VirtualSftpSnapshot {
         string root_path;
         list<string> file_paths;
@@ -267,6 +291,7 @@ public namespace SftpServerDataProvider {
         hash<auto> files;
     }
 
+    #! directory entry information for a file or subdirectory
     public hashdecl VirtualSftpEntryInfo {
         string filename;
         string long_name;
@@ -283,6 +308,7 @@ public namespace SftpServerDataProvider {
         hash<auto> metadata;
     }
 
+    #! record-oriented file information for queue operations
     public hashdecl VirtualSftpRecordInfo {
         string queue;
         string name;
@@ -297,20 +323,24 @@ public namespace SftpServerDataProvider {
         bool completed = False;
     }
 
+    #! base record request with name and optional metadata
     public hashdecl VirtualSftpRecordRequest {
         string name;
         *hash<auto> metadata;
     }
 
+    #! record submission request with binary data payload
     public hashdecl VirtualSftpRecordSubmissionRequest inherits VirtualSftpRecordRequest {
         binary data;
     }
 
+    #! record completion request with optional final name and completion mode
     public hashdecl VirtualSftpRecordCompletionRequest inherits VirtualSftpRecordRequest {
         *string final_name;
         *string completion_mode;
     }
 
+    #! inbound file event payload with acceptance status and transfer details
     public hashdecl VirtualSftpInboundEventInfo {
         string event_type = EventInboundFileAccepted;
         string queue = "inbound";
@@ -333,6 +363,7 @@ public namespace SftpServerDataProvider {
         *hash<Qore::Ssh::SftpTransferInfo> transfer_info;
     }
 
+    #! outbound file event payload with claim/archive/delete details
     public hashdecl VirtualSftpOutboundEventInfo {
         string event_type;
         string queue = "outbound";
@@ -355,6 +386,7 @@ public namespace SftpServerDataProvider {
         *hash<Qore::Ssh::SftpTransferInfo> transfer_info;
     }
 
+    #! result of a retention cleanup operation with removed file and directory lists
     public hashdecl VirtualSftpRetentionCleanupResult {
         string queue;
         int evaluated_at;

@@ -55,13 +55,13 @@ DLLLOCAL extern qore_classid_t CID_SFTPSESSION;
 DLLLOCAL extern QoreClass* QC_SFTPSESSION;
 
 DLLLOCAL QoreObject* ssh_new_session_object(QoreProgram* pgm, QoreHashNode* info, QoreHashNode* auth_info,
-    QoreObject* logger, ssh_session session, std::shared_ptr<std::atomic<int64>> active_session_counter,
+    const QoreObject* logger, ssh_session session, std::shared_ptr<std::atomic<int64>> active_session_counter,
     int enabled_auth_methods_mask, int64 keepalive_interval_seconds, int64 idle_timeout_seconds,
     ExceptionSink* xsink);
-DLLLOCAL QoreObject* ssh_new_command_session_object(QoreProgram* pgm, QoreHashNode* request, QoreObject* logger,
+DLLLOCAL QoreObject* ssh_new_command_session_object(QoreProgram* pgm, QoreHashNode* request, const QoreObject* logger,
     ssh_channel channel, ssh_message request_msg, ExceptionSink* xsink);
 DLLLOCAL QoreObject* ssh_new_sftp_session_object(QoreProgram* pgm, QoreHashNode* info, QoreHashNode* transfer_info,
-    QoreObject* logger, QoreObject* backend, ssh_channel channel, ExceptionSink* xsink);
+    const QoreObject* logger, QoreObject* backend, ssh_channel channel, ExceptionSink* xsink);
 DLLLOCAL QoreHashNode* ssh_session_get_info(const QoreObject* session_obj, ExceptionSink* xsink);
 DLLLOCAL QoreObject* ssh_session_wait_auth_context(const QoreObject* session_obj, QoreProgram* pgm, int timeout_ms,
     ExceptionSink* xsink);
@@ -69,21 +69,21 @@ DLLLOCAL QoreObject* ssh_session_wait_command_session(const QoreObject* session_
     ExceptionSink* xsink);
 DLLLOCAL QoreObject* ssh_session_wait_sftp_session(const QoreObject* session_obj, QoreProgram* pgm, int timeout_ms,
     ExceptionSink* xsink);
-DLLLOCAL int ssh_session_set_logger(const QoreObject* session_obj, QoreObject* logger, ExceptionSink* xsink);
+DLLLOCAL int ssh_session_set_logger(const QoreObject* session_obj, const QoreObject* logger, ExceptionSink* xsink);
 DLLLOCAL int ssh_session_apply_auth_decision(const QoreObject* session_obj, const QoreHashNode* auth_context_info,
     const QoreHashNode* decision, ExceptionSink* xsink);
 DLLLOCAL QoreHashNode* ssh_auth_context_get_info(const QoreObject* auth_obj, ExceptionSink* xsink);
-DLLLOCAL int ssh_auth_context_set_logger(const QoreObject* auth_obj, QoreObject* logger, ExceptionSink* xsink);
+DLLLOCAL int ssh_auth_context_set_logger(const QoreObject* auth_obj, const QoreObject* logger, ExceptionSink* xsink);
 DLLLOCAL int ssh_auth_context_reply_public_key_ok(const QoreObject* auth_obj, ExceptionSink* xsink);
 DLLLOCAL int ssh_auth_context_apply_decision(const QoreObject* auth_obj, const QoreHashNode* decision,
     ExceptionSink* xsink);
 DLLLOCAL QoreHashNode* ssh_command_session_get_request(const QoreObject* command_obj, ExceptionSink* xsink);
-DLLLOCAL int ssh_command_session_set_logger(const QoreObject* command_obj, QoreObject* logger, ExceptionSink* xsink);
+DLLLOCAL int ssh_command_session_set_logger(const QoreObject* command_obj, const QoreObject* logger, ExceptionSink* xsink);
 DLLLOCAL int ssh_command_session_apply_result(const QoreObject* command_obj, const QoreHashNode* result,
     ExceptionSink* xsink);
 DLLLOCAL QoreHashNode* ssh_sftp_session_get_info(const QoreObject* sftp_obj, ExceptionSink* xsink);
 DLLLOCAL QoreHashNode* ssh_sftp_session_get_transfer_info(const QoreObject* sftp_obj, ExceptionSink* xsink);
-DLLLOCAL int ssh_sftp_session_set_logger(const QoreObject* sftp_obj, QoreObject* logger, ExceptionSink* xsink);
+DLLLOCAL int ssh_sftp_session_set_logger(const QoreObject* sftp_obj, const QoreObject* logger, ExceptionSink* xsink);
 DLLLOCAL int ssh_sftp_session_set_backend(const QoreObject* sftp_obj, QoreObject* backend, ExceptionSink* xsink);
 DLLLOCAL int ssh_sftp_session_apply_factory_result(const QoreObject* sftp_obj, const QoreHashNode* result,
     ExceptionSink* xsink);

@@ -64,7 +64,9 @@ DLLLOCAL QoreClass* initSshCommandSessionClass(QoreNamespace& ns);
 DLLLOCAL QoreClass* initSftpSessionClass(QoreNamespace& ns);
 
 //! typed SSH listener configuration hash
-/**
+/** Passed as elements of @ref SshServerConfig "SshServerConfig::listeners".
+    Controls bind address, port, host keys, authentication filtering, service
+    gates, security options, and keepalive/idle settings for a single listener.
 */
 hashdecl Qore::Ssh::SshListenerConfig {
     //! listener name
@@ -108,7 +110,9 @@ hashdecl Qore::Ssh::SshListenerConfig {
 }
 
 //! typed SSH server configuration hash
-/**
+/** Top-level configuration for @ref Qore::Ssh::SshServer "SshServer". Contains
+    listener definitions, authentication providers, command/SFTP callbacks, and
+    optional logger and audit configuration.
 */
 hashdecl Qore::Ssh::SshServerConfig {
     //! server name
@@ -116,7 +120,7 @@ hashdecl Qore::Ssh::SshServerConfig {
     //! listener configuration list
     list<hash<SshListenerConfig>> listeners;
     //! optional logger object implementing Qore::Logger::LoggerInterface
-    *object logger;
+    *LoggerInterfaceBase logger;
     //! optional object-driven authentication provider implementing authenticate()
     *object auth_provider;
     //! optional authentication callback
@@ -144,7 +148,8 @@ hashdecl Qore::Ssh::SshServerConfig {
 }
 
 //! typed SSH listener runtime status hash
-/**
+/** Returned as elements of @ref SshServerStatus "SshServerStatus::listeners"
+    from @ref Qore::Ssh::SshServer::getStatus() "SshServer::getStatus()".
 */
 hashdecl Qore::Ssh::SshListenerStatus {
     //! listener name
@@ -164,7 +169,8 @@ hashdecl Qore::Ssh::SshListenerStatus {
 }
 
 //! typed SSH server runtime status hash
-/**
+/** Returned by @ref Qore::Ssh::SshServer::getStatus() "SshServer::getStatus()".
+    Includes per-listener status entries and aggregate session counts.
 */
 hashdecl Qore::Ssh::SshServerStatus {
     //! server name
@@ -182,7 +188,9 @@ hashdecl Qore::Ssh::SshServerStatus {
 }
 
 //! typed SSH session metadata hash
-/**
+/** Carries identity, address, authentication state, and policy data for a live
+    SSH session. Populated by the server during accept and auth, and passed to
+    callbacks and SFTP session factories.
 */
 hashdecl Qore::Ssh::SshSessionInfo {
     //! stable session identifier
@@ -220,7 +228,9 @@ hashdecl Qore::Ssh::SshSessionInfo {
 }
 
 //! typed SSH authentication context hash
-/**
+/** Passed to authentication providers and callbacks with the client's
+    credentials and method details. See @ref sshauthguide for the full
+    authentication flow.
 */
 hashdecl Qore::Ssh::SshAuthContextInfo {
     //! stable session identifier
@@ -250,7 +260,9 @@ hashdecl Qore::Ssh::SshAuthContextInfo {
 }
 
 //! typed SSH authentication decision hash
-/**
+/** Returned by authentication providers and callbacks. Controls session
+    acceptance, principal assignment, policy attachment, and partial-auth
+    continuation for multi-factor flows.
 */
 hashdecl Qore::Ssh::SshAuthDecision {
     //! @c True when authentication is accepted
@@ -274,7 +286,8 @@ hashdecl Qore::Ssh::SshAuthDecision {
 }
 
 //! typed SSH command request hash
-/**
+/** Passed to the @c command_callback or virtual command service when the
+    client issues an exec or subsystem request.
 */
 hashdecl Qore::Ssh::SshCommandRequest {
     //! stable session identifier
@@ -298,7 +311,9 @@ hashdecl Qore::Ssh::SshCommandRequest {
 }
 
 //! typed SSH command result hash
-/**
+/** Returned by the @c command_callback or virtual command service.
+    Carries acceptance status, exit code, stdout/stderr payloads, and
+    structured result metadata.
 */
 hashdecl Qore::Ssh::SshCommandResult {
     //! @c True when the request was accepted by the virtual command layer
@@ -316,7 +331,8 @@ hashdecl Qore::Ssh::SshCommandResult {
 }
 
 //! typed SFTP session metadata hash
-/**
+/** Wraps @ref SshSessionInfo with SFTP-specific fields. Passed to the SFTP
+    backend and factory callback after SFTP subsystem negotiation.
 */
 hashdecl Qore::Ssh::SftpSessionInfo {
     //! wrapped SSH session metadata
@@ -332,7 +348,8 @@ hashdecl Qore::Ssh::SftpSessionInfo {
 }
 
 //! typed SFTP protocol message hash
-/**
+/** Raw SFTP protocol message envelope returned by
+    @ref Qore::Ssh::SftpSession::waitProtocolMessage() "SftpSession::waitProtocolMessage()".
 */
 hashdecl Qore::Ssh::SftpProtocolMessage {
     //! numeric SFTP message type
@@ -350,7 +367,8 @@ hashdecl Qore::Ssh::SftpProtocolMessage {
 }
 
 //! typed SFTP transfer request hash
-/**
+/** Used by publish/retrieve transfer workflows to request file transfer
+    decisions from the server-side transfer policy.
 */
 hashdecl Qore::Ssh::SftpTransferRequest {
     //! live SFTP session metadata
@@ -370,7 +388,8 @@ hashdecl Qore::Ssh::SftpTransferRequest {
 }
 
 //! typed SFTP transfer info hash
-/**
+/** Tracks the state of an active publish or retrieve transfer workflow
+    including atomic-publish paths and completion status.
 */
 hashdecl Qore::Ssh::SftpTransferInfo {
     //! transfer operation name
@@ -392,7 +411,7 @@ hashdecl Qore::Ssh::SftpTransferInfo {
 }
 
 //! typed SFTP transfer decision hash
-/**
+/** Returned by transfer policy callbacks to allow or deny a file transfer.
 */
 hashdecl Qore::Ssh::SftpTransferDecision {
     //! @c True when the transfer is allowed
@@ -404,7 +423,8 @@ hashdecl Qore::Ssh::SftpTransferDecision {
 }
 
 //! typed SFTP path request hash
-/**
+/** Used by backend @c stat(), @c list(), @c removePath(), @c mkdir(), and
+    @c rmdir() operations. See @ref sshsftpbackendguide for the backend contract.
 */
 hashdecl Qore::Ssh::SftpPathRequest {
     //! optional live SFTP session metadata
@@ -420,7 +440,8 @@ hashdecl Qore::Ssh::SftpPathRequest {
 }
 
 //! typed SFTP path info / stat result hash
-/**
+/** Returned by backend @c stat() to describe a file, directory, or symlink.
+    Used by the SFTP session to build SSH_FXP_ATTRS responses.
 */
 hashdecl Qore::Ssh::SftpPathInfo {
     //! optional resolved path
@@ -442,7 +463,8 @@ hashdecl Qore::Ssh::SftpPathInfo {
 }
 
 //! typed SFTP directory listing result hash
-/**
+/** Returned by backend @c list() to provide directory entries for
+    SSH_FXP_READDIR responses.
 */
 hashdecl Qore::Ssh::SftpListResult {
     //! optional listed path
@@ -454,7 +476,7 @@ hashdecl Qore::Ssh::SftpListResult {
 }
 
 //! typed SFTP open request hash
-/**
+/** Used by backend @c openRead() and @c openWrite() to open a file handle.
 */
 hashdecl Qore::Ssh::SftpOpenRequest {
     //! optional live SFTP session metadata
@@ -474,7 +496,9 @@ hashdecl Qore::Ssh::SftpOpenRequest {
 }
 
 //! typed SFTP open result hash
-/**
+/** Returned by backend @c openRead()/@c openWrite(). If @c data is set, the
+    content is sent immediately (buffered mode). If @c backend_handle is set,
+    the session uses streamed @c read()/@c write()/@c close*() calls instead.
 */
 hashdecl Qore::Ssh::SftpOpenResult {
     //! optional opened path
@@ -496,7 +520,8 @@ hashdecl Qore::Ssh::SftpOpenResult {
 }
 
 //! typed SFTP operation result hash
-/**
+/** Returned by backend mutation operations (@c rename, @c removePath,
+    @c mkdir, @c rmdir, @c closeRead, @c closeWrite) and completion helpers.
 */
 hashdecl Qore::Ssh::SftpOperationResult {
     //! optional resulting path
@@ -514,7 +539,7 @@ hashdecl Qore::Ssh::SftpOperationResult {
 }
 
 //! typed SFTP rename request hash
-/**
+/** Used by backend @c rename() for SSH_FXP_RENAME operations.
 */
 hashdecl Qore::Ssh::SftpRenameRequest {
     //! optional live SFTP session metadata
@@ -530,7 +555,8 @@ hashdecl Qore::Ssh::SftpRenameRequest {
 }
 
 //! typed SFTP submission request hash
-/**
+/** Used by @ref Qore::Ssh::SftpSession "SftpSession" convenience helpers and
+    virtual backends for file submission with optional inline data or source path.
 */
 hashdecl Qore::Ssh::SftpSubmissionRequest {
     //! optional live SFTP session metadata
@@ -554,7 +580,9 @@ hashdecl Qore::Ssh::SftpSubmissionRequest {
 }
 
 //! typed SFTP operation request hash for completion and mutation operations
-/**
+/** Used by @ref Qore::Ssh::SftpSession "SftpSession" convenience helpers for
+    archive, claim, delete, and rename completion flows. The @c completion_mode
+    field selects the operation type.
 */
 hashdecl Qore::Ssh::SftpOperationRequest {
     //! optional live SFTP session metadata
@@ -572,7 +600,8 @@ hashdecl Qore::Ssh::SftpOperationRequest {
 }
 
 //! typed SFTP streamed read request hash
-/**
+/** Used by backend @c read() when the session is in streamed read mode
+    (i.e. @ref SftpOpenResult "SftpOpenResult::backend_handle" was set).
 */
 hashdecl Qore::Ssh::SftpReadRequest {
     //! optional live SFTP session metadata
@@ -594,7 +623,7 @@ hashdecl Qore::Ssh::SftpReadRequest {
 }
 
 //! typed SFTP streamed read result hash
-/**
+/** Returned by backend @c read(). Set @c eof to @c True on the last chunk.
 */
 hashdecl Qore::Ssh::SftpReadResult {
     //! optional data payload
@@ -606,7 +635,7 @@ hashdecl Qore::Ssh::SftpReadResult {
 }
 
 //! typed SFTP streamed write request hash
-/**
+/** Used by backend @c write() when the session is in streamed write mode.
 */
 hashdecl Qore::Ssh::SftpWriteRequest {
     //! optional live SFTP session metadata
@@ -628,7 +657,8 @@ hashdecl Qore::Ssh::SftpWriteRequest {
 }
 
 //! typed SFTP streamed close request hash
-/**
+/** Used by backend @c closeRead() and @c closeWrite() to finalize a streamed
+    handle. May carry a final buffered data payload for write operations.
 */
 hashdecl Qore::Ssh::SftpCloseRequest {
     //! optional live SFTP session metadata
@@ -647,8 +677,9 @@ hashdecl Qore::Ssh::SftpCloseRequest {
     *hash<auto> metadata;
 }
 
-//! typed active session info hash as returned by @ref Qore::Ssh::SshServer::listActiveSessions() "SshServer::listActiveSessions()"
-/**
+//! typed active session info hash
+/** Returned by @ref Qore::Ssh::SshServer::listActiveSessions() "SshServer::listActiveSessions()"
+    with identity, timing, and I/O counters for each connected session.
 */
 hashdecl Qore::Ssh::SshActiveSessionInfo {
     //! stable session identifier
@@ -676,7 +707,7 @@ hashdecl Qore::Ssh::SshActiveSessionInfo {
 }
 
 //! typed SFTP symlink request hash
-/**
+/** Used by backend @c symlink() for SSH_FXP_SYMLINK operations.
 */
 hashdecl Qore::Ssh::SftpSymlinkRequest {
     //! optional live SFTP session metadata
@@ -692,7 +723,9 @@ hashdecl Qore::Ssh::SftpSymlinkRequest {
 }
 
 //! typed SFTP setstat/fsetstat request hash
-/**
+/** Used by backend @c setstat() for SSH_FXP_SETSTAT and SSH_FXP_FSETSTAT
+    operations. The @c attr_flags bitmask indicates which attribute fields
+    are present.
 */
 hashdecl Qore::Ssh::SftpSetstatRequest {
     //! optional live SFTP session metadata
@@ -722,7 +755,8 @@ hashdecl Qore::Ssh::SftpSetstatRequest {
 }
 
 //! typed SFTP statvfs result hash for the @c statvfs\@openssh.com extension
-/**
+/** Returned by backend @c statvfs() for SSH_FXP_EXTENDED statvfs requests.
+    Fields follow the POSIX @c statvfs layout.
 */
 hashdecl Qore::Ssh::SftpStatvfsResult {
     //! filesystem block size

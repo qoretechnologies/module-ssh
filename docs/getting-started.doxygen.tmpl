@@ -1,0 +1,116 @@
+/** @page sshgettingstarted Getting Started
+
+    @tableofcontents
+
+    This page shows the fastest path to a running SSH or SFTP server using the
+    Qore SSH module. Both examples use the high-level
+    @ref sshserverconnectionsintro "SshServerConnections" helpers so you can
+    focus on the backend logic rather than low-level libssh configuration.
+
+    @section sshgettingstartedprereqs Prerequisites
+
+    - <b>Qore 2.0+</b> with @c %modern enabled
+    - <b>libssh</b> installed (the binary module links against it)
+    - The @c ssh binary module loaded (@c %requires @c ssh)
+    - At least one SSH host key file (e.g. generated with
+      @c ssh-keygen @c -t @c ed25519 @c -f @c ssh_host_ed25519_key @c -N @c "")
+
+    @section sshgettingstartedsftp Minimal SFTP Server
+
+    The example below creates an in-memory virtual SFTP server that accepts
+    unauthenticated connections and serves a single file. It uses
+    @ref SshServerConnections::SftpServerConnection "SftpServerConnection"
+    with a @ref SftpServerDataProvider::VirtualSftpFilesystem "VirtualSftpFilesystem"
+    backend.
+
+    @code
+    %modern
+    %requires ssh
+    %requires SshServerConnections
+    %requires SshServerAuthProvider
+    %requires SftpServerDataProvider
+
+    SftpServerDataProvider::VirtualSftpFilesystem vfs();
+    vfs.addOutboundText("hello.txt", "hello world\n");
+
+    SshServerConnections::SftpServerConnection conn({
+        "name": "my-sftp",
+        "url": "sftpserver://127.0.0.1:0",
+        "opts": {
+            "host_keys": ("ssh_host_ed25519_key",),
+            "auth": <SshServerAuthProvider::VirtualSshAuthProviderOptions>{
+                "methods": ("none",),
+                "none": <SshServerAuthProvider::VirtualSshStaticAuthMethodOptions>{
+                    "success_decision": <SshServerAuthProvider::VirtualSshAuthDecisionTemplate>{
+                        "principal": "anonymous",
+                        "sftp_policy": {"mode": "enabled"},
+                    },
+                },
+            },
+            "backend": vfs,
+        },
+    });
+
+    Qore::Ssh::SshServer server = conn.get(True);
+    int port = server.getStatus().listeners[0].bound_port;
+    printf("SFTP server listening on port %d\n", port);
+
+    # ... serve sessions here ...
+    server.stop();
+    @endcode
+
+    Port @c 0 lets the OS pick a free port; read the actual port from
+    @c getStatus() as shown above.
+
+    @section sshgettingstartedcommand Minimal SSH Command Server
+
+    The example below creates a virtual command server that responds to
+    @c exec requests with canned text output. It uses
+    @ref SshServerConnections::SshCommandServerConnection "SshCommandServerConnection"
+    with a @ref SshServerCommandProvider::VirtualSshCommandService "VirtualSshCommandService"
+    command backend.
+
+    @code
+    %modern
+    %requires ssh
+    %requires SshServerConnections
+    %requires SshServerAuthProvider
+    %requires SshServerCommandProvider
+
+    SshServerCommandProvider::VirtualSshCommandService service();
+    service.addTextCommand("status", "ok\n");
+
+    SshServerConnections::SshCommandServerConnection conn({
+        "name": "my-command",
+        "url": "sshserver://127.0.0.1:0",
+        "opts": {
+            "host_keys": ("ssh_host_ed25519_key",),
+            "auth": <SshServerAuthProvider::VirtualSshAuthProviderOptions>{
+                "methods": ("none",),
+                "none": <SshServerAuthProvider::VirtualSshStaticAuthMethodOptions>{
+                    "success_decision": <SshServerAuthProvider::VirtualSshAuthDecisionTemplate>{
+                        "principal": "anonymous",
+                        "command_policy": {"mode": "command-only"},
+                    },
+                },
+            },
+            "command_backend": service,
+        },
+    });
+
+    Qore::Ssh::SshServer server = conn.get(True);
+    int port = server.getStatus().listeners[0].bound_port;
+    printf("SSH command server listening on port %d\n", port);
+
+    # ... serve sessions here ...
+    server.stop();
+    @endcode
+
+    @section sshgettingstartednext Where to Go Next
+
+    - @ref sshauthguide -- authentication methods including @c password,
+      @c publickey, multi-factor auth, and custom auth providers
+    - @ref sshsftpbackendguide -- SFTP backend types: virtual filesystem,
+      exchange, record-store, stream backends, and persistence
+    - @ref sshcookbook -- complete typed code examples for production scenarios
+*/

@@ -666,7 +666,7 @@ public:
                              : nullptr;
     }
 
-    void setLogger(QoreObject* q_logger, ExceptionSink* xsink) {
+    void setLogger(const QoreObject* q_logger, ExceptionSink* xsink) {
         ssh_sftp_validate_logger(q_logger, "SFTPSESSION-LOGGER-ERROR", xsink);
         if (*xsink) {
             return;
@@ -3614,7 +3614,7 @@ hash<SftpSessionInfo> SftpSession::getInfo() [flags=RET_VALUE_ONLY] {
 //! Sets the logger object used by the SFTP session
 /** @param logger an optional logger object
  */
-nothing SftpSession::setLogger(*object logger) {
+nothing SftpSession::setLogger(*LoggerInterfaceBase logger) {
     priv->setLogger(logger, xsink);
 }
 
@@ -4203,7 +4203,7 @@ hash<SftpTransferInfo> SftpSession::retrieveLocalFile(string target_path, bool m
 //! Returns the configured logger object
 /** @return the configured logger object or `NOTHING`
  */
-*object SftpSession::getLogger() [flags=RET_VALUE_ONLY] {
+*LoggerInterfaceBase SftpSession::getLogger() [flags=RET_VALUE_ONLY] {
     return priv->getLogger();
 }
 
@@ -4230,10 +4230,10 @@ nothing SftpSession::close() {
 }
 
 DLLLOCAL QoreObject* ssh_new_sftp_session_object(QoreProgram* pgm, QoreHashNode* info, QoreHashNode* transfer_info,
-        QoreObject* logger, QoreObject* backend, ssh_channel channel, ExceptionSink* xsink) {
+        const QoreObject* logger, QoreObject* backend, ssh_channel channel, ExceptionSink* xsink) {
     ReferenceHolder<QoreHashNode> info_holder(info, xsink);
     ReferenceHolder<QoreHashNode> transfer_info_holder(transfer_info, xsink);
-    ReferenceHolder<QoreObject> logger_holder(logger, xsink);
+    ReferenceHolder<QoreObject> logger_holder(logger ? logger->objectRefSelf() : nullptr, xsink);
     ReferenceHolder<QoreObject> backend_holder(backend, xsink);
     bool keep_resources = false;
     ON_BLOCK_EXIT([&keep_resources, channel]() {
@@ -4272,7 +4272,7 @@ DLLLOCAL QoreHashNode* ssh_sftp_session_get_transfer_info(const QoreObject* sftp
     return *xsink ? nullptr : priv->getTransferInfo(xsink);
 }
 
-DLLLOCAL int ssh_sftp_session_set_logger(const QoreObject* sftp_obj, QoreObject* logger, ExceptionSink* xsink) {
+DLLLOCAL int ssh_sftp_session_set_logger(const QoreObject* sftp_obj, const QoreObject* logger, ExceptionSink* xsink) {
     if (!sftp_obj) {
         xsink->raiseException("SFTPSESSION-STATE-ERROR", "cannot set logger on a null SFTP session object");
         return -1;

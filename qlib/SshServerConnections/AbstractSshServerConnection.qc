@@ -1,14 +1,17 @@
 public namespace SshServerConnections {
+#! Operational limits for an SSH server connection listener
 public hashdecl SshServerConnectionLimits {
     *int max_sessions;
 }
 
+#! Authentication and service controls for an SSH server connection listener
 public hashdecl SshServerConnectionServices {
     *list<string> enabled_auth_methods;
     *bool allow_command_service;
     *bool allow_sftp_service;
 }
 
+#! Security options for ciphers, key exchange, MACs, host-key algorithms, and IP address filtering
 public hashdecl SshServerConnectionSecurity {
     *string allowed_ciphers;
     *string allowed_kex;

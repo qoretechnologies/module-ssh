@@ -33,6 +33,12 @@ set(CPP_SRC
 set(QORE_DOX_TMPL_SRC
   docs/mainpage.doxygen.tmpl
   docs/binary-typed-symbols.doxygen.tmpl
+  docs/getting-started.doxygen.tmpl
+  docs/authentication.doxygen.tmpl
+  docs/sftp-backends.doxygen.tmpl
+  docs/cookbook.doxygen.tmpl
+  docs/typed-contracts.doxygen.tmpl
+  docs/release-notes.doxygen.tmpl
 )
 
 qore_wrap_qpp_value(QPP_SOURCES METALIST QPP_META_SRC ${QPP_SRC})

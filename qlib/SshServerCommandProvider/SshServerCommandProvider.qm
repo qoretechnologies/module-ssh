@@ -60,6 +60,52 @@ module SshServerCommandProvider {
       @ref Qore::Ssh::SshCommandRequest "Qore::Ssh::SshCommandRequest" and
       @ref Qore::Ssh::SshCommandResult "Qore::Ssh::SshCommandResult"
     - do not introduce a command-side @c DataProvider abstraction
+
+    @subsection sshservercommandproviderservice VirtualSshCommandService Overview
+
+    @ref SshServerCommandProvider::VirtualSshCommandService is constructed with an
+    optional @ref SshServerCommandProvider::VirtualSshCommandServiceOptions hash that
+    carries typed @c policy, @c audit, @c limits, @c default_result, and @c logger
+    fields.  Once created, static text or binary responses are registered with
+    @c addTextCommand() or @c addCommand(), and dynamic handlers with @c addHandler();
+    subsystems follow the same pattern via @c addTextSubsystem(), @c addSubsystem(), and
+    @c addSubsystemHandler().  The service instance is then attached to a
+    @ref SshServerConnections::SshCommandServerConnection through its @c command_backend
+    option so that every incoming exec or subsystem request is dispatched through the
+    virtual command namespace.
+
+    @subsection sshservercommandproviderpolicy Policy, Audit, and Limits
+
+    - @ref SshServerCommandProvider::VirtualSshCommandPolicy -- global exact-name
+      allow/deny lists for commands (@c allowed_commands, @c denied_commands) and
+      subsystems (@c allowed_subsystems, @c denied_subsystems), plus blanket
+      @c allow_all_commands and @c allow_all_subsystems flags
+    - @ref SshServerCommandProvider::VirtualSshCommandPrincipalPolicy -- inherits
+      @ref SshServerCommandProvider::VirtualSshCommandPolicy and adds a per-principal
+      @c default_result override, set at runtime with @c setPrincipalPolicy()
+    - @ref SshServerCommandProvider::VirtualSshCommandAuditOptions -- controls bounded
+      request capture via @c request_history_limit, with optional environment, argument,
+      and identity redaction (@c capture_environment, @c capture_arguments,
+      @c capture_identity) and @c captured_string_limit truncation
+    - @ref SshServerCommandProvider::VirtualSshCommandLimits -- global
+      @c max_concurrent_requests and per-principal @c max_concurrent_requests_per_principal
+      concurrency caps
+
+    @subsection sshservercommandproviderexample Minimal Example
+
+    @code{.py}
+    VirtualSshCommandService service(<VirtualSshCommandServiceOptions>{
+        "policy": <VirtualSshCommandPolicy>{"allow_all_commands": True},
+        "limits": <VirtualSshCommandLimits>{"max_concurrent_requests": 10},
+    });
+    service.addTextCommand("status", "ok\n");
+    service.addHandler("echo", string sub (hash<Qore::Ssh::SshCommandRequest> req) {
+        return <Qore::Ssh::SshCommandResult>{"accepted": True, "stdout": req.arguments[0]};
+    });
+    @endcode
+
+    See @ref sshcommandcookbook "Virtual Command Server Cookbook" for complete examples
+    and @ref sshcookbook "Typed Helper Cookbook" for the full cookbook.
 */
 
 public namespace SshServerCommandProvider {
@@ -68,7 +114,7 @@ public namespace SshServerCommandProvider {
     public const CommandRejectMaxConcurrentRequests = "command-concurrency-above-maximum";
     public const CommandRejectMaxConcurrentRequestsPerPrincipal = "principal-command-concurrency-above-maximum";
 
-    /** Generic exact-name command and subsystem policy. */
+    #! Generic exact-name allow/deny policy for commands and subsystems
     public hashdecl VirtualSshCommandPolicy {
         *bool allow_all_commands;
         *bool allow_all_subsystems;
@@ -78,12 +124,12 @@ public namespace SshServerCommandProvider {
         *list<string> denied_subsystems;
     }
 
-    /** Principal-specific command policy override. */
+    #! Principal-specific command policy override with an optional default result
     public hashdecl VirtualSshCommandPrincipalPolicy inherits VirtualSshCommandPolicy {
         *hash<Qore::Ssh::SshCommandResult> default_result;
     }
 
-    /** Optional audit-capture controls for retained request history. */
+    #! Audit-capture controls for retained request history and value redaction
     public hashdecl VirtualSshCommandAuditOptions {
         *int request_history_limit;
         *bool capture_environment;
@@ -92,13 +138,13 @@ public namespace SshServerCommandProvider {
         *int captured_string_limit;
     }
 
-    /** Optional concurrency caps for active virtual command dispatch. */
+    #! Concurrency caps for active virtual command dispatch
     public hashdecl VirtualSshCommandLimits {
         *int max_concurrent_requests;
         *int max_concurrent_requests_per_principal;
     }
 
-    /** Constructor options for @ref SshServerCommandProvider::VirtualSshCommandService. */
+    #! Constructor options for @ref SshServerCommandProvider::VirtualSshCommandService
     public hashdecl VirtualSshCommandServiceOptions {
         *hash<VirtualSshCommandPolicy> policy;
         *hash<VirtualSshCommandAuditOptions> audit;

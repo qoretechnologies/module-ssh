@@ -51,22 +51,78 @@ module SshServerAuthProvider {
     - @ref SshServerAuthProvider::VirtualSshAuthProvider for built-in
       config-driven authentication
 
-    The built-in provider supports:
-    - @c none
-    - @c password
-    - @c publickey
-    - @c interactive
-    - @c hostbased
-    - @c gssapi-mic
+    @subsection sshauthproviderauthflow Authentication Flow
 
-    Connection helpers can synthesize
+    When a client attempts to authenticate, the SSH listener first filters the
+    request against its @c enabled_auth_methods list; only methods present in
+    that list are forwarded to the auth provider.  The provider's
+    @ref SshServerAuthProvider::AbstractSshAuthProvider::authenticate()
+    "authenticate(hash<SshAuthContextInfo>)" method is then called with a typed
+    context describing the attempt (username, method, credentials, and session
+    metadata).  The provider evaluates the request and returns a
+    @ref Qore::Ssh::SshAuthDecision "hash<SshAuthDecision>" indicating
+    acceptance or rejection, along with optional session policy (command and
+    SFTP restrictions) and audit data.  On success the decision's policy fields
+    are attached to the session for the lifetime of the connection.
+
+    @subsection sshauthprovidermethods Supported Authentication Methods
+
+    The built-in @ref SshServerAuthProvider::VirtualSshAuthProvider supports
+    the following SSH authentication methods:
+    - @c none -- unconditional accept (useful for anonymous access with
+      restricted session policies)
+    - @c password -- static credential matching via
+      @ref SshServerAuthProvider::VirtualSshPasswordAuthOptions "VirtualSshPasswordAuthOptions"
+    - @c publickey -- authorized-key matching via
+      @ref SshServerAuthProvider::VirtualSshPublicKeyAuthOptions "VirtualSshPublicKeyAuthOptions"
+    - @c interactive -- keyboard-interactive challenge-response
+    - @c hostbased -- host-based authentication
+    - @c gssapi-mic -- GSS-API authentication with MIC
+
+    Each method can be configured with username allow/deny lists, per-method
+    decision templates, and optional custom @c validator callbacks for
+    application-specific logic.
+
+    @subsection sshauthprovidermfa Multi-Factor Authentication
+
+    Multi-factor authentication is configured by setting the
+    @ref SshServerAuthProvider::VirtualSshAuthProviderOptions "required_methods"
+    field in @ref SshServerAuthProvider::VirtualSshAuthProviderOptions to an
+    ordered list of methods that must all succeed before full access is granted.
+    When a single method succeeds but other required methods remain, the
+    provider returns a partial decision with @c partial set to @c True and
+    @c allowed_auth_methods listing the remaining methods.  Completed methods
+    are tracked across rounds in @c session_data under the
+    @c SessionDataCompletedMethodsKey key so that each
+    subsequent authentication attempt can build on prior successes.
+
+    @subsection sshauthproviderexample Minimal Configuration Example
+
+    The following example creates a password-only auth provider with a single
+    user:
+
+    @code
+    VirtualSshAuthProvider provider(<VirtualSshAuthProviderOptions>{
+        "methods": ("password",),
+        "password": <VirtualSshPasswordAuthOptions>{
+            "users": (<VirtualSshPasswordUserInfo>{"username": "admin", "password": "secret"},),
+        },
+    });
+    @endcode
+
+    Connection helpers can also synthesize
     @ref SshServerAuthProvider::VirtualSshAuthProvider automatically from
     grouped @c auth options, while low-level binary-module server configs can
     attach provider objects directly through
     @ref Qore::Ssh::SshServerConfig "Qore::Ssh::SshServerConfig".
+
+    For the full authentication guide including advanced multi-factor
+    scenarios, custom validators, and session policy configuration, see
+    @ref sshauthguide.
 */
 
 public namespace SshServerAuthProvider {
+    #! typed authentication decision template for config-driven auth providers
     public hashdecl VirtualSshAuthDecisionTemplate {
         *bool partial;
         *string principal;
@@ -78,6 +134,7 @@ public namespace SshServerAuthProvider {
         *hash<auto> audit_data;
     }
 
+    #! common options for static auth methods including username filters, decision templates, and custom validators
     public hashdecl VirtualSshStaticAuthMethodOptions {
         *list<string> allowed_usernames;
         *list<string> denied_usernames;
@@ -86,16 +143,19 @@ public namespace SshServerAuthProvider {
         *code<hash<Qore::Ssh::SshAuthDecision>(hash<Qore::Ssh::SshAuthContextInfo>)> validator;
     }
 
+    #! per-user password credential entry with an optional custom auth decision override
     public hashdecl VirtualSshPasswordUserInfo {
         string username;
         string password;
         *hash<VirtualSshAuthDecisionTemplate> decision;
     }
 
+    #! password auth method options with an optional list of static user credentials
     public hashdecl VirtualSshPasswordAuthOptions inherits VirtualSshStaticAuthMethodOptions {
         *list<hash<VirtualSshPasswordUserInfo>> users;
     }
 
+    #! per-user authorized public key entry with an optional key type filter and custom auth decision override
     public hashdecl VirtualSshAuthorizedKeyInfo {
         string username;
         binary public_key;
@@ -103,10 +163,12 @@ public namespace SshServerAuthProvider {
         *hash<VirtualSshAuthDecisionTemplate> decision;
     }
 
+    #! public-key auth method options with an optional list of authorized keys
     public hashdecl VirtualSshPublicKeyAuthOptions inherits VirtualSshStaticAuthMethodOptions {
         *list<hash<VirtualSshAuthorizedKeyInfo>> authorized_keys;
     }
 
+    #! top-level configuration for VirtualSshAuthProvider including per-method options and multi-factor settings
     public hashdecl VirtualSshAuthProviderOptions {
         *list<string> methods;
         #! ordered list of methods that must ALL succeed for multi-factor auth
