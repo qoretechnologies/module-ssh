@@ -458,6 +458,10 @@ hashdecl Qore::Ssh::SftpPathInfo {
     *int size;
     //! optional permission bits
     *int permissions;
+    //! optional access time (Unix epoch seconds)
+    *int atime;
+    //! optional modification time (Unix epoch seconds)
+    *int mtime;
     //! optional backend metadata
     *hash<auto> metadata;
 }

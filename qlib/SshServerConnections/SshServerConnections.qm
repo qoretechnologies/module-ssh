@@ -73,15 +73,9 @@ module SshServerConnections {
 
     The module registers the following connection schemes on load:
 
-    <table>
-    <tr><th>Scheme</th><th>Alias</th><th>Connection Class</th><th>Description</th></tr>
-    <tr><td><tt>sshsrv</tt></td><td><tt>sshserver</tt></td>
-        <td>@ref SshServerConnections::SshCommandServerConnection</td>
-        <td>Managed local SSH command server</td></tr>
-    <tr><td><tt>sftpsrv</tt></td><td><tt>sftpserver</tt></td>
-        <td>@ref SshServerConnections::SftpServerConnection</td>
-        <td>Managed local SFTP server with optional DataProvider bridging</td></tr>
-    </table>
+    |!Scheme|!Alias|!Connection Class|!Description
+    |<tt>sshsrv</tt>|<tt>sshserver</tt>|@ref SshServerConnections::SshCommandServerConnection|Managed local SSH command server
+    |<tt>sftpsrv</tt>|<tt>sftpserver</tt>|@ref SshServerConnections::SftpServerConnection|Managed local SFTP server with optional DataProvider bridging
 
     @section sshserverconnectionsoptions Typed Option Groups
 

@@ -190,7 +190,7 @@ class SftpServerDataProviderDataProviderTest inherits QUnit::Test {
             "data": binary("expired\n"),
         });
 
-        hash<auto> stat = store.getExchange().stat({"path": "/inbound/tenant/old.dat"});
+        hash<auto> stat = store.getExchange().stat(<Qore::Ssh::SftpPathRequest>{"path": "/inbound/tenant/old.dat"});
         hash<auto> cleanup_result = provider.getChildProviderEx("cleanup-expired").doRequest({
             "queue": SftpServerDataProvider::RetentionQueueInbound,
             "now_s": stat.metadata.expires_at,
@@ -249,7 +249,7 @@ class SftpServerDataProviderDataProviderTest inherits QUnit::Test {
                 "read_only": False,
             },
         });
-        hash<auto> alpha_stat = store.getExchange().stat({"path": "/inbound/tenant/alpha.dat"});
+        hash<auto> alpha_stat = store.getExchange().stat(<Qore::Ssh::SftpPathRequest>{"path": "/inbound/tenant/alpha.dat"});
         hash<auto> alpha_cleanup = provider.getChildProviderEx("cleanup-expired").doRequest({
             "queue": SftpServerDataProvider::RetentionQueueInbound,
             "now_s": alpha_stat.metadata.expires_at,

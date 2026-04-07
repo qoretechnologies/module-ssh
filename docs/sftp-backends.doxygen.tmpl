@@ -23,31 +23,27 @@
 
     <b>Required Methods</b>
 
-    <table>
-    <tr><th>Method</th><th>Request Type</th><th>Result Type</th><th>Purpose</th></tr>
-    <tr><td>\c stat()</td><td>@ref Qore::Ssh::SftpPathRequest "SftpPathRequest"</td><td>@ref Qore::Ssh::SftpPathInfo "SftpPathInfo"</td><td>Return file or directory metadata for a path</td></tr>
-    <tr><td>\c list()</td><td>@ref Qore::Ssh::SftpPathRequest "SftpPathRequest"</td><td>@ref Qore::Ssh::SftpListResult "SftpListResult"</td><td>Return directory listing entries</td></tr>
-    </table>
+    |!Method|!Request Type|!Result Type|!Purpose
+    |\c stat()|@ref Qore::Ssh::SftpPathRequest "SftpPathRequest"|@ref Qore::Ssh::SftpPathInfo "SftpPathInfo"|Return file or directory metadata for a path
+    |\c list()|@ref Qore::Ssh::SftpPathRequest "SftpPathRequest"|@ref Qore::Ssh::SftpListResult "SftpListResult"|Return directory listing entries
 
     <b>Optional Methods</b>
 
-    <table>
-    <tr><th>Method</th><th>Request Type</th><th>Purpose</th></tr>
-    <tr><td>\c openRead()</td><td>@ref Qore::Ssh::SftpOpenRequest "SftpOpenRequest"</td><td>Open a file for reading</td></tr>
-    <tr><td>\c read()</td><td>@ref Qore::Ssh::SftpReadRequest "SftpReadRequest"</td><td>Streamed read chunk</td></tr>
-    <tr><td>\c closeRead()</td><td>@ref Qore::Ssh::SftpCloseRequest "SftpCloseRequest"</td><td>Finalize a streamed read</td></tr>
-    <tr><td>\c openWrite()</td><td>@ref Qore::Ssh::SftpOpenRequest "SftpOpenRequest"</td><td>Open a file for writing</td></tr>
-    <tr><td>\c write()</td><td>@ref Qore::Ssh::SftpWriteRequest "SftpWriteRequest"</td><td>Streamed write chunk</td></tr>
-    <tr><td>\c closeWrite()</td><td>@ref Qore::Ssh::SftpCloseRequest "SftpCloseRequest"</td><td>Finalize a write</td></tr>
-    <tr><td>\c removePath()</td><td>@ref Qore::Ssh::SftpPathRequest "SftpPathRequest"</td><td>Remove a file or symlink</td></tr>
-    <tr><td>\c rename()</td><td>@ref Qore::Ssh::SftpRenameRequest "SftpRenameRequest"</td><td>Rename or move a path</td></tr>
-    <tr><td>\c mkdir()</td><td>@ref Qore::Ssh::SftpPathRequest "SftpPathRequest"</td><td>Create a directory</td></tr>
-    <tr><td>\c rmdir()</td><td>@ref Qore::Ssh::SftpPathRequest "SftpPathRequest"</td><td>Remove a directory</td></tr>
-    <tr><td>\c symlink()</td><td>@ref Qore::Ssh::SftpSymlinkRequest "SftpSymlinkRequest"</td><td>Create a symbolic link</td></tr>
-    <tr><td>\c readlink()</td><td>@ref Qore::Ssh::SftpPathRequest "SftpPathRequest"</td><td>Read a symbolic link target</td></tr>
-    <tr><td>\c setstat()</td><td>@ref Qore::Ssh::SftpSetstatRequest "SftpSetstatRequest"</td><td>Set file attributes</td></tr>
-    <tr><td>\c statvfs()</td><td>@ref Qore::Ssh::SftpPathRequest "SftpPathRequest"</td><td>Filesystem statistics (\c statvfs\@openssh.com)</td></tr>
-    </table>
+    |!Method|!Request Type|!Purpose
+    |\c openRead()|@ref Qore::Ssh::SftpOpenRequest "SftpOpenRequest"|Open a file for reading
+    |\c read()|@ref Qore::Ssh::SftpReadRequest "SftpReadRequest"|Streamed read chunk
+    |\c closeRead()|@ref Qore::Ssh::SftpCloseRequest "SftpCloseRequest"|Finalize a streamed read
+    |\c openWrite()|@ref Qore::Ssh::SftpOpenRequest "SftpOpenRequest"|Open a file for writing
+    |\c write()|@ref Qore::Ssh::SftpWriteRequest "SftpWriteRequest"|Streamed write chunk
+    |\c closeWrite()|@ref Qore::Ssh::SftpCloseRequest "SftpCloseRequest"|Finalize a write
+    |\c removePath()|@ref Qore::Ssh::SftpPathRequest "SftpPathRequest"|Remove a file or symlink
+    |\c rename()|@ref Qore::Ssh::SftpRenameRequest "SftpRenameRequest"|Rename or move a path
+    |\c mkdir()|@ref Qore::Ssh::SftpPathRequest "SftpPathRequest"|Create a directory
+    |\c rmdir()|@ref Qore::Ssh::SftpPathRequest "SftpPathRequest"|Remove a directory
+    |\c symlink()|@ref Qore::Ssh::SftpSymlinkRequest "SftpSymlinkRequest"|Create a symbolic link
+    |\c readlink()|@ref Qore::Ssh::SftpPathRequest "SftpPathRequest"|Read a symbolic link target
+    |\c setstat()|@ref Qore::Ssh::SftpSetstatRequest "SftpSetstatRequest"|Set file attributes
+    |\c statvfs()|@ref Qore::Ssh::SftpPathRequest "SftpPathRequest"|Filesystem statistics (\c statvfs\@openssh.com)
 
     @section sshsftpbackendstreaming Streamed vs Buffered Dispatch
 
@@ -148,22 +144,28 @@
 
     @code
     class MyReadOnlyBackend {
-        hash<auto> stat(hash<auto> req) {
-            return {"path": req.path, "exists": True, "directory": req.path == "/",
+        hash<Qore::Ssh::SftpPathInfo> stat(hash<Qore::Ssh::SftpPathRequest> req) {
+            return <Qore::Ssh::SftpPathInfo>{
+                "path": req.path, "exists": True, "directory": req.path == "/",
                 "size": 1024, "permissions": 0100444,
-                "mtime": now_us().epochSeconds(), "atime": now_us().epochSeconds()};
-        }
-        hash<auto> list(hash<auto> req) {
-            return {"path": req.path, "exists": True, "entries": ({
-                "filename": "data.bin", "directory": False, "size": 1024,
-                "long_name": "-r--r--r-- 1 root root 1024 Jan 01 00:00 data.bin",
-                "permissions": 0100444, "metadata": {},
                 "mtime": now_us().epochSeconds(), "atime": now_us().epochSeconds(),
-            },)};
+            };
         }
-        hash<auto> openRead(hash<auto> req) {
-            return {"path": req.path, "exists": True,
-                "data": binary("file content"), "size": 12, "permissions": 0100444};
+        hash<Qore::Ssh::SftpListResult> list(hash<Qore::Ssh::SftpPathRequest> req) {
+            return <Qore::Ssh::SftpListResult>{
+                "path": req.path, "entries": ({
+                    "filename": "data.bin", "directory": False, "size": 1024,
+                    "long_name": "-r--r--r-- 1 root root 1024 Jan 01 00:00 data.bin",
+                    "permissions": 0100444,
+                    "mtime": now_us().epochSeconds(), "atime": now_us().epochSeconds(),
+                },),
+            };
+        }
+        hash<Qore::Ssh::SftpOpenResult> openRead(hash<Qore::Ssh::SftpOpenRequest> req) {
+            return <Qore::Ssh::SftpOpenResult>{
+                "path": req.path, "exists": True,
+                "data": binary("file content"), "size": 12, "permissions": 0100444,
+            };
         }
     }
     session.setBackend(new MyReadOnlyBackend());

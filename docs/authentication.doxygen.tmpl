@@ -28,14 +28,13 @@
     The module recognises six method names that correspond to standard SSH
     authentication types:
 
-    | Method        | Description                                    |
-    |---------------|------------------------------------------------|
-    | @c none       | No credentials required                        |
-    | @c password   | Username and password                          |
-    | @c publickey  | Public-key signature verification              |
-    | @c interactive| Keyboard-interactive challenge-response        |
-    | @c hostbased  | Host-based authentication                      |
-    | @c gssapi-mic | GSSAPI with MIC (Kerberos)                     |
+    |!Method|!Description
+    |@c none|No credentials required
+    |@c password|Username and password
+    |@c publickey|Public-key signature verification
+    |@c interactive|Keyboard-interactive challenge-response
+    |@c hostbased|Host-based authentication
+    |@c gssapi-mic|GSSAPI with MIC (Kerberos)
 
     Only methods listed in
     @ref Qore::Ssh::SshListenerConfig "SshListenerConfig.enabled_auth_methods"
@@ -172,11 +171,10 @@ class MyAuthProvider inherits AbstractSshAuthProvider {
     or @ref Qore::Ssh::SshServerConfig "SshServerConfig.logger"), the
     provider emits messages at three levels:
 
-    | Level    | What is logged                                          |
-    |----------|---------------------------------------------------------|
-    | @c detail| Every auth attempt: method name and username             |
-    | @c info  | Accepted authentications: method, username, principal, partial flag |
-    | @c warn  | Rejected authentications: method, username, rejection reason |
+    |!Level|!What is logged
+    |@c detail|Every auth attempt: method name and username
+    |@c info|Accepted authentications: method, username, principal, partial flag
+    |@c warn|Rejected authentications: method, username, rejection reason
 
     The server-level @c authenticateSession() method additionally logs
     public-key probe acceptances and final accept/reject outcomes at the

@@ -152,37 +152,37 @@ class SftpServerDataProviderTest inherits QUnit::Test {
         vfs.addDirectory("/inbound");
         vfs.addTextFile("/outbound/report.txt", "payload\n", {"kind": "report"});
 
-        hash<auto> root_listing = vfs.list({"path": "/"});
-        assertTrue(root_listing.exists);
+        hash<Qore::Ssh::SftpListResult> root_listing = vfs.list(<Qore::Ssh::SftpPathRequest>{"path": "/"});
+        assertTrue(root_listing.entries.size() > 0);
         assertEq(3, root_listing.entries.size());
 
-        hash<auto> stat = vfs.stat({"path": "/outbound/report.txt"});
+        hash<auto> stat = vfs.stat(<Qore::Ssh::SftpPathRequest>{"path": "/outbound/report.txt"});
         assertTrue(stat.exists);
         assertFalse(stat.directory);
         assertEq(8, stat.size);
         assertEq("payload\n", vfs.getFileText("/outbound/report.txt"));
 
-        hash<auto> read_result = vfs.openRead({"path": "/outbound/report.txt"});
+        hash<auto> read_result = vfs.openRead(<Qore::Ssh::SftpOpenRequest>{"path": "/outbound/report.txt"});
         assertEq(binary("payload\n"), read_result.data);
     }
 
     testVirtualFilesystemMutations() {
         SftpServerDataProvider::VirtualSftpFilesystem vfs();
-        vfs.mkdir({"path": "/incoming"});
+        vfs.mkdir(<Qore::Ssh::SftpPathRequest>{"path": "/incoming"});
         vfs.addTextFile("/incoming/a.txt", "a\n");
 
-        hash<auto> rename_result = vfs.rename({
+        hash<auto> rename_result = vfs.rename(<Qore::Ssh::SftpRenameRequest>{
             "path": "/incoming/a.txt",
             "target_path": "/incoming/b.txt",
         });
         assertTrue(rename_result.completed);
         assertEq("a\n", vfs.getFileText("/incoming/b.txt"));
 
-        hash<auto> remove_result = vfs.removePath({"path": "/incoming/b.txt"});
+        hash<auto> remove_result = vfs.removePath(<Qore::Ssh::SftpPathRequest>{"path": "/incoming/b.txt"});
         assertTrue(remove_result.completed);
         assertFalse(vfs.exists("/incoming/b.txt"));
 
-        hash<auto> rmdir_result = vfs.rmdir({"path": "/incoming"});
+        hash<auto> rmdir_result = vfs.rmdir(<Qore::Ssh::SftpPathRequest>{"path": "/incoming"});
         assertTrue(rmdir_result.completed);
         assertFalse(vfs.exists("/incoming"));
     }
@@ -196,31 +196,31 @@ class SftpServerDataProviderTest inherits QUnit::Test {
         assertTrue(vfs.exists("/data/link.txt"));
 
         # stat returns symlink info
-        hash<auto> stat_result = vfs.stat({"path": "/data/link.txt"});
+        hash<auto> stat_result = vfs.stat(<Qore::Ssh::SftpPathRequest>{"path": "/data/link.txt"});
         assertTrue(stat_result.exists);
         assertTrue(stat_result.symlink);
         assertEq("/data/target.txt", stat_result.target_path);
         assertFalse(stat_result.directory);
 
         # readlink returns target path
-        hash<auto> readlink_result = vfs.readlink({"path": "/data/link.txt"});
+        hash<auto> readlink_result = vfs.readlink(<Qore::Ssh::SftpPathRequest>{"path": "/data/link.txt"});
         assertTrue(readlink_result.exists);
         assertEq("/data/target.txt", readlink_result.target_path);
 
         # readlink on non-existent path
-        hash<auto> missing = vfs.readlink({"path": "/data/missing.txt"});
+        hash<auto> missing = vfs.readlink(<Qore::Ssh::SftpPathRequest>{"path": "/data/missing.txt"});
         assertFalse(missing.exists);
 
         # symlink via backend verb
-        hash<auto> symlink_result = vfs.symlink({
+        hash<auto> symlink_result = vfs.symlink(<Qore::Ssh::SftpSymlinkRequest>{
             "link_path": "/data/link2.txt",
             "target_path": "/data/target.txt",
         });
         assertTrue(symlink_result.completed);
 
         # list includes symlinks
-        hash<auto> listing = vfs.list({"path": "/data"});
-        assertTrue(listing.exists);
+        hash<Qore::Ssh::SftpListResult> listing = vfs.list(<Qore::Ssh::SftpPathRequest>{"path": "/data"});
+        assertTrue(listing.entries.size() > 0);
         int symlink_count = 0;
         foreach hash<auto> entry in (listing.entries) {
             if (entry.symlink) {
@@ -230,24 +230,24 @@ class SftpServerDataProviderTest inherits QUnit::Test {
         assertEq(2, symlink_count);
 
         # rename a symlink
-        hash<auto> rename_result = vfs.rename({
+        hash<auto> rename_result = vfs.rename(<Qore::Ssh::SftpRenameRequest>{
             "path": "/data/link.txt",
             "target_path": "/data/renamed_link.txt",
         });
         assertTrue(rename_result.completed);
         assertFalse(vfs.exists("/data/link.txt"));
         assertTrue(vfs.exists("/data/renamed_link.txt"));
-        hash<auto> renamed_readlink = vfs.readlink({"path": "/data/renamed_link.txt"});
+        hash<auto> renamed_readlink = vfs.readlink(<Qore::Ssh::SftpPathRequest>{"path": "/data/renamed_link.txt"});
         assertEq("/data/target.txt", renamed_readlink.target_path);
 
         # remove a symlink
-        hash<auto> remove_result = vfs.removePath({"path": "/data/renamed_link.txt"});
+        hash<auto> remove_result = vfs.removePath(<Qore::Ssh::SftpPathRequest>{"path": "/data/renamed_link.txt"});
         assertTrue(remove_result.completed);
         assertFalse(vfs.exists("/data/renamed_link.txt"));
 
         # symlink on existing path throws
         assertThrows("VIRTUAL-SFTP-FS-ERROR", sub() {
-            vfs.symlink({
+            vfs.symlink(<Qore::Ssh::SftpSymlinkRequest>{
                 "link_path": "/data/target.txt",
                 "target_path": "/data/link2.txt",
             });
@@ -255,16 +255,16 @@ class SftpServerDataProviderTest inherits QUnit::Test {
 
         # directory rename moves child symlinks
         vfs.addSymlink("/data/child_link.txt", "/data/target.txt");
-        vfs.rename({"path": "/data", "target_path": "/moved"});
+        vfs.rename(<Qore::Ssh::SftpRenameRequest>{"path": "/data", "target_path": "/moved"});
         assertTrue(vfs.exists("/moved/child_link.txt"));
-        hash<auto> moved_readlink = vfs.readlink({"path": "/moved/child_link.txt"});
+        hash<auto> moved_readlink = vfs.readlink(<Qore::Ssh::SftpPathRequest>{"path": "/moved/child_link.txt"});
         assertTrue(moved_readlink.exists);
 
         # symlink prevents directory from being considered empty
-        vfs.mkdir({"path": "/dir_with_link"});
+        vfs.mkdir(<Qore::Ssh::SftpPathRequest>{"path": "/dir_with_link"});
         vfs.addSymlink("/dir_with_link/link", "/moved/target.txt");
         assertThrows("VIRTUAL-SFTP-FS-ERROR", sub() {
-            vfs.rmdir({"path": "/dir_with_link"});
+            vfs.rmdir(<Qore::Ssh::SftpPathRequest>{"path": "/dir_with_link"});
         });
     }
 
@@ -274,7 +274,7 @@ class SftpServerDataProviderTest inherits QUnit::Test {
         vfs.addDirectory("/data/subdir");
 
         # setstat on a file: update permissions and mtime
-        hash<auto> result = vfs.setstat({
+        hash<auto> result = vfs.setstat(<Qore::Ssh::SftpSetstatRequest>{
             "path": "/data/test.txt",
             "permissions": 0100755,
             "mtime": 1000000,
@@ -284,34 +284,34 @@ class SftpServerDataProviderTest inherits QUnit::Test {
         assertTrue(result.exists);
         assertTrue(result.completed);
 
-        hash<auto> stat_result = vfs.stat({"path": "/data/test.txt"});
+        hash<auto> stat_result = vfs.stat(<Qore::Ssh::SftpPathRequest>{"path": "/data/test.txt"});
         assertEq(0100755, stat_result.permissions);
         assertEq(1000000, stat_result.mtime);
         assertEq(2000000, stat_result.atime);
 
         # setstat on a directory: update permissions
-        hash<auto> dir_result = vfs.setstat({
+        hash<auto> dir_result = vfs.setstat(<Qore::Ssh::SftpSetstatRequest>{
             "path": "/data/subdir",
             "permissions": 0040700,
             "attr_flags": 0x04,
         });
         assertTrue(dir_result.completed);
-        hash<auto> dir_stat = vfs.stat({"path": "/data/subdir"});
+        hash<auto> dir_stat = vfs.stat(<Qore::Ssh::SftpPathRequest>{"path": "/data/subdir"});
         assertEq(0040700, dir_stat.permissions);
 
         # setstat on a symlink
         vfs.addSymlink("/data/link.txt", "/data/test.txt");
-        hash<auto> link_result = vfs.setstat({
+        hash<auto> link_result = vfs.setstat(<Qore::Ssh::SftpSetstatRequest>{
             "path": "/data/link.txt",
             "mtime": 3000000,
             "attr_flags": 0x08,
         });
         assertTrue(link_result.completed);
-        hash<auto> link_stat = vfs.stat({"path": "/data/link.txt"});
+        hash<auto> link_stat = vfs.stat(<Qore::Ssh::SftpPathRequest>{"path": "/data/link.txt"});
         assertEq(3000000, link_stat.mtime);
 
         # setstat on non-existent path
-        hash<auto> missing = vfs.setstat({"path": "/data/missing.txt", "attr_flags": 0});
+        hash<auto> missing = vfs.setstat(<Qore::Ssh::SftpSetstatRequest>{"path": "/data/missing.txt", "attr_flags": 0});
         assertFalse(missing.exists);
     }
 
@@ -321,7 +321,7 @@ class SftpServerDataProviderTest inherits QUnit::Test {
         vfs.addTextFile("/data/file2.txt", "world\n");
         vfs.addDirectory("/data/subdir");
 
-        hash<auto> result = vfs.statvfs({"path": "/"});
+        hash<auto> result = vfs.statvfs(<Qore::Ssh::SftpPathRequest>{"path": "/"});
         assertEq(4096, result.f_bsize);
         assertEq(4096, result.f_frsize);
         assertEq(255, result.f_namemax);
@@ -354,7 +354,7 @@ class SftpServerDataProviderTest inherits QUnit::Test {
             vfs.addDirectory("/data/subdir");
             # write-through should have persisted after closeWrite (via addTextFile → makeFileEntry path)
             # but addFile uses direct assignment not closeWrite, so let's use the backend verb
-            vfs.closeWrite({"path": "/data/file2.txt", "data": binary("content-2\n")});
+            vfs.closeWrite(<Qore::Ssh::SftpCloseRequest>{"path": "/data/file2.txt", "data": binary("content-2\n")});
         }
 
         # Create a new filesystem that restores from the persisted snapshot
@@ -474,7 +474,7 @@ class SftpServerDataProviderTest inherits QUnit::Test {
     testVirtualFilesystemRejectsEscapingPaths() {
         SftpServerDataProvider::VirtualSftpFilesystem vfs();
         assertThrows("VIRTUAL-SFTP-FS-ERROR", sub() { vfs.addTextFile("/../../bad.txt", "bad"); });
-        assertThrows("VIRTUAL-SFTP-FS-ERROR", sub() { vfs.stat({"path": "relative.txt"}); });
+        assertThrows("VIRTUAL-SFTP-FS-ERROR", sub() { vfs.stat(<Qore::Ssh::SftpPathRequest>{"path": "relative.txt"}); });
     }
 
     testVirtualFilesystemLogger() {
@@ -484,8 +484,8 @@ class SftpServerDataProviderTest inherits QUnit::Test {
         });
         assertEq(logger, vfs.getLogger());
         vfs.addTextFile("/logged.txt", "log me\n");
-        vfs.rename({"path": "/logged.txt", "target_path": "/renamed.txt"});
-        vfs.removePath({"path": "/renamed.txt"});
+        vfs.rename(<Qore::Ssh::SftpRenameRequest>{"path": "/logged.txt", "target_path": "/renamed.txt"});
+        vfs.removePath(<Qore::Ssh::SftpPathRequest>{"path": "/renamed.txt"});
         assertTrue(logger.events.size() >= 3);
         for (int i = 0; i < logger.events.size(); ++i) {
             assertEq("detail", logger.events[i].level);
@@ -506,7 +506,7 @@ class SftpServerDataProviderTest inherits QUnit::Test {
         assertEq("typed", file_snapshot.metadata.kind);
         assertEq(NOTHING, file_snapshot.state);
 
-        list<hash<SftpServerDataProvider::VirtualSftpEntryInfo>> listing = vfs.list({"path": "/typed"}).entries;
+        list<hash<auto>> listing = vfs.list(<Qore::Ssh::SftpPathRequest>{"path": "/typed"}).entries;
         assertEq(1, listing.size());
         assertEq("file.txt", listing[0].filename);
         assertFalse(listing[0].directory);
@@ -1049,7 +1049,7 @@ class SftpServerDataProviderTest inherits QUnit::Test {
         assertEq(("/inbound/shared/alpha.dat",), alpha_cleanup.removed_paths);
         assertFalse(exchange.getFilesystem().exists("/inbound/shared/alpha.dat"));
         assertTrue(exchange.getFilesystem().exists("/inbound/shared/beta.dat"));
-        assertEq("principal:beta", exchange.stat({"path": "/inbound/shared/beta.dat"}).metadata.retention_principal);
+        assertEq("principal:beta", exchange.stat(<Qore::Ssh::SftpPathRequest>{"path": "/inbound/shared/beta.dat"}).metadata.retention_principal);
     }
 
     testVirtualExchangeRejectsDuplicateInboundBasenames() {
@@ -1601,29 +1601,29 @@ class SftpServerDataProviderTest inherits QUnit::Test {
         exchange.addOutboundText("target.txt", "content\n");
 
         # symlink passthrough
-        hash<auto> sym_result = exchange.symlink({
+        hash<auto> sym_result = exchange.symlink(<Qore::Ssh::SftpSymlinkRequest>{
             "link_path": "/outbound/link.txt",
             "target_path": "/outbound/target.txt",
         });
         assertTrue(sym_result.completed);
 
         # readlink passthrough
-        hash<auto> rl_result = exchange.readlink({"path": "/outbound/link.txt"});
+        hash<auto> rl_result = exchange.readlink(<Qore::Ssh::SftpPathRequest>{"path": "/outbound/link.txt"});
         assertTrue(rl_result.exists);
         assertEq("/outbound/target.txt", rl_result.target_path);
 
         # setstat passthrough
-        hash<auto> ss_result = exchange.setstat({
+        hash<auto> ss_result = exchange.setstat(<Qore::Ssh::SftpSetstatRequest>{
             "path": "/outbound/target.txt",
             "permissions": 0100755,
             "attr_flags": 0x04,
         });
         assertTrue(ss_result.completed);
-        hash<auto> stat_result = exchange.stat({"path": "/outbound/target.txt"});
+        hash<auto> stat_result = exchange.stat(<Qore::Ssh::SftpPathRequest>{"path": "/outbound/target.txt"});
         assertEq(0100755, stat_result.permissions);
 
         # statvfs passthrough
-        hash<auto> vfs_result = exchange.statvfs({"path": "/"});
+        hash<auto> vfs_result = exchange.statvfs(<Qore::Ssh::SftpPathRequest>{"path": "/"});
         assertEq(4096, vfs_result.f_bsize);
         assertTrue(vfs_result.f_files > 0);
     }

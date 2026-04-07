@@ -317,7 +317,7 @@ class SshServerConnectionsTest inherits QUnit::Test {
             "name": "tenant/bridge-old.dat",
             "data": binary("cleanup\n"),
         });
-        hash<auto> retained_stat = store.getExchange().stat({"path": "/inbound/tenant/bridge-old.dat"});
+        hash<auto> retained_stat = store.getExchange().stat(<Qore::Ssh::SftpPathRequest>{"path": "/inbound/tenant/bridge-old.dat"});
         hash<auto> cleanup_result = provider.getChildProviderEx("cleanup-expired").doRequest({
             "queue": SftpServerDataProvider::RetentionQueueInbound,
             "now_s": retained_stat.metadata.expires_at,
@@ -372,7 +372,7 @@ class SshServerConnectionsTest inherits QUnit::Test {
                 "read_only": False,
             },
         });
-        hash<auto> alpha_stat = store.getExchange().stat({"path": "/inbound/tenant/bridge-alpha.dat"});
+        hash<auto> alpha_stat = store.getExchange().stat(<Qore::Ssh::SftpPathRequest>{"path": "/inbound/tenant/bridge-alpha.dat"});
         hash<auto> alpha_cleanup = provider.getChildProviderEx("cleanup-expired").doRequest({
             "queue": SftpServerDataProvider::RetentionQueueInbound,
             "now_s": alpha_stat.metadata.expires_at,

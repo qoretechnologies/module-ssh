@@ -186,29 +186,29 @@ public namespace SftpServerDataProvider {
             }
         }
 
-        hash<auto> stat(hash<auto> req) {
+        hash<Qore::Ssh::SftpPathInfo> stat(hash<Qore::Ssh::SftpPathRequest> req) {
             state_lock.lock();
             on_exit state_lock.unlock();
             string path = getRequestPath(req, "stat");
             if (*hash<auto> dir = directories{path}) {
-                return makeDirectoryStat(path, dir);
+                return cast<hash<Qore::Ssh::SftpPathInfo>>(makeDirectoryStat(path, dir));
             }
             if (*hash<auto> file = files{path}) {
-                return makeFileStat(path, file);
+                return cast<hash<Qore::Ssh::SftpPathInfo>>(makeFileStat(path, file));
             }
             if (*hash<auto> link = symlinks{path}) {
-                return makeSymlinkStat(path, link);
+                return cast<hash<Qore::Ssh::SftpPathInfo>>(makeSymlinkStat(path, link));
             }
-            return {"path": path, "exists": False};
+            return <Qore::Ssh::SftpPathInfo>{"path": path, "exists": False};
         }
 
-        hash<auto> list(hash<auto> req) {
+        hash<Qore::Ssh::SftpListResult> list(hash<Qore::Ssh::SftpPathRequest> req) {
             state_lock.lock();
             on_exit state_lock.unlock();
             string path = getRequestPath(req, "list");
             *hash<auto> dir = directories{path};
             if (!dir) {
-                return {"path": path, "exists": False};
+                return <Qore::Ssh::SftpListResult>{"path": path};
             }
 
             list<hash<auto>> entries = ();
@@ -265,48 +265,44 @@ public namespace SftpServerDataProvider {
                 entries += (entry,);
             }
 
-            return {
+            return <Qore::Ssh::SftpListResult>{
                 "path": path,
-                "exists": True,
                 "entries": entries,
             };
         }
 
-        hash<auto> openRead(hash<auto> req) {
+        hash<Qore::Ssh::SftpOpenResult> openRead(hash<Qore::Ssh::SftpOpenRequest> req) {
             state_lock.lock();
             on_exit state_lock.unlock();
             string path = getRequestPath(req, "openRead");
             *hash<auto> file = files{path};
             if (!file) {
-                return {"path": path, "exists": False};
+                return <Qore::Ssh::SftpOpenResult>{"path": path, "exists": False};
             }
             touchEntry(file, False);
-            return {
+            return <Qore::Ssh::SftpOpenResult>{
                 "path": path,
                 "exists": True,
                 "data": file.data,
                 "size": file.data.size(),
                 "permissions": file.permissions,
-                "directory": False,
-                "mtime": file.mtime,
-                "atime": file.atime,
                 "metadata": copyMetadata(file.metadata),
             };
         }
 
-        hash<auto> openWrite(hash<auto> req) {
+        hash<Qore::Ssh::SftpOpenResult> openWrite(hash<Qore::Ssh::SftpOpenRequest> req) {
             state_lock.lock();
             on_exit state_lock.unlock();
             string path = getRequestPath(req, "openWrite");
             ensureParentDirectories(path);
-            return {
+            return <Qore::Ssh::SftpOpenResult>{
                 "path": path,
                 "exists": True,
                 "permissions": default_file_permissions,
             };
         }
 
-        hash<auto> closeWrite(hash<auto> req) {
+        hash<Qore::Ssh::SftpOperationResult> closeWrite(hash<Qore::Ssh::SftpCloseRequest> req) {
             state_lock.lock();
             on_exit state_lock.unlock();
             string path = getRequestPath(req, "closeWrite");
@@ -316,14 +312,14 @@ public namespace SftpServerDataProvider {
             files{path} = makeFileEntry(data, metadata);
             logDetail("virtual file written: %s (%d bytes)", path, data.size());
             persistIfNeeded();
-            return {
+            return <Qore::Ssh::SftpOperationResult>{
                 "path": path,
                 "exists": True,
                 "completed": True,
             };
         }
 
-        hash<auto> removePath(hash<auto> req) {
+        hash<Qore::Ssh::SftpOperationResult> removePath(hash<Qore::Ssh::SftpPathRequest> req) {
             state_lock.lock();
             on_exit state_lock.unlock();
             string path = getRequestPath(req, "removePath");
@@ -331,18 +327,18 @@ public namespace SftpServerDataProvider {
                 delete files{path};
                 logDetail("virtual file removed: %s", path);
                 persistIfNeeded();
-                return {"path": path, "exists": True, "completed": True};
+                return <Qore::Ssh::SftpOperationResult>{"path": path, "exists": True, "completed": True};
             }
             if (symlinks{path}) {
                 delete symlinks{path};
                 logDetail("virtual symlink removed: %s", path);
                 persistIfNeeded();
-                return {"path": path, "exists": True, "completed": True};
+                return <Qore::Ssh::SftpOperationResult>{"path": path, "exists": True, "completed": True};
             }
-            return {"path": path, "exists": False};
+            return <Qore::Ssh::SftpOperationResult>{"path": path, "exists": False};
         }
 
-        hash<auto> rename(hash<auto> req) {
+        hash<Qore::Ssh::SftpOperationResult> rename(hash<Qore::Ssh::SftpRenameRequest> req) {
             state_lock.lock();
             on_exit state_lock.unlock();
             string path = getRequestPath(req, "rename");
@@ -358,7 +354,7 @@ public namespace SftpServerDataProvider {
                 delete symlinks{path};
                 logDetail("virtual symlink renamed: %s -> %s", path, target_path);
                 persistIfNeeded();
-                return {"path": target_path, "exists": True, "completed": True};
+                return <Qore::Ssh::SftpOperationResult>{"path": target_path, "exists": True, "completed": True};
             }
 
             if (*hash<auto> file = files{path}) {
@@ -366,12 +362,12 @@ public namespace SftpServerDataProvider {
                 delete files{path};
                 logDetail("virtual file renamed: %s -> %s", path, target_path);
                 persistIfNeeded();
-                return {"path": target_path, "exists": True, "completed": True};
+                return <Qore::Ssh::SftpOperationResult>{"path": target_path, "exists": True, "completed": True};
             }
 
             *hash<auto> dir = directories{path};
             if (!dir) {
-                return {"path": path, "exists": False};
+                return <Qore::Ssh::SftpOperationResult>{"path": path, "exists": False};
             }
             if (path == "/") {
                 throw "VIRTUAL-SFTP-FS-ERROR", "cannot rename the virtual root directory";
@@ -428,10 +424,10 @@ public namespace SftpServerDataProvider {
 
             logDetail("virtual directory renamed: %s -> %s", path, target_path);
             persistIfNeeded();
-            return {"path": target_path, "exists": True, "completed": True};
+            return <Qore::Ssh::SftpOperationResult>{"path": target_path, "exists": True, "completed": True};
         }
 
-        hash<auto> mkdir(hash<auto> req) {
+        hash<Qore::Ssh::SftpOperationResult> mkdir(hash<Qore::Ssh::SftpPathRequest> req) {
             state_lock.lock();
             on_exit state_lock.unlock();
             string path = getRequestPath(req, "mkdir");
@@ -439,10 +435,10 @@ public namespace SftpServerDataProvider {
             ensureDirectoryExists(path, req.metadata);
             logDetail("virtual directory created: %s", path);
             persistIfNeeded();
-            return {"path": path, "exists": True, "completed": True};
+            return <Qore::Ssh::SftpOperationResult>{"path": path, "exists": True, "completed": True};
         }
 
-        hash<auto> rmdir(hash<auto> req) {
+        hash<Qore::Ssh::SftpOperationResult> rmdir(hash<Qore::Ssh::SftpPathRequest> req) {
             state_lock.lock();
             on_exit state_lock.unlock();
             string path = getRequestPath(req, "rmdir");
@@ -450,7 +446,7 @@ public namespace SftpServerDataProvider {
                 throw "VIRTUAL-SFTP-FS-ERROR", "cannot remove the virtual root directory";
             }
             if (!directories{path}) {
-                return {"path": path, "exists": False};
+                return <Qore::Ssh::SftpOperationResult>{"path": path, "exists": False};
             }
             if (!directoryEmpty(path)) {
                 throw "VIRTUAL-SFTP-FS-ERROR", sprintf("virtual directory %y is not empty", path);
@@ -458,10 +454,10 @@ public namespace SftpServerDataProvider {
             delete directories{path};
             logDetail("virtual directory removed: %s", path);
             persistIfNeeded();
-            return {"path": path, "exists": True, "completed": True};
+            return <Qore::Ssh::SftpOperationResult>{"path": path, "exists": True, "completed": True};
         }
 
-        hash<auto> statvfs(hash<auto> req) {
+        hash<Qore::Ssh::SftpStatvfsResult> statvfs(hash<Qore::Ssh::SftpPathRequest> req) {
             state_lock.lock();
             on_exit state_lock.unlock();
             int file_count = files.size();
@@ -474,7 +470,7 @@ public namespace SftpServerDataProvider {
             int bsize = 4096;
             int total_blocks = (total_bytes + bsize - 1) / bsize + 1024;
             int used_blocks = (total_bytes + bsize - 1) / bsize;
-            return {
+            return <Qore::Ssh::SftpStatvfsResult>{
                 "f_bsize": bsize,
                 "f_frsize": bsize,
                 "f_blocks": total_blocks,
@@ -499,7 +495,7 @@ public namespace SftpServerDataProvider {
             logDetail("virtual symlink added: %s -> %s", normalized, normalized_target);
         }
 
-        hash<auto> symlink(hash<auto> req) {
+        hash<Qore::Ssh::SftpOperationResult> symlink(hash<Qore::Ssh::SftpSymlinkRequest> req) {
             state_lock.lock();
             on_exit state_lock.unlock();
             *string raw_link = req.link_path;
@@ -519,10 +515,10 @@ public namespace SftpServerDataProvider {
             symlinks{link_path} = makeSymlinkEntry(target_path);
             logDetail("virtual symlink created: %s -> %s", link_path, target_path);
             persistIfNeeded();
-            return {"path": link_path, "exists": True, "completed": True};
+            return <Qore::Ssh::SftpOperationResult>{"path": link_path, "exists": True, "completed": True};
         }
 
-        hash<auto> readlink(hash<auto> req) {
+        hash<auto> readlink(hash<Qore::Ssh::SftpPathRequest> req) {
             state_lock.lock();
             on_exit state_lock.unlock();
             string path = getRequestPath(req, "readlink");
@@ -533,7 +529,7 @@ public namespace SftpServerDataProvider {
             return {"path": path, "exists": True, "target_path": link.target_path};
         }
 
-        hash<auto> setstat(hash<auto> req) {
+        hash<Qore::Ssh::SftpOperationResult> setstat(hash<Qore::Ssh::SftpSetstatRequest> req) {
             state_lock.lock();
             on_exit state_lock.unlock();
             string path = getRequestPath(req, "setstat");
@@ -548,7 +544,7 @@ public namespace SftpServerDataProvider {
                 entry = link;
             }
             if (!entry) {
-                return {"path": path, "exists": False};
+                return <Qore::Ssh::SftpOperationResult>{"path": path, "exists": False};
             }
 
             if (exists req.permissions) {
@@ -571,7 +567,7 @@ public namespace SftpServerDataProvider {
             }
 
             logDetail("virtual setstat: %s (flags=%d)", path, req.attr_flags ?? 0);
-            return {"path": path, "exists": True, "completed": True};
+            return <Qore::Ssh::SftpOperationResult>{"path": path, "exists": True, "completed": True};
         }
 
         hash<auto> submit(hash<auto> req) {
@@ -766,68 +762,8 @@ public namespace SftpServerDataProvider {
             };
         }
 
-        hash<Qore::Ssh::SftpPathInfo> stat(hash<Qore::Ssh::SftpPathRequest> req) {
-            hash<auto> result = stat(copyTypedRequest(req));
-            return <Qore::Ssh::SftpPathInfo>{
-                "path": result.path,
-                "exists": result.exists,
-                "directory": result.directory,
-                "size": result.size,
-                "permissions": result.permissions,
-                "metadata": result.metadata,
-            };
-        }
-
-        hash<Qore::Ssh::SftpListResult> list(hash<Qore::Ssh::SftpPathRequest> req) {
-            hash<auto> result = list(copyTypedRequest(req));
-            return <Qore::Ssh::SftpListResult>{
-                "path": result.path,
-                "entries": result.entries ?? (),
-            };
-        }
-
-        hash<Qore::Ssh::SftpOpenResult> openRead(hash<Qore::Ssh::SftpOpenRequest> req) {
-            hash<auto> result = openRead(copyTypedRequest(req));
-            return <Qore::Ssh::SftpOpenResult>{
-                "path": result.path,
-                "exists": result.exists,
-                "data": result.data,
-                "size": result.size,
-                "permissions": result.permissions,
-                "metadata": result.metadata,
-                "transfer_info": result.transfer_info,
-            };
-        }
-
-        hash<Qore::Ssh::SftpOpenResult> openWrite(hash<Qore::Ssh::SftpOpenRequest> req) {
-            hash<auto> result = openWrite(copyTypedRequest(req));
-            return <Qore::Ssh::SftpOpenResult>{
-                "path": result.path,
-                "exists": result.exists,
-                "permissions": result.permissions,
-                "metadata": result.metadata,
-                "transfer_info": result.transfer_info,
-            };
-        }
-
         hash<Qore::Ssh::SftpOperationResult> closeWrite(hash<Qore::Ssh::SftpSubmissionRequest> req) {
-            return cast<hash<Qore::Ssh::SftpOperationResult>>(closeWrite(copyTypedRequest(req)));
-        }
-
-        hash<Qore::Ssh::SftpOperationResult> removePath(hash<Qore::Ssh::SftpPathRequest> req) {
-            return cast<hash<Qore::Ssh::SftpOperationResult>>(removePath(copyTypedRequest(req)));
-        }
-
-        hash<Qore::Ssh::SftpOperationResult> rename(hash<Qore::Ssh::SftpRenameRequest> req) {
-            return cast<hash<Qore::Ssh::SftpOperationResult>>(rename(copyTypedRequest(req)));
-        }
-
-        hash<Qore::Ssh::SftpOperationResult> mkdir(hash<Qore::Ssh::SftpPathRequest> req) {
-            return cast<hash<Qore::Ssh::SftpOperationResult>>(mkdir(copyTypedRequest(req)));
-        }
-
-        hash<Qore::Ssh::SftpOperationResult> rmdir(hash<Qore::Ssh::SftpPathRequest> req) {
-            return cast<hash<Qore::Ssh::SftpOperationResult>>(rmdir(copyTypedRequest(req)));
+            return closeWrite(cast<hash<Qore::Ssh::SftpCloseRequest>>(copyTypedRequest(req)));
         }
 
         private int getUnixTime() {
@@ -1109,7 +1045,6 @@ public namespace SftpServerDataProvider {
                 "size": 0,
                 "mtime": dir.mtime,
                 "atime": dir.atime,
-                "state": getBuiltinState(dir.metadata),
                 "metadata": copyMetadata(dir.metadata),
             };
         }
@@ -1123,7 +1058,6 @@ public namespace SftpServerDataProvider {
                 "size": file.data.size(),
                 "mtime": file.mtime,
                 "atime": file.atime,
-                "state": getBuiltinState(file.metadata),
                 "metadata": copyMetadata(file.metadata),
             };
         }

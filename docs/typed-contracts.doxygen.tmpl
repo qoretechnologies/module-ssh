@@ -14,82 +14,66 @@
 
     <b>Server Configuration</b>
 
-    <table>
-    <tr><th>Symbol</th><th>Description</th></tr>
-    <tr><td>@ref Qore::Ssh::SshServerConfig "SshServerConfig"</td><td>top-level server configuration with listeners, callbacks, and providers</td></tr>
-    <tr><td>@ref Qore::Ssh::SshListenerConfig "SshListenerConfig"</td><td>per-listener bind, auth, security, and keepalive configuration</td></tr>
-    </table>
+    |!Symbol|!Description
+    |@ref Qore::Ssh::SshServerConfig "SshServerConfig"|top-level server configuration with listeners, callbacks, and providers
+    |@ref Qore::Ssh::SshListenerConfig "SshListenerConfig"|per-listener bind, auth, security, and keepalive configuration
 
     <b>Server Status</b>
 
-    <table>
-    <tr><th>Symbol</th><th>Description</th></tr>
-    <tr><td>@ref Qore::Ssh::SshServerStatus "SshServerStatus"</td><td>server runtime status with per-listener detail</td></tr>
-    <tr><td>@ref Qore::Ssh::SshListenerStatus "SshListenerStatus"</td><td>individual listener runtime status</td></tr>
-    <tr><td>@ref Qore::Ssh::SshActiveSessionInfo "SshActiveSessionInfo"</td><td>active session info with byte counters and SFTP operation count</td></tr>
-    </table>
+    |!Symbol|!Description
+    |@ref Qore::Ssh::SshServerStatus "SshServerStatus"|server runtime status with per-listener detail
+    |@ref Qore::Ssh::SshListenerStatus "SshListenerStatus"|individual listener runtime status
+    |@ref Qore::Ssh::SshActiveSessionInfo "SshActiveSessionInfo"|active session info with byte counters and SFTP operation count
 
     <b>Session and Authentication</b>
 
-    <table>
-    <tr><th>Symbol</th><th>Description</th></tr>
-    <tr><td>@ref Qore::Ssh::SshSessionInfo "SshSessionInfo"</td><td>SSH session metadata including identity, address, and policy</td></tr>
-    <tr><td>@ref Qore::Ssh::SshAuthContextInfo "SshAuthContextInfo"</td><td>authentication context with method, credentials, and metadata</td></tr>
-    <tr><td>@ref Qore::Ssh::SshAuthDecision "SshAuthDecision"</td><td>authentication decision with principal, policy, and partial-auth support</td></tr>
-    </table>
+    |!Symbol|!Description
+    |@ref Qore::Ssh::SshSessionInfo "SshSessionInfo"|SSH session metadata including identity, address, and policy
+    |@ref Qore::Ssh::SshAuthContextInfo "SshAuthContextInfo"|authentication context with method, credentials, and metadata
+    |@ref Qore::Ssh::SshAuthDecision "SshAuthDecision"|authentication decision with principal, policy, and partial-auth support
 
     <b>Command Contract</b>
 
-    <table>
-    <tr><th>Symbol</th><th>Description</th></tr>
-    <tr><td>@ref Qore::Ssh::SshCommandRequest "SshCommandRequest"</td><td>command/subsystem request with identity and routing metadata</td></tr>
-    <tr><td>@ref Qore::Ssh::SshCommandResult "SshCommandResult"</td><td>command result with exit status, stdout/stderr, and result data</td></tr>
-    </table>
+    |!Symbol|!Description
+    |@ref Qore::Ssh::SshCommandRequest "SshCommandRequest"|command/subsystem request with identity and routing metadata
+    |@ref Qore::Ssh::SshCommandResult "SshCommandResult"|command result with exit status, stdout/stderr, and result data
 
     <b>SFTP Session</b>
 
-    <table>
-    <tr><th>Symbol</th><th>Description</th></tr>
-    <tr><td>@ref Qore::Ssh::SftpSessionInfo "SftpSessionInfo"</td><td>SFTP session metadata wrapping SSH session info</td></tr>
-    <tr><td>@ref Qore::Ssh::SftpProtocolMessage "SftpProtocolMessage"</td><td>raw SFTP protocol message envelope</td></tr>
-    <tr><td>@ref Qore::Ssh::SftpTransferRequest "SftpTransferRequest"</td><td>file transfer request for publish/retrieve workflows</td></tr>
-    <tr><td>@ref Qore::Ssh::SftpTransferInfo "SftpTransferInfo"</td><td>transfer state tracking for atomic publish workflows</td></tr>
-    <tr><td>@ref Qore::Ssh::SftpTransferDecision "SftpTransferDecision"</td><td>transfer allow/deny decision</td></tr>
-    </table>
+    |!Symbol|!Description
+    |@ref Qore::Ssh::SftpSessionInfo "SftpSessionInfo"|SFTP session metadata wrapping SSH session info
+    |@ref Qore::Ssh::SftpProtocolMessage "SftpProtocolMessage"|raw SFTP protocol message envelope
+    |@ref Qore::Ssh::SftpTransferRequest "SftpTransferRequest"|file transfer request for publish/retrieve workflows
+    |@ref Qore::Ssh::SftpTransferInfo "SftpTransferInfo"|transfer state tracking for atomic publish workflows
+    |@ref Qore::Ssh::SftpTransferDecision "SftpTransferDecision"|transfer allow/deny decision
 
     <b>SFTP Backend: Path and Listing</b>
 
-    <table>
-    <tr><th>Symbol</th><th>Description</th></tr>
-    <tr><td>@ref Qore::Ssh::SftpPathRequest "SftpPathRequest"</td><td>path operation request (stat, rmdir, mkdir, removePath)</td></tr>
-    <tr><td>@ref Qore::Ssh::SftpPathInfo "SftpPathInfo"</td><td>stat result with type, size, permissions, and symlink info</td></tr>
-    <tr><td>@ref Qore::Ssh::SftpListResult "SftpListResult"</td><td>directory listing result</td></tr>
-    </table>
+    |!Symbol|!Description
+    |@ref Qore::Ssh::SftpPathRequest "SftpPathRequest"|path operation request (stat, rmdir, mkdir, removePath)
+    |@ref Qore::Ssh::SftpPathInfo "SftpPathInfo"|stat result with type, size, permissions, and symlink info
+    |@ref Qore::Ssh::SftpListResult "SftpListResult"|directory listing result
 
     <b>SFTP Backend: Handle I/O</b>
 
-    <table>
-    <tr><th>Symbol</th><th>Description</th></tr>
-    <tr><td>@ref Qore::Ssh::SftpOpenRequest "SftpOpenRequest"</td><td>open request for read or write</td></tr>
-    <tr><td>@ref Qore::Ssh::SftpOpenResult "SftpOpenResult"</td><td>open result with optional eager data or backend handle</td></tr>
-    <tr><td>@ref Qore::Ssh::SftpReadRequest "SftpReadRequest"</td><td>streamed read request with offset and length</td></tr>
-    <tr><td>@ref Qore::Ssh::SftpReadResult "SftpReadResult"</td><td>streamed read result with data and EOF flag</td></tr>
-    <tr><td>@ref Qore::Ssh::SftpWriteRequest "SftpWriteRequest"</td><td>streamed write request with offset and data</td></tr>
-    <tr><td>@ref Qore::Ssh::SftpCloseRequest "SftpCloseRequest"</td><td>close request for read or write handles</td></tr>
-    </table>
+    |!Symbol|!Description
+    |@ref Qore::Ssh::SftpOpenRequest "SftpOpenRequest"|open request for read or write
+    |@ref Qore::Ssh::SftpOpenResult "SftpOpenResult"|open result with optional eager data or backend handle
+    |@ref Qore::Ssh::SftpReadRequest "SftpReadRequest"|streamed read request with offset and length
+    |@ref Qore::Ssh::SftpReadResult "SftpReadResult"|streamed read result with data and EOF flag
+    |@ref Qore::Ssh::SftpWriteRequest "SftpWriteRequest"|streamed write request with offset and data
+    |@ref Qore::Ssh::SftpCloseRequest "SftpCloseRequest"|close request for read or write handles
 
     <b>SFTP Backend: Mutations and Operations</b>
 
-    <table>
-    <tr><th>Symbol</th><th>Description</th></tr>
-    <tr><td>@ref Qore::Ssh::SftpRenameRequest "SftpRenameRequest"</td><td>rename request with source and destination paths</td></tr>
-    <tr><td>@ref Qore::Ssh::SftpSubmissionRequest "SftpSubmissionRequest"</td><td>file submission request with inline data or source path</td></tr>
-    <tr><td>@ref Qore::Ssh::SftpOperationRequest "SftpOperationRequest"</td><td>completion and mutation request with explicit completion mode</td></tr>
-    <tr><td>@ref Qore::Ssh::SftpOperationResult "SftpOperationResult"</td><td>operation result with path, status, and transfer info</td></tr>
-    <tr><td>@ref Qore::Ssh::SftpSymlinkRequest "SftpSymlinkRequest"</td><td>symlink creation request</td></tr>
-    <tr><td>@ref Qore::Ssh::SftpSetstatRequest "SftpSetstatRequest"</td><td>setstat/fsetstat request with attribute fields</td></tr>
-    <tr><td>@ref Qore::Ssh::SftpStatvfsResult "SftpStatvfsResult"</td><td>statvfs result for the @c statvfs\@openssh.com extension</td></tr>
-    </table>
+    |!Symbol|!Description
+    |@ref Qore::Ssh::SftpRenameRequest "SftpRenameRequest"|rename request with source and destination paths
+    |@ref Qore::Ssh::SftpSubmissionRequest "SftpSubmissionRequest"|file submission request with inline data or source path
+    |@ref Qore::Ssh::SftpOperationRequest "SftpOperationRequest"|completion and mutation request with explicit completion mode
+    |@ref Qore::Ssh::SftpOperationResult "SftpOperationResult"|operation result with path, status, and transfer info
+    |@ref Qore::Ssh::SftpSymlinkRequest "SftpSymlinkRequest"|symlink creation request
+    |@ref Qore::Ssh::SftpSetstatRequest "SftpSetstatRequest"|setstat/fsetstat request with attribute fields
+    |@ref Qore::Ssh::SftpStatvfsResult "SftpStatvfsResult"|statvfs result for the @c statvfs\@openssh.com extension
 
     @subsection sshtypedcontractflags Binary-Module Restriction And Flag Targets
 
@@ -99,11 +83,9 @@
     The following stable targets are used by the generated binary-module API
     docs:
 
-    <table>
-    <tr><th>Symbol</th><th>Description</th></tr>
-    <tr><td>@ref Qore::PO_NO_NETWORK "Qore::PO_NO_NETWORK"</td><td>module operations that require network access</td></tr>
-    <tr><td>@ref Qore::PO_NO_FILESYSTEM "Qore::PO_NO_FILESYSTEM"</td><td>module operations that require filesystem access</td></tr>
-    <tr><td>@ref RET_VALUE_ONLY "RET_VALUE_ONLY"</td><td>method metadata flag used for return-value-only accessors</td></tr>
-    <tr><td>@ref CONSTANT "CONSTANT"</td><td>method metadata flag used for non-mutating accessors</td></tr>
-    </table>
+    |!Symbol|!Description
+    |@ref Qore::PO_NO_NETWORK "Qore::PO_NO_NETWORK"|module operations that require network access
+    |@ref Qore::PO_NO_FILESYSTEM "Qore::PO_NO_FILESYSTEM"|module operations that require filesystem access
+    |@ref RET_VALUE_ONLY "RET_VALUE_ONLY"|method metadata flag used for return-value-only accessors
+    |@ref CONSTANT "CONSTANT"|method metadata flag used for non-mutating accessors
 */
