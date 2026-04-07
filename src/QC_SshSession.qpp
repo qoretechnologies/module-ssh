@@ -22,6 +22,7 @@
 */
 
 #include "ssh-module.h"
+#include <qore/QoreAbstractLoggerInterface.h>
 
 #include <chrono>
 #include <condition_variable>
@@ -201,26 +202,26 @@ static void ssh_session_validate_logger(const QoreObject* logger, const char* er
     }
 
     const QoreClass* cls = logger->getClass();
-    if (!cls || !cls->findMethod("info") || !cls->findMethod("warn") || !cls->findMethod("error")
-            || !cls->findMethod("debug")) {
+    if (!cls || !cls->findMethod("logArgs") || !cls->findMethod("isEnabledFor")) {
         xsink->raiseException(err,
-            "logger objects must implement info(), warn(), error(), and debug() methods");
+            "logger objects must implement logArgs() and isEnabledFor() methods");
     }
 }
 
-static void ssh_session_log_message(QoreObject* logger, const char* method, const std::string& msg) {
-    if (!logger || !method) {
+static void ssh_session_log_message(QoreObject* logger, int level, const std::string& msg) {
+    if (!logger) {
         return;
     }
 
     ExceptionSink xsink;
     ReferenceHolder<QoreListNode> args(new QoreListNode(autoTypeInfo), &xsink);
+    args->push(level, &xsink);
     args->push(new QoreStringNode(msg.c_str()), &xsink);
     if (xsink) {
         return;
     }
 
-    ValueHolder rv(logger->evalMethod(method, *args, &xsink), &xsink);
+    ValueHolder rv(logger->evalMethod("logArgs", *args, &xsink), &xsink);
 }
 
 static bool ssh_policy_mode_enabled(const QoreHashNode* policy) {
@@ -318,7 +319,7 @@ public:
             msg = nullptr;
             handled = true;
         }
-        log("info", "SshAuthContext accepted authentication request");
+        logInfo("SshAuthContext accepted authentication request");
         return 0;
     }
 
@@ -347,7 +348,7 @@ public:
             msg = nullptr;
             handled = true;
         }
-        log("warn", "SshAuthContext rejected authentication request");
+        logWarn("SshAuthContext rejected authentication request");
         return 0;
     }
 
@@ -368,7 +369,7 @@ public:
             msg = nullptr;
             handled = true;
         }
-        log("debug", "SshAuthContext acknowledged public-key probe");
+        logDebug("SshAuthContext acknowledged public-key probe");
         return 0;
     }
 
@@ -405,12 +406,44 @@ public:
     QoreObject* logger;
 
 private:
-    void log(const char* method, const char* msg_text) const {
+    void logDetail(const char* msg_text) const {
         ReferenceHolder<QoreObject> logger_holder(getLogger(), nullptr);
         if (!logger_holder) {
             return;
         }
-        ssh_session_log_message(*logger_holder, method, msg_text ? std::string(msg_text) : std::string());
+        ssh_session_log_message(*logger_holder, QORE_LOG_LEVEL_DETAIL, msg_text ? std::string(msg_text) : std::string());
+    }
+
+    void logInfo(const char* msg_text) const {
+        ReferenceHolder<QoreObject> logger_holder(getLogger(), nullptr);
+        if (!logger_holder) {
+            return;
+        }
+        ssh_session_log_message(*logger_holder, QORE_LOG_LEVEL_INFO, msg_text ? std::string(msg_text) : std::string());
+    }
+
+    void logWarn(const char* msg_text) const {
+        ReferenceHolder<QoreObject> logger_holder(getLogger(), nullptr);
+        if (!logger_holder) {
+            return;
+        }
+        ssh_session_log_message(*logger_holder, QORE_LOG_LEVEL_WARN, msg_text ? std::string(msg_text) : std::string());
+    }
+
+    void logDebug(const char* msg_text) const {
+        ReferenceHolder<QoreObject> logger_holder(getLogger(), nullptr);
+        if (!logger_holder) {
+            return;
+        }
+        ssh_session_log_message(*logger_holder, QORE_LOG_LEVEL_DEBUG, msg_text ? std::string(msg_text) : std::string());
+    }
+
+    void logError(const char* msg_text) const {
+        ReferenceHolder<QoreObject> logger_holder(getLogger(), nullptr);
+        if (!logger_holder) {
+            return;
+        }
+        ssh_session_log_message(*logger_holder, QORE_LOG_LEVEL_ERROR, msg_text ? std::string(msg_text) : std::string());
     }
 };
 
@@ -544,6 +577,8 @@ public:
             cv.notify_all();
         });
 
+        logInfo("session: waiting for auth context");
+
         socket_t fd = ssh_get_fd(current_session);
         if (fd == SSH_INVALID_SOCKET) {
             xsink->raiseException("SSHSESSION-AUTH-ERROR", "could not get the session socket");
@@ -662,7 +697,7 @@ public:
                 ssh_message_free(msg);
                 std::ostringstream log_msg;
                 log_msg << "SshSession rejected disabled auth method " << ssh_auth_method_name(subtype);
-                log("warn", log_msg.str().c_str());
+                logWarn(log_msg.str());
                 continue;
             }
 
@@ -738,6 +773,8 @@ public:
                 accepted_channel = nullptr;
             }
         });
+
+        logInfo("session: waiting for command/subsystem request");
 
         long timeout_usec = static_cast<long>(timeout_ms) * 1000;
         if (ssh_options_set(current_session, SSH_OPTIONS_TIMEOUT_USEC, &timeout_usec) != SSH_OK) {
@@ -911,7 +948,7 @@ public:
             QoreObject* rv = ssh_new_command_session_object(pgm, request.release(),
                 logger_holder ? logger_holder.release() : nullptr, accepted_channel, msg, xsink);
             if (!*xsink && rv) {
-                log("debug", "SshSession accepted command request");
+                logDebug("SshSession accepted command request");
             }
             if (*xsink) {
                 return nullptr;
@@ -968,6 +1005,8 @@ public:
                 accepted_channel = nullptr;
             }
         });
+
+        logInfo("session: waiting for SFTP subsystem");
 
         long timeout_usec = static_cast<long>(timeout_ms) * 1000;
         if (ssh_options_set(current_session, SSH_OPTIONS_TIMEOUT_USEC, &timeout_usec) != SSH_OK) {
@@ -1123,7 +1162,7 @@ public:
             QoreObject* rv = ssh_new_sftp_session_object(pgm, sftp_info.release(), nullptr,
                 logger_holder ? logger_holder.release() : nullptr, nullptr, accepted_channel, xsink);
             if (!*xsink && rv) {
-                log("debug", "SshSession accepted SFTP subsystem request");
+                logDebug("SshSession accepted SFTP subsystem request");
             }
             if (*xsink) {
                 return nullptr;
@@ -1168,7 +1207,7 @@ public:
                 active_session_counter.reset();
             }
         }
-        log("info", "SshSession disconnected");
+        logInfo("SshSession disconnected");
     }
 
     bool isConnected() const {
@@ -1199,7 +1238,7 @@ public:
         if (idle_timeout_seconds > 0) {
             auto idle_seconds = std::chrono::duration_cast<std::chrono::seconds>(now - last_activity).count();
             if (idle_seconds >= idle_timeout_seconds) {
-                log("warn", "session idle timeout exceeded");
+                logInfo("session: idle timeout after " + std::to_string(idle_seconds) + "s");
                 xsink->raiseException("SSHSESSION-IDLE-TIMEOUT",
                     "session idle for %lld seconds (limit: %lld)",
                     static_cast<long long>(idle_seconds), static_cast<long long>(idle_timeout_seconds));
@@ -1213,6 +1252,7 @@ public:
             if (since_keepalive >= keepalive_interval_seconds) {
                 ssh_send_keepalive(current_session);
                 last_keepalive_sent = now;
+                logDetail("session: keepalive sent");
             }
         }
 
@@ -1241,7 +1281,7 @@ public:
                 ssh_get_error(session));
             return -1;
         }
-        log("info", "SshSession sent auth banner");
+        logInfo("SshSession sent auth banner");
         return 0;
     }
 
@@ -1270,12 +1310,44 @@ public:
     }
 
 private:
-    void log(const char* method, const char* msg_text) const {
+    void logDetail(const std::string& msg_text) const {
         ReferenceHolder<QoreObject> logger_holder(getLogger(), nullptr);
         if (!logger_holder) {
             return;
         }
-        ssh_session_log_message(*logger_holder, method, msg_text ? std::string(msg_text) : std::string());
+        ssh_session_log_message(*logger_holder, QORE_LOG_LEVEL_DETAIL, msg_text);
+    }
+
+    void logInfo(const std::string& msg_text) const {
+        ReferenceHolder<QoreObject> logger_holder(getLogger(), nullptr);
+        if (!logger_holder) {
+            return;
+        }
+        ssh_session_log_message(*logger_holder, QORE_LOG_LEVEL_INFO, msg_text);
+    }
+
+    void logWarn(const std::string& msg_text) const {
+        ReferenceHolder<QoreObject> logger_holder(getLogger(), nullptr);
+        if (!logger_holder) {
+            return;
+        }
+        ssh_session_log_message(*logger_holder, QORE_LOG_LEVEL_WARN, msg_text);
+    }
+
+    void logDebug(const std::string& msg_text) const {
+        ReferenceHolder<QoreObject> logger_holder(getLogger(), nullptr);
+        if (!logger_holder) {
+            return;
+        }
+        ssh_session_log_message(*logger_holder, QORE_LOG_LEVEL_DEBUG, msg_text);
+    }
+
+    void logError(const std::string& msg_text) const {
+        ReferenceHolder<QoreObject> logger_holder(getLogger(), nullptr);
+        if (!logger_holder) {
+            return;
+        }
+        ssh_session_log_message(*logger_holder, QORE_LOG_LEVEL_ERROR, msg_text);
     }
 };
 

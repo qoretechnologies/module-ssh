@@ -23,6 +23,7 @@
 */
 
 #include "ssh-module.h"
+#include <qore/QoreAbstractLoggerInterface.h>
 
 #include <atomic>
 #include <arpa/inet.h>
@@ -138,10 +139,9 @@ static void ssh_validate_logger(const QoreObject* logger, const char* err, Excep
     }
 
     const QoreClass* cls = logger->getClass();
-    if (!cls || !cls->findMethod("info") || !cls->findMethod("warn") || !cls->findMethod("error")
-            || !cls->findMethod("debug")) {
+    if (!cls || !cls->findMethod("logArgs") || !cls->findMethod("isEnabledFor")) {
         xsink->raiseException(err,
-            "logger objects must implement info(), warn(), error(), and debug() methods");
+            "logger objects must implement logArgs() and isEnabledFor() methods");
     }
 }
 
@@ -157,19 +157,20 @@ static void ssh_validate_auth_provider(const QoreObject* auth_provider, const ch
     }
 }
 
-static void ssh_log_message(QoreObject* logger, const char* method, const std::string& msg) {
-    if (!logger || !method) {
+static void ssh_log_message(QoreObject* logger, int level, const std::string& msg) {
+    if (!logger) {
         return;
     }
 
     ExceptionSink xsink;
     ReferenceHolder<QoreListNode> args(new QoreListNode(autoTypeInfo), &xsink);
+    args->push(level, &xsink);
     args->push(new QoreStringNode(msg.c_str()), &xsink);
     if (xsink) {
         return;
     }
 
-    ValueHolder rv(logger->evalMethod(method, *args, &xsink), &xsink);
+    ValueHolder rv(logger->evalMethod("logArgs", *args, &xsink), &xsink);
 }
 
 static bool ssh_string_in_list(const QoreListNode* l, const char* value) {
@@ -870,12 +871,20 @@ public:
         return logger ? logger->objectRefSelf() : nullptr;
     }
 
+    void logDetail(const std::string& msg) const {
+        ReferenceHolder<QoreObject> logger_holder(getLogger(), nullptr);
+        if (!logger_holder) {
+            return;
+        }
+        ssh_log_message(*logger_holder, QORE_LOG_LEVEL_DETAIL, msg);
+    }
+
     void logInfo(const std::string& msg) const {
         ReferenceHolder<QoreObject> logger_holder(getLogger(), nullptr);
         if (!logger_holder) {
             return;
         }
-        ssh_log_message(*logger_holder, "info", msg);
+        ssh_log_message(*logger_holder, QORE_LOG_LEVEL_INFO, msg);
     }
 
     void logWarn(const std::string& msg) const {
@@ -883,7 +892,15 @@ public:
         if (!logger_holder) {
             return;
         }
-        ssh_log_message(*logger_holder, "warn", msg);
+        ssh_log_message(*logger_holder, QORE_LOG_LEVEL_WARN, msg);
+    }
+
+    void logDebug(const std::string& msg) const {
+        ReferenceHolder<QoreObject> logger_holder(getLogger(), nullptr);
+        if (!logger_holder) {
+            return;
+        }
+        ssh_log_message(*logger_holder, QORE_LOG_LEVEL_DEBUG, msg);
     }
 
     QoreHashNode* getStatus(ExceptionSink* xsink) const {
@@ -1361,6 +1378,9 @@ public:
             return -1;
         }
 
+        logDetail("listener \"" + selected_listener_name + "\": key exchange completed for "
+            + remote_address + ":" + std::to_string(remote_port));
+
         int64 now = static_cast<int64>(time(nullptr));
         std::string session_id = selected_listener_name + ":" + std::to_string(static_cast<long long>(now)) + ":"
             + std::to_string(static_cast<long long>(session_fd));
@@ -1387,6 +1407,8 @@ public:
         accepted_info = info.release();
         active_session_counter = selected_active_session_counter;
         registerActiveSession(session_id, accepted_info, xsink);
+        logInfo("listener \"" + selected_listener_name + "\": accepted session from "
+            + remote_address + ":" + std::to_string(remote_port) + " session_id=" + session_id);
         return 1;
     }
 
@@ -2095,6 +2117,11 @@ printf("accepted %y:%d on %y\n", info.remote_address, info.remote_port, info.lis
                     if (*xsink) {
                         return QoreValue();
                     }
+                    const QoreStringNode* session_id_str = session_info->getKeyValue("session_id")
+                        .get<QoreStringNode>();
+                    priv->logDetail("session "
+                        + std::string(session_id_str ? session_id_str->c_str() : "<unknown>")
+                        + ": auth banner sent");
                 }
             }
         }

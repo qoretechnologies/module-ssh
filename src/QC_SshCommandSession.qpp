@@ -22,6 +22,7 @@
 */
 
 #include "ssh-module.h"
+#include <qore/QoreAbstractLoggerInterface.h>
 
 #include <algorithm>
 #include <libssh/server.h>
@@ -33,26 +34,26 @@ static void ssh_command_validate_logger(const QoreObject* logger, const char* er
     }
 
     const QoreClass* cls = logger->getClass();
-    if (!cls || !cls->findMethod("info") || !cls->findMethod("warn") || !cls->findMethod("error")
-            || !cls->findMethod("debug")) {
+    if (!cls || !cls->findMethod("logArgs") || !cls->findMethod("isEnabledFor")) {
         xsink->raiseException(err,
-            "logger objects must implement info(), warn(), error(), and debug() methods");
+            "logger objects must implement logArgs() and isEnabledFor() methods");
     }
 }
 
-static void ssh_command_log_message(QoreObject* logger, const char* method, const std::string& msg) {
-    if (!logger || !method) {
+static void ssh_command_log_message(QoreObject* logger, int level, const std::string& msg) {
+    if (!logger) {
         return;
     }
 
     ExceptionSink xsink;
     ReferenceHolder<QoreListNode> args(new QoreListNode(autoTypeInfo), &xsink);
+    args->push(level, &xsink);
     args->push(new QoreStringNode(msg.c_str()), &xsink);
     if (xsink) {
         return;
     }
 
-    ValueHolder rv(logger->evalMethod(method, *args, &xsink), &xsink);
+    ValueHolder rv(logger->evalMethod("logArgs", *args, &xsink), &xsink);
 }
 
 class SshCommandSessionPriv : public AbstractPrivateData {
@@ -167,12 +168,14 @@ public:
             cleanupChannel();
         });
 
+        logDetail("command session: applying result accepted=" + std::string(accepted ? "true" : "false"));
+
         if (!accepted) {
             if (ssh_message_reply_default(current_request_msg) != SSH_OK) {
                 xsink->raiseException("SSHCOMMANDSESSION-ERROR", "could not reject the command request");
                 return -1;
             }
-            log("warn", "SshCommandSession rejected command request");
+            logWarn("SshCommandSession rejected command request");
             return 0;
         }
 
@@ -212,7 +215,7 @@ public:
             }
         }
 
-        log("info", "SshCommandSession applied command result");
+        logInfo("SshCommandSession applied command result");
         return 0;
     }
 
@@ -274,12 +277,44 @@ private:
         }
     }
 
-    void log(const char* method, const char* msg_text) const {
+    void logDetail(const std::string& msg_text) const {
         ReferenceHolder<QoreObject> logger_holder(getLogger(), nullptr);
         if (!logger_holder) {
             return;
         }
-        ssh_command_log_message(*logger_holder, method, msg_text ? std::string(msg_text) : std::string());
+        ssh_command_log_message(*logger_holder, QORE_LOG_LEVEL_DETAIL, msg_text);
+    }
+
+    void logInfo(const std::string& msg_text) const {
+        ReferenceHolder<QoreObject> logger_holder(getLogger(), nullptr);
+        if (!logger_holder) {
+            return;
+        }
+        ssh_command_log_message(*logger_holder, QORE_LOG_LEVEL_INFO, msg_text);
+    }
+
+    void logWarn(const std::string& msg_text) const {
+        ReferenceHolder<QoreObject> logger_holder(getLogger(), nullptr);
+        if (!logger_holder) {
+            return;
+        }
+        ssh_command_log_message(*logger_holder, QORE_LOG_LEVEL_WARN, msg_text);
+    }
+
+    void logDebug(const std::string& msg_text) const {
+        ReferenceHolder<QoreObject> logger_holder(getLogger(), nullptr);
+        if (!logger_holder) {
+            return;
+        }
+        ssh_command_log_message(*logger_holder, QORE_LOG_LEVEL_DEBUG, msg_text);
+    }
+
+    void logError(const std::string& msg_text) const {
+        ReferenceHolder<QoreObject> logger_holder(getLogger(), nullptr);
+        if (!logger_holder) {
+            return;
+        }
+        ssh_command_log_message(*logger_holder, QORE_LOG_LEVEL_ERROR, msg_text);
     }
 };
 

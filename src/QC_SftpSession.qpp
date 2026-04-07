@@ -24,6 +24,7 @@
 #include "ssh-module.h"
 
 #include <cerrno>
+#include <qore/QoreAbstractLoggerInterface.h>
 #include <fcntl.h>
 #include <qore/QoreSandboxManager.h>
 #include <libssh/server.h>
@@ -43,10 +44,9 @@ static void ssh_sftp_validate_logger(const QoreObject* logger, const char* err, 
     }
 
     const QoreClass* cls = logger->getClass();
-    if (!cls || !cls->findMethod("info") || !cls->findMethod("warn") || !cls->findMethod("error")
-            || !cls->findMethod("debug")) {
+    if (!cls || !cls->findMethod("logArgs") || !cls->findMethod("isEnabledFor")) {
         xsink->raiseException(err,
-            "logger objects must implement info(), warn(), error(), and debug() methods");
+            "logger objects must implement logArgs() and isEnabledFor() (LoggerInterfaceBase)");
     }
 }
 
@@ -87,19 +87,23 @@ static void ssh_sftp_validate_backend(const QoreObject* backend, const char* err
     }
 }
 
-static void ssh_sftp_log_message(QoreObject* logger, const char* method, const std::string& msg) {
-    if (!logger || !method) {
+static void ssh_sftp_log_message(QoreObject* logger, int level, const std::string& msg) {
+    if (!logger) {
         return;
     }
 
     ExceptionSink xsink;
+    const QoreMethod* m = logger->getClass()->findMethod("logArgs");
+    if (!m) {
+        return;
+    }
     ReferenceHolder<QoreListNode> args(new QoreListNode(autoTypeInfo), &xsink);
+    args->push(level, &xsink);
     args->push(new QoreStringNode(msg.c_str()), &xsink);
     if (xsink) {
         return;
     }
-
-    ValueHolder rv(logger->evalMethod(method, *args, &xsink), &xsink);
+    ValueHolder rv(logger->evalMethod(*m, *args, &xsink), &xsink);
 }
 
 static int ssh_sftp_check_fs_access(const std::string& path, int mode, ExceptionSink* xsink) {
@@ -790,7 +794,7 @@ public:
         std::ostringstream os;
         os << "SftpSession received protocol message type=" << static_cast<int>(type)
            << " name=" << type_name;
-        log("debug", os.str().c_str());
+        logDebug(os.str());
         return msg.release();
     }
 
@@ -822,9 +826,7 @@ public:
             return -1;
         }
 
-        std::ostringstream os;
-        os << "SftpSession sent version=" << version << " with statvfs extension";
-        log("info", os.str().c_str());
+        logInfo("SFTP session initialized version=" + std::to_string(version));
         return 0;
     }
 
@@ -863,7 +865,7 @@ public:
 
         std::ostringstream os;
         os << "SftpSession sent status request_id=" << request_id << " code=" << status_code;
-        log("info", os.str().c_str());
+        logInfo(os.str());
         return 0;
     }
 
@@ -898,7 +900,7 @@ public:
 
         std::ostringstream os;
         os << "SftpSession sent name request_id=" << request_id << " path=" << name;
-        log("info", os.str().c_str());
+        logInfo(os.str());
         return 0;
     }
 
@@ -1047,7 +1049,7 @@ public:
         std::ostringstream os;
         os << "SftpSession sent attrs request_id=" << request_id << " mode=" << st.st_mode
            << " size=" << static_cast<long long>(st.st_size);
-        log("info", os.str().c_str());
+        logInfo(os.str());
         return 0;
     }
 
@@ -1229,6 +1231,7 @@ public:
     }
 
     int handleBackendOpenDir(int request_id, const std::string& normalized_path, ExceptionSink* xsink) {
+        logDetail("SFTP opendir path=" + normalized_path);
         ReferenceHolder<QoreHashNode> typed_backend_req(new QoreHashNode(hashdeclSftpPathRequest, xsink), xsink);
         typed_backend_req->setKeyValue("session_info", getInfo(xsink), xsink);
         typed_backend_req->setKeyValue("path", new QoreStringNode(normalized_path.c_str()), xsink);
@@ -1265,6 +1268,7 @@ public:
     }
 
     int handleBackendReadDir(int request_id, const std::string& handle, ExceptionSink* xsink) {
+        logDebug("SFTP readdir handle=" + handle);
         QoreListNode* copied_entries = nullptr;
         size_t offset = 0;
         {
@@ -1293,6 +1297,7 @@ public:
     }
 
     int handleBackendOpenRead(int request_id, const std::string& normalized_path, uint32_t pflags, ExceptionSink* xsink) {
+        logDetail("SFTP open-read path=" + normalized_path);
         if (!(pflags & SSH_FXF_READ) || (pflags & (SSH_FXF_WRITE | SSH_FXF_APPEND | SSH_FXF_CREAT | SSH_FXF_TRUNC
                 | SSH_FXF_EXCL))) {
             return sendStatus(request_id, SSH_FX_PERMISSION_DENIED, "write access is not supported", "en", xsink);
@@ -1367,6 +1372,7 @@ public:
     }
 
     int handleBackendOpenWrite(int request_id, const std::string& normalized_path, uint32_t pflags, ExceptionSink* xsink) {
+        logDetail("SFTP open-write path=" + normalized_path);
         if (!(pflags & SSH_FXF_WRITE)) {
             return sendStatus(request_id, SSH_FX_PERMISSION_DENIED, "write access was requested without write flags", "en",
                 xsink);
@@ -1411,6 +1417,7 @@ public:
     }
 
     int handleBackendRead(int request_id, const std::string& handle, uint64_t offset, uint32_t length, ExceptionSink* xsink) {
+        logDebug("SFTP read handle=" + handle + " offset=" + std::to_string(offset) + " length=" + std::to_string(length));
         std::string chunk;
         bool eof = false;
         bool invalid = false;
@@ -1514,6 +1521,7 @@ public:
 
     int handleBackendWrite(int request_id, const std::string& handle, uint64_t offset, const std::string& data,
             ExceptionSink* xsink) {
+        logDebug("SFTP write handle=" + handle + " offset=" + std::to_string(offset) + " length=" + std::to_string(data.size()));
         bool invalid = false;
         bool stream_write = false;
         QoreHashNode* metadata = nullptr;
@@ -1690,6 +1698,8 @@ public:
             }
         }
         if (file_state) {
+            logDetail("SFTP " + std::string(file_state->write_mode ? "close-write" : "close-read")
+                + " path=" + file_state->path);
             if (finalizeBackendFileState(*file_state, true, request_id, xsink)) {
                 if (*xsink) {
                     return -1;
@@ -1702,6 +1712,7 @@ public:
     }
 
     int handleBackendFstat(int request_id, const std::string& handle, ExceptionSink* xsink) {
+        logDetail("SFTP fstat handle=" + handle);
         QoreHashNode* copied_metadata = nullptr;
         bool invalid = false;
         {
@@ -1756,6 +1767,7 @@ public:
 
     int handleBackendFsetstat(int request_id, const std::string& handle,
             const unsigned char* attrs_ptr, size_t attrs_size, size_t attrs_offset, ExceptionSink* xsink) {
+        logDetail("SFTP fsetstat handle=" + handle);
         std::string path;
         bool invalid = false;
         {
@@ -1799,6 +1811,7 @@ public:
 
     int handleBackendSetstat(int request_id, const std::string& normalized_path,
             const unsigned char* attrs_ptr, size_t attrs_size, size_t attrs_offset, ExceptionSink* xsink) {
+        logDetail("SFTP setstat path=" + normalized_path);
         if (!backendHasMethod("setstat")) {
             return sendStatus(request_id, SSH_FX_OP_UNSUPPORTED, "setstat is not supported", "en", xsink);
         }
@@ -1826,6 +1839,7 @@ public:
     int handleBackendPathOperation(const char* method, int request_id, const std::string& normalized_path,
             const char* operation, const char* unsupported_message, const char* success_message, bool path_not_found,
             ExceptionSink* xsink) {
+        logDetail("SFTP " + std::string(operation) + " path=" + normalized_path);
         if (!backendHasMethod(method)) {
             return sendStatus(request_id, SSH_FX_OP_UNSUPPORTED, unsupported_message, "en", xsink);
         }
@@ -1855,6 +1869,7 @@ public:
 
     int handleBackendRename(int request_id, const std::string& normalized_path, const std::string& target_path,
             ExceptionSink* xsink) {
+        logDetail("SFTP rename path=" + normalized_path + " target=" + target_path);
         if (!backendHasMethod("rename")) {
             return sendStatus(request_id, SSH_FX_OP_UNSUPPORTED, "rename is not supported", "en", xsink);
         }
@@ -1884,6 +1899,7 @@ public:
 
     int handleBackendSymlink(int request_id, const std::string& link_path, const std::string& target_path,
             ExceptionSink* xsink) {
+        logDetail("SFTP symlink link=" + link_path + " target=" + target_path);
         if (!backendHasMethod("symlink")) {
             return sendStatus(request_id, SSH_FX_OP_UNSUPPORTED, "symlink is not supported", "en", xsink);
         }
@@ -1912,6 +1928,7 @@ public:
     }
 
     int handleBackendReadlink(int request_id, const std::string& normalized_path, ExceptionSink* xsink) {
+        logDetail("SFTP readlink path=" + normalized_path);
         if (!backendHasMethod("readlink")) {
             return sendStatus(request_id, SSH_FX_OP_UNSUPPORTED, "readlink is not supported", "en", xsink);
         }
@@ -1973,6 +1990,7 @@ public:
     }
 
     int handleBackendStatvfs(int request_id, const std::string& normalized_path, ExceptionSink* xsink) {
+        logDetail("SFTP statvfs path=" + normalized_path);
         if (!backendHasMethod("statvfs")) {
             return sendStatus(request_id, SSH_FX_OP_UNSUPPORTED, "statvfs is not supported", "en", xsink);
         }
@@ -2732,6 +2750,7 @@ public:
             return msg.release();
         }
 
+        logWarn("SFTP unsupported operation type=" + std::to_string(type));
         if (sendStatus(request_id, SSH_FX_OP_UNSUPPORTED, "unsupported", "en", xsink)) {
             return nullptr;
         }
@@ -2962,7 +2981,7 @@ public:
         {
             std::ostringstream os;
             os << "SftpSession submit path=" << normalized_path;
-            log("info", os.str().c_str());
+            logInfo(os.str());
         }
 
         return reinterpret_cast<QoreHashNode*>(hashdeclSftpOperationResult->doRuntimeCast(*backend_result, xsink));
@@ -3047,7 +3066,7 @@ public:
         {
             std::ostringstream os;
             os << "SftpSession retrieve path=" << normalized_path;
-            log("info", os.str().c_str());
+            logInfo(os.str());
         }
 
         return reinterpret_cast<QoreHashNode*>(hashdeclSftpOpenResult->doRuntimeCast(*backend_result, xsink));
@@ -3142,7 +3161,7 @@ public:
             if (completion_mode && completion_mode->strlen()) {
                 os << " completion_mode=" << completion_mode->c_str();
             }
-            log("info", os.str().c_str());
+            logInfo(os.str());
         }
 
         return reinterpret_cast<QoreHashNode*>(hashdeclSftpOperationResult->doRuntimeCast(*backend_result, xsink));
@@ -3227,7 +3246,7 @@ public:
             }
         }
 
-        log("debug", "SftpSession applied factory result");
+        logDebug("SftpSession applied factory result");
         return *xsink ? -1 : 0;
     }
 
@@ -3254,7 +3273,7 @@ public:
             old_transfer_info->deref(xsink);
         }
 
-        log("debug", "SftpSession applied transfer info");
+        logDebug("SftpSession applied transfer info");
         return *xsink ? -1 : 0;
     }
 
@@ -3268,7 +3287,7 @@ public:
         if (old_transfer_info) {
             old_transfer_info->deref(xsink);
         }
-        log("debug", "SftpSession cleared transfer info");
+        logDebug("SftpSession cleared transfer info");
     }
 
     void closeIntern() {
@@ -3300,7 +3319,7 @@ public:
                         msg += desc->c_str();
                     }
                 }
-                log("warn", msg.c_str());
+                logWarn(msg);
                 xsink.clear();
             }
         }
@@ -3316,7 +3335,7 @@ public:
             ssh_channel_send_eof(current_channel);
             ssh_channel_close(current_channel);
             ssh_channel_free(current_channel);
-            log("info", "SftpSession closed");
+            logInfo("SftpSession closed");
         }
     }
 
@@ -3408,7 +3427,7 @@ public:
         }
 
         std::string action = atomic_publish ? "published local file atomically" : "published local file";
-        log("info", action.c_str());
+        logInfo(action);
         return updated_transfer_info.release();
     }
 
@@ -3476,7 +3495,7 @@ public:
         }
 
         std::string action = move ? "retrieved local file by rename" : "retrieved local file";
-        log("info", action.c_str());
+        logInfo(action);
         return updated_transfer_info.release();
     }
 
@@ -3535,12 +3554,44 @@ private:
         return 0;
     }
 
-    void log(const char* method, const char* msg_text) const {
-        ReferenceHolder<QoreObject> logger_holder(getLogger(), nullptr);
-        if (!logger_holder) {
+    void logDetail(const std::string& msg) const {
+        ReferenceHolder<QoreObject> lh(getLogger(), nullptr);
+        if (!lh) {
             return;
         }
-        ssh_sftp_log_message(*logger_holder, method, msg_text ? std::string(msg_text) : std::string());
+        ssh_sftp_log_message(*lh, QORE_LOG_LEVEL_DETAIL, msg);
+    }
+
+    void logInfo(const std::string& msg) const {
+        ReferenceHolder<QoreObject> lh(getLogger(), nullptr);
+        if (!lh) {
+            return;
+        }
+        ssh_sftp_log_message(*lh, QORE_LOG_LEVEL_INFO, msg);
+    }
+
+    void logWarn(const std::string& msg) const {
+        ReferenceHolder<QoreObject> lh(getLogger(), nullptr);
+        if (!lh) {
+            return;
+        }
+        ssh_sftp_log_message(*lh, QORE_LOG_LEVEL_WARN, msg);
+    }
+
+    void logDebug(const std::string& msg) const {
+        ReferenceHolder<QoreObject> lh(getLogger(), nullptr);
+        if (!lh) {
+            return;
+        }
+        ssh_sftp_log_message(*lh, QORE_LOG_LEVEL_DEBUG, msg);
+    }
+
+    void logError(const std::string& msg) const {
+        ReferenceHolder<QoreObject> lh(getLogger(), nullptr);
+        if (!lh) {
+            return;
+        }
+        ssh_sftp_log_message(*lh, QORE_LOG_LEVEL_ERROR, msg);
     }
 
     QoreHashNode* info;
