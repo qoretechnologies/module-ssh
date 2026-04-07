@@ -28,7 +28,6 @@ set(QPP_SRC
 )
 
 set(CPP_SRC
-    src/ssh-hashdecl.cpp
 )
 
 set(QORE_DOX_TMPL_SRC

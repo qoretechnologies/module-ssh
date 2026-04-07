@@ -63,37 +63,691 @@ DLLLOCAL QoreClass* initSshAuthContextClass(QoreNamespace& ns);
 DLLLOCAL QoreClass* initSshCommandSessionClass(QoreNamespace& ns);
 DLLLOCAL QoreClass* initSftpSessionClass(QoreNamespace& ns);
 
-DLLLOCAL TypedHashDecl* init_hashdecl_SshListenerConfig(QoreNamespace& ns);
-DLLLOCAL TypedHashDecl* init_hashdecl_SshServerConfig(QoreNamespace& ns);
-DLLLOCAL TypedHashDecl* init_hashdecl_SshListenerStatus(QoreNamespace& ns);
-DLLLOCAL TypedHashDecl* init_hashdecl_SshServerStatus(QoreNamespace& ns);
-DLLLOCAL TypedHashDecl* init_hashdecl_SshSessionInfo(QoreNamespace& ns);
-DLLLOCAL TypedHashDecl* init_hashdecl_SshAuthContextInfo(QoreNamespace& ns);
-DLLLOCAL TypedHashDecl* init_hashdecl_SshAuthDecision(QoreNamespace& ns);
-DLLLOCAL TypedHashDecl* init_hashdecl_SshCommandRequest(QoreNamespace& ns);
-DLLLOCAL TypedHashDecl* init_hashdecl_SshCommandResult(QoreNamespace& ns);
-DLLLOCAL TypedHashDecl* init_hashdecl_SftpSessionInfo(QoreNamespace& ns);
-DLLLOCAL TypedHashDecl* init_hashdecl_SftpProtocolMessage(QoreNamespace& ns);
-DLLLOCAL TypedHashDecl* init_hashdecl_SftpTransferRequest(QoreNamespace& ns);
-DLLLOCAL TypedHashDecl* init_hashdecl_SftpTransferInfo(QoreNamespace& ns);
-DLLLOCAL TypedHashDecl* init_hashdecl_SftpTransferDecision(QoreNamespace& ns);
-DLLLOCAL TypedHashDecl* init_hashdecl_SftpPathRequest(QoreNamespace& ns);
-DLLLOCAL TypedHashDecl* init_hashdecl_SftpPathInfo(QoreNamespace& ns);
-DLLLOCAL TypedHashDecl* init_hashdecl_SftpListResult(QoreNamespace& ns);
-DLLLOCAL TypedHashDecl* init_hashdecl_SftpOpenRequest(QoreNamespace& ns);
-DLLLOCAL TypedHashDecl* init_hashdecl_SftpOpenResult(QoreNamespace& ns);
-DLLLOCAL TypedHashDecl* init_hashdecl_SftpOperationResult(QoreNamespace& ns);
-DLLLOCAL TypedHashDecl* init_hashdecl_SftpRenameRequest(QoreNamespace& ns);
-DLLLOCAL TypedHashDecl* init_hashdecl_SftpSubmissionRequest(QoreNamespace& ns);
-DLLLOCAL TypedHashDecl* init_hashdecl_SftpOperationRequest(QoreNamespace& ns);
-DLLLOCAL TypedHashDecl* init_hashdecl_SftpReadRequest(QoreNamespace& ns);
-DLLLOCAL TypedHashDecl* init_hashdecl_SftpReadResult(QoreNamespace& ns);
-DLLLOCAL TypedHashDecl* init_hashdecl_SftpWriteRequest(QoreNamespace& ns);
-DLLLOCAL TypedHashDecl* init_hashdecl_SftpCloseRequest(QoreNamespace& ns);
-DLLLOCAL TypedHashDecl* init_hashdecl_SshActiveSessionInfo(QoreNamespace& ns);
-DLLLOCAL TypedHashDecl* init_hashdecl_SftpSymlinkRequest(QoreNamespace& ns);
-DLLLOCAL TypedHashDecl* init_hashdecl_SftpSetstatRequest(QoreNamespace& ns);
-DLLLOCAL TypedHashDecl* init_hashdecl_SftpStatvfsResult(QoreNamespace& ns);
+//! typed SSH listener configuration hash
+/**
+*/
+hashdecl Qore::Ssh::SshListenerConfig {
+    //! listener name
+    string name;
+    //! bind address for the listener
+    string bind_address;
+    //! TCP port for the listener
+    int port;
+    //! host key file paths
+    list<string> host_keys;
+    //! optional session cap for the listener
+    *int max_sessions;
+    //! optional SSH banner string
+    *string banner;
+    //! optional allowed authentication methods
+    *list<string> enabled_auth_methods;
+    //! optional flag enabling command-service requests
+    *bool allow_command_service;
+    //! optional flag enabling SFTP subsystem requests
+    *bool allow_sftp_service;
+    //! optional low-level listener server options
+    *hash<auto> server_options;
+    //! optional keepalive probe interval in seconds
+    *int keepalive_interval_seconds;
+    //! optional idle session timeout in seconds
+    *int idle_timeout_seconds;
+    //! optional comma-separated list of allowed ciphers
+    *string allowed_ciphers;
+    //! optional comma-separated list of allowed key exchange algorithms
+    *string allowed_kex;
+    //! optional comma-separated list of allowed MAC algorithms
+    *string allowed_macs;
+    //! optional comma-separated list of allowed host key algorithms
+    *string allowed_hostkey_algorithms;
+    //! optional list of allowed client addresses in CIDR notation
+    *list<string> allowed_addresses;
+    //! optional list of denied client addresses in CIDR notation
+    *list<string> denied_addresses;
+    //! optional pre-authentication banner message
+    *string auth_banner;
+}
+
+//! typed SSH server configuration hash
+/**
+*/
+hashdecl Qore::Ssh::SshServerConfig {
+    //! server name
+    string name;
+    //! listener configuration list
+    list<hash<SshListenerConfig>> listeners;
+    //! optional logger object implementing Qore::Logger::LoggerInterface
+    *object logger;
+    //! optional object-driven authentication provider implementing authenticate()
+    *object auth_provider;
+    //! optional authentication callback
+    *code auth_callback;
+    //! optional command callback
+    *code command_callback;
+    //! optional audit callback
+    *code audit_callback;
+    //! optional SFTP session factory callback
+    *code sftp_factory_callback;
+    //! optional authentication configuration hash
+    *hash<auto> auth_config;
+    //! optional command configuration hash
+    *hash<auto> command_config;
+    //! optional audit configuration hash
+    *hash<auto> audit_config;
+    //! optional SFTP configuration hash
+    *hash<auto> sftp_config;
+    //! optional default command timeout in milliseconds
+    *int default_command_timeout_ms;
+    //! optional flag enabling authenticated-session logging
+    *bool log_authenticated_sessions;
+    //! optional flag enabling file-transfer logging
+    *bool log_file_transfers;
+}
+
+//! typed SSH listener runtime status hash
+/**
+*/
+hashdecl Qore::Ssh::SshListenerStatus {
+    //! listener name
+    string name;
+    //! configured bind address
+    string bind_address;
+    //! configured port
+    int port;
+    //! actual bound port, if available
+    *int bound_port;
+    //! @c True when the listener is running
+    bool running;
+    //! current active session count on this listener
+    int active_session_count;
+    //! optional last listener error
+    *hash<ExceptionInfo> last_error;
+}
+
+//! typed SSH server runtime status hash
+/**
+*/
+hashdecl Qore::Ssh::SshServerStatus {
+    //! server name
+    string name;
+    //! @c True when the server is running
+    bool running;
+    //! number of configured listeners
+    int listener_count;
+    //! total active session count
+    int active_session_count;
+    //! optional server start time
+    *date started;
+    //! per-listener runtime status entries
+    list<hash<SshListenerStatus>> listeners;
+}
+
+//! typed SSH session metadata hash
+/**
+*/
+hashdecl Qore::Ssh::SshSessionInfo {
+    //! stable session identifier
+    string session_id;
+    //! server name
+    string server_name;
+    //! listener name
+    string listener_name;
+    //! remote peer address
+    string remote_address;
+    //! remote peer port
+    int remote_port;
+    //! local bound address
+    string local_address;
+    //! local bound port
+    int local_port;
+    //! optional authenticated username
+    *string username;
+    //! @c True when the session is authenticated
+    bool authenticated;
+    //! optional authentication method name
+    *string auth_method;
+    //! optional authenticated principal
+    *string principal;
+    //! optional arbitrary session data
+    *hash<auto> session_data;
+    //! optional session command policy data
+    *hash<auto> command_policy;
+    //! optional session SFTP policy data
+    *hash<auto> sftp_policy;
+    //! session start time
+    date started;
+    //! last activity timestamp
+    date last_activity;
+}
+
+//! typed SSH authentication context hash
+/**
+*/
+hashdecl Qore::Ssh::SshAuthContextInfo {
+    //! stable session identifier
+    string session_id;
+    //! server name
+    string server_name;
+    //! listener name
+    string listener_name;
+    //! remote peer address
+    string remote_address;
+    //! remote peer port
+    int remote_port;
+    //! username supplied by the client
+    string username;
+    //! authentication method name
+    string auth_method;
+    //! optional password payload
+    *string password;
+    //! optional public key blob
+    *binary public_key;
+    //! optional public key type
+    *string public_key_type;
+    //! optional requested service name
+    *string service;
+    //! optional authentication metadata
+    *hash<auto> metadata;
+}
+
+//! typed SSH authentication decision hash
+/**
+*/
+hashdecl Qore::Ssh::SshAuthDecision {
+    //! @c True when authentication is accepted
+    bool accepted;
+    //! optional partial-authentication flag for multi-factor auth
+    *bool partial;
+    //! optional resulting principal name
+    *string principal;
+    //! optional message for the client or audit trail
+    *string message;
+    //! optional list of allowed authentication methods to advertise
+    *list<string> allowed_auth_methods;
+    //! optional command policy attached to the session
+    *hash<auto> command_policy;
+    //! optional SFTP policy attached to the session
+    *hash<auto> sftp_policy;
+    //! optional arbitrary session data
+    *hash<auto> session_data;
+    //! optional audit payload
+    *hash<auto> audit_data;
+}
+
+//! typed SSH command request hash
+/**
+*/
+hashdecl Qore::Ssh::SshCommandRequest {
+    //! stable session identifier
+    string session_id;
+    //! server name
+    string server_name;
+    //! listener name
+    string listener_name;
+    //! optional authenticated username
+    *string username;
+    //! optional authenticated principal
+    *string principal;
+    //! command or subsystem name
+    string command;
+    //! optional command arguments
+    *list<string> arguments;
+    //! optional environment map
+    *hash<auto> environment;
+    //! optional routing and request metadata
+    *hash<auto> metadata;
+}
+
+//! typed SSH command result hash
+/**
+*/
+hashdecl Qore::Ssh::SshCommandResult {
+    //! @c True when the request was accepted by the virtual command layer
+    bool accepted;
+    //! optional exit status
+    *int exit_status;
+    //! optional human-readable message
+    *string message;
+    //! optional stdout payload
+    *binary stdout;
+    //! optional stderr payload
+    *binary stderr;
+    //! optional structured result metadata
+    *hash<auto> result_data;
+}
+
+//! typed SFTP session metadata hash
+/**
+*/
+hashdecl Qore::Ssh::SftpSessionInfo {
+    //! wrapped SSH session metadata
+    hash<SshSessionInfo> session_info;
+    //! authenticated principal for the SFTP session
+    string principal;
+    //! optional effective root directory
+    *string root_dir;
+    //! @c True when the session is read-only
+    bool read_only;
+    //! optional session-specific backend data
+    *hash<auto> session_data;
+}
+
+//! typed SFTP protocol message hash
+/**
+*/
+hashdecl Qore::Ssh::SftpProtocolMessage {
+    //! numeric SFTP message type
+    int type;
+    //! human-readable SFTP message name
+    string name;
+    //! optional request identifier
+    *int request_id;
+    //! optional protocol version
+    *int version;
+    //! optional raw payload bytes
+    *binary payload;
+    //! raw payload size in bytes
+    int payload_size;
+}
+
+//! typed SFTP transfer request hash
+/**
+*/
+hashdecl Qore::Ssh::SftpTransferRequest {
+    //! live SFTP session metadata
+    hash<SftpSessionInfo> session_info;
+    //! transfer operation name
+    string operation;
+    //! virtual source path
+    string path;
+    //! optional target path
+    *string target_path;
+    //! optional temporary path for atomic publish workflows
+    *string temporary_path;
+    //! optional transfer size in bytes
+    *int size;
+    //! optional backend or policy metadata
+    *hash<auto> metadata;
+}
+
+//! typed SFTP transfer info hash
+/**
+*/
+hashdecl Qore::Ssh::SftpTransferInfo {
+    //! transfer operation name
+    string operation;
+    //! virtual source path
+    string path;
+    //! optional temporary path
+    *string temporary_path;
+    //! optional final published path
+    *string final_path;
+    //! optional transfer size in bytes
+    *int size;
+    //! optional checksum string
+    *string checksum;
+    //! @c True when atomic publish behavior is active
+    bool atomic_publish;
+    //! @c True when the transfer workflow is completed
+    bool completed;
+}
+
+//! typed SFTP transfer decision hash
+/**
+*/
+hashdecl Qore::Ssh::SftpTransferDecision {
+    //! @c True when the transfer is allowed
+    bool allowed;
+    //! optional rejection or audit message
+    *string message;
+    //! resulting transfer metadata
+    hash<SftpTransferInfo> transfer_info;
+}
+
+//! typed SFTP path request hash
+/**
+*/
+hashdecl Qore::Ssh::SftpPathRequest {
+    //! optional live SFTP session metadata
+    *hash<SftpSessionInfo> session_info;
+    //! requested virtual path
+    string path;
+    //! optional symlink-following flag
+    *bool follow_symlinks;
+    //! optional logical operation name
+    *string operation;
+    //! optional backend metadata
+    *hash<auto> metadata;
+}
+
+//! typed SFTP path info / stat result hash
+/**
+*/
+hashdecl Qore::Ssh::SftpPathInfo {
+    //! optional resolved path
+    *string path;
+    //! optional existence flag
+    *bool exists;
+    //! optional directory flag
+    *bool directory;
+    //! optional symlink flag
+    *bool symlink;
+    //! optional symlink target path
+    *string target_path;
+    //! optional size in bytes
+    *int size;
+    //! optional permission bits
+    *int permissions;
+    //! optional backend metadata
+    *hash<auto> metadata;
+}
+
+//! typed SFTP directory listing result hash
+/**
+*/
+hashdecl Qore::Ssh::SftpListResult {
+    //! optional listed path
+    *string path;
+    //! optional entry list
+    *list<hash<auto>> entries;
+    //! optional backend metadata
+    *hash<auto> metadata;
+}
+
+//! typed SFTP open request hash
+/**
+*/
+hashdecl Qore::Ssh::SftpOpenRequest {
+    //! optional live SFTP session metadata
+    *hash<SftpSessionInfo> session_info;
+    //! requested virtual path
+    string path;
+    //! optional logical operation name
+    *string operation;
+    //! optional SFTP open flags
+    *int pflags;
+    //! optional backend metadata
+    *hash<auto> metadata;
+    //! optional byte offset
+    *int offset;
+    //! optional byte length
+    *int length;
+}
+
+//! typed SFTP open result hash
+/**
+*/
+hashdecl Qore::Ssh::SftpOpenResult {
+    //! optional opened path
+    *string path;
+    //! optional existence flag
+    *bool exists;
+    //! optional eager-read payload
+    *binary data;
+    //! backend handle for streamed operations
+    auto backend_handle;
+    //! optional size in bytes
+    *int size;
+    //! optional permission bits
+    *int permissions;
+    //! optional backend metadata
+    *hash<auto> metadata;
+    //! optional transfer metadata
+    *hash<SftpTransferInfo> transfer_info;
+}
+
+//! typed SFTP operation result hash
+/**
+*/
+hashdecl Qore::Ssh::SftpOperationResult {
+    //! optional resulting path
+    *string path;
+    //! optional existence flag
+    *bool exists;
+    //! optional completion flag
+    *bool completed;
+    //! optional message
+    *string message;
+    //! optional backend metadata
+    *hash<auto> metadata;
+    //! optional transfer metadata
+    *hash<SftpTransferInfo> transfer_info;
+}
+
+//! typed SFTP rename request hash
+/**
+*/
+hashdecl Qore::Ssh::SftpRenameRequest {
+    //! optional live SFTP session metadata
+    *hash<SftpSessionInfo> session_info;
+    //! source path
+    string path;
+    //! destination path
+    string target_path;
+    //! optional logical operation name
+    *string operation;
+    //! optional backend metadata
+    *hash<auto> metadata;
+}
+
+//! typed SFTP submission request hash
+/**
+*/
+hashdecl Qore::Ssh::SftpSubmissionRequest {
+    //! optional live SFTP session metadata
+    *hash<SftpSessionInfo> session_info;
+    //! destination virtual path
+    string path;
+    //! optional local source path
+    *string source_path;
+    //! optional inline data payload
+    *binary data;
+    //! optional backend metadata
+    *hash<auto> metadata;
+    //! optional checksum string
+    *string checksum;
+    //! optional move-instead-of-copy flag
+    *bool move;
+    //! optional create-parent-directories flag
+    *bool create_parents;
+    //! optional logical operation name
+    *string operation;
+}
+
+//! typed SFTP operation request hash for completion and mutation operations
+/**
+*/
+hashdecl Qore::Ssh::SftpOperationRequest {
+    //! optional live SFTP session metadata
+    *hash<SftpSessionInfo> session_info;
+    //! source or record path
+    string path;
+    //! optional target path
+    *string target_path;
+    //! optional logical operation name
+    *string operation;
+    //! optional explicit completion mode
+    *string completion_mode;
+    //! optional backend metadata
+    *hash<auto> metadata;
+}
+
+//! typed SFTP streamed read request hash
+/**
+*/
+hashdecl Qore::Ssh::SftpReadRequest {
+    //! optional live SFTP session metadata
+    *hash<SftpSessionInfo> session_info;
+    //! opened virtual path
+    string path;
+    //! optional logical operation name
+    *string operation;
+    //! backend handle for the open stream
+    auto backend_handle;
+    //! optional original open result
+    *hash<SftpOpenResult> open_result;
+    //! read offset
+    int offset;
+    //! requested byte length
+    int length;
+    //! optional backend metadata
+    *hash<auto> metadata;
+}
+
+//! typed SFTP streamed read result hash
+/**
+*/
+hashdecl Qore::Ssh::SftpReadResult {
+    //! optional data payload
+    *binary data;
+    //! optional EOF flag
+    *bool eof;
+    //! optional backend metadata
+    *hash<auto> metadata;
+}
+
+//! typed SFTP streamed write request hash
+/**
+*/
+hashdecl Qore::Ssh::SftpWriteRequest {
+    //! optional live SFTP session metadata
+    *hash<SftpSessionInfo> session_info;
+    //! opened virtual path
+    string path;
+    //! optional logical operation name
+    *string operation;
+    //! backend handle for the open stream
+    auto backend_handle;
+    //! optional original open result
+    *hash<SftpOpenResult> open_result;
+    //! write offset
+    int offset;
+    //! data payload to write
+    binary data;
+    //! optional backend metadata
+    *hash<auto> metadata;
+}
+
+//! typed SFTP streamed close request hash
+/**
+*/
+hashdecl Qore::Ssh::SftpCloseRequest {
+    //! optional live SFTP session metadata
+    *hash<SftpSessionInfo> session_info;
+    //! opened virtual path
+    string path;
+    //! optional logical operation name
+    *string operation;
+    //! backend handle for the open stream
+    auto backend_handle;
+    //! optional original open result
+    *hash<SftpOpenResult> open_result;
+    //! optional final buffered data payload
+    *binary data;
+    //! optional backend metadata
+    *hash<auto> metadata;
+}
+
+//! typed active session info hash as returned by @ref Qore::Ssh::SshServer::listActiveSessions() "SshServer::listActiveSessions()"
+/**
+*/
+hashdecl Qore::Ssh::SshActiveSessionInfo {
+    //! stable session identifier
+    string session_id;
+    //! remote peer address
+    string remote_address;
+    //! remote peer port
+    int remote_port;
+    //! optional authenticated username
+    *string username;
+    //! optional authenticated principal
+    *string principal;
+    //! optional authentication method name
+    *string auth_method;
+    //! session start time
+    date started;
+    //! last activity timestamp
+    date last_activity;
+    //! total bytes read from the client
+    int bytes_read;
+    //! total bytes written to the client
+    int bytes_written;
+    //! total SFTP operations processed
+    int sftp_operations;
+}
+
+//! typed SFTP symlink request hash
+/**
+*/
+hashdecl Qore::Ssh::SftpSymlinkRequest {
+    //! optional live SFTP session metadata
+    *hash<SftpSessionInfo> session_info;
+    //! symlink path to create
+    string link_path;
+    //! target path the symlink points to
+    string target_path;
+    //! optional logical operation name
+    *string operation;
+    //! optional backend metadata
+    *hash<auto> metadata;
+}
+
+//! typed SFTP setstat/fsetstat request hash
+/**
+*/
+hashdecl Qore::Ssh::SftpSetstatRequest {
+    //! optional live SFTP session metadata
+    *hash<SftpSessionInfo> session_info;
+    //! path to modify
+    string path;
+    //! optional file handle for fsetstat operations
+    *string handle;
+    //! operation name (@c "setstat" or @c "fsetstat")
+    string operation;
+    //! optional file size
+    *int size;
+    //! optional user ID
+    *int uid;
+    //! optional group ID
+    *int gid;
+    //! optional permission bits
+    *int permissions;
+    //! optional access time (Unix epoch seconds)
+    *int atime;
+    //! optional modification time (Unix epoch seconds)
+    *int mtime;
+    //! bitmask of which attributes are present in the request
+    int attr_flags;
+    //! optional backend metadata
+    *hash<auto> metadata;
+}
+
+//! typed SFTP statvfs result hash for the @c statvfs\@openssh.com extension
+/**
+*/
+hashdecl Qore::Ssh::SftpStatvfsResult {
+    //! filesystem block size
+    int f_bsize;
+    //! fragment size
+    int f_frsize;
+    //! total data blocks in the filesystem
+    int f_blocks;
+    //! free blocks in the filesystem
+    int f_bfree;
+    //! available blocks for unprivileged users
+    int f_bavail;
+    //! total file nodes in the filesystem
+    int f_files;
+    //! free file nodes in the filesystem
+    int f_ffree;
+    //! available file nodes for unprivileged users
+    int f_favail;
+    //! filesystem ID
+    int f_fsid;
+    //! mount flags
+    int f_flag;
+    //! maximum filename length
+    int f_namemax;
+}
 
 static void ssh_module_init(QoreModuleInitContext& ctx, ExceptionSink& xsink) {
     hashdeclSshListenerConfig = init_hashdecl_SshListenerConfig(SshNS);

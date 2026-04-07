@@ -5,7 +5,7 @@
     @section sshintro Ssh Module Introduction
 
     The Ssh module provides server-side SSH and SFTP support for Qore through
-    libssh. The module is designed for controlled command processing, auditable
+    <a href="https://www.libssh.org/">libssh</a>. The module is designed for controlled command processing, auditable
     file transfer, and integration scenarios.
 
     The current API shape and design direction are documented in the source
@@ -41,9 +41,9 @@
     The initial public classes include:
     - @ref Qore::Ssh::SshServer "Qore::Ssh::SshServer"
 
-    Generic user modules in this repository now include:
+    Generic user modules in this repository include:
     - @ref sshserverconnectionsintro "SshServerConnections"
-      - currently provides
+      - provides
         @ref SshServerConnections::AbstractSshServerConnection,
         @ref SshServerConnections::SshCommandServerConnection, and
         @ref SshServerConnections::SftpServerConnection
@@ -56,10 +56,10 @@
         hashes through
         @c getServerConfig() and @c getListenerConfig()
       - supports grouped listener-side operational caps through
-        @c SshServerConnectionLimits, including
+        @ref sshserverconnections-sshserverconnectionlimits "SshServerConnectionLimits", including
         @c max_sessions
       - supports grouped listener service controls through
-        @c SshServerConnectionServices, including @c enabled_auth_methods,
+        @ref sshserverconnections-sshserverconnectionservices "SshServerConnectionServices", including @c enabled_auth_methods,
         @c allow_command_service, and @c allow_sftp_service
       - supports grouped typed authentication through
         @ref sshserverauthproviderintro "SshServerAuthProvider" or explicit
@@ -78,11 +78,11 @@
         @ref SshServerConnections::SshCommandServerConnection
       - intentionally does not add a command-side @c DataProvider layer
     - @ref sftpserverdataproviderintro "SftpServerDataProvider"
-      - now includes a config-driven observable event action
-        @c inbound-file-accepted for new inbound uploads
-      - the observable event contract now includes typed
+      - includes a config-driven observable event action
+        @c inbound-file-accepted for inbound uploads
+      - the observable event contract includes typed
         @c inbound-file-accepted and @c inbound-file-rejected events
-      - also exposes typed outbound completion events
+      - exposes typed outbound completion events
         @c outbound-file-claimed, @c outbound-file-archived, and
         @c outbound-file-deleted
       - exposes a typed inbound acceptance policy for helper, provider, and
@@ -90,8 +90,8 @@
         routing plus duplicate-name, duplicate-size, duplicate-content,
         file-count, and total-byte rejection
 
-    The current qlib convenience layer already includes:
-    - @c SshServerConnectionLimits for grouped
+    The qlib convenience layer includes:
+    - @ref sshserverconnections-sshserverconnectionlimits "SshServerConnectionLimits" for grouped
       listener operational caps such as @c max_sessions
     - @ref SshServerAuthProvider::VirtualSshAuthProvider for config-driven
       and custom object-driven authentication
@@ -158,17 +158,17 @@
     @ref Qore::Ssh::SftpListResult "SftpListResult",
     @ref Qore::Ssh::SftpOpenResult "SftpOpenResult", and
     @ref Qore::Ssh::SftpOperationResult "SftpOperationResult". The remaining loose backend
-    maps remain available for dynamic backends; @ref Qore::Ssh::SftpSession "SftpSession" now dispatches typed backend
+    maps remain available for dynamic backends; @ref Qore::Ssh::SftpSession "SftpSession" dispatches typed backend
     request hashes directly for both low-level filesystem verbs and streamed
     handle verbs.
-    The higher-level @ref Qore::Ssh::SftpSession "SftpSession" convenience helpers also support typed
+    The higher-level @ref Qore::Ssh::SftpSession "SftpSession" convenience helpers support typed
     request overloads, so callers can stay inside the typed API for
     submit/retrieve/complete flows instead of dropping back to primitive
     arguments plus loose metadata.
-    Retrieval completion now also uses an explicit typed
+    Retrieval completion uses an explicit typed
     @c completion_mode field on
     @ref Qore::Ssh::SftpOperationRequest "SftpOperationRequest".
-    Inbound acceptance can now also be configured through a typed
+    Inbound acceptance can be configured through a typed
     @ref sftpserverdataprovider-virtualsftpinboundpolicy "VirtualSftpInboundPolicy"
     with filename glob/regex controls, size
     bounds, overwrite control, and hidden-file policy.
@@ -189,7 +189,7 @@
     - generic @c DataProvider infrastructure only for the SFTP/file-exchange
       side
     - no command-side @c DataProvider abstraction
-    That now includes a first real
+    This includes a
     @ref sftpserverdataproviderintro "SftpServerDataProvider"
     factory/app/provider layer on top of the typed virtual exchange helpers,
     including a config-driven inbound file submission event action for local

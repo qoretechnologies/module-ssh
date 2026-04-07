@@ -69,6 +69,14 @@ module SshServerConnections {
     - connection-owned @c DataProvider bridging for generic SFTP exchange
       backends
 
+    The following typed hashes are currently provided:
+    @anchor sshserverconnections-sshserverconnectionlimits
+    @anchor sshserverconnections-sshserverconnectionservices
+    @anchor sshserverconnections-sshserverconnectionsecurity
+    - @ref sshserverconnections-sshserverconnectionlimits "SshServerConnectionLimits" — grouped operational listener caps
+    - @ref sshserverconnections-sshserverconnectionservices "SshServerConnectionServices" — grouped listener service controls
+    - @ref sshserverconnections-sshserverconnectionsecurity "SshServerConnectionSecurity" — grouped cipher/KEX/MAC/IP security options
+
     The following classes are currently provided:
     - @ref SshServerConnections::AbstractSshServerConnection
     - @ref SshServerConnections::SshCommandServerConnection
