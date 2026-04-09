@@ -22,6 +22,7 @@ set(module_name "ssh")
 set(QPP_SRC
     src/QC_SftpSession.qpp
     src/QC_SshCommandSession.qpp
+    src/QC_SshKey.qpp
     src/QC_SshServer.qpp
     src/QC_SshSession.qpp
     src/ssh.qpp
@@ -36,6 +37,7 @@ set(QORE_DOX_TMPL_SRC
   docs/getting-started.doxygen.tmpl
   docs/authentication.doxygen.tmpl
   docs/sftp-backends.doxygen.tmpl
+  docs/ssh-key-management.doxygen.tmpl
   docs/cookbook.doxygen.tmpl
   docs/typed-contracts.doxygen.tmpl
   docs/release-notes.doxygen.tmpl

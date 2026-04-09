@@ -1,0 +1,773 @@
+/* -*- mode: c++; indent-tabs-mode: nil -*- */
+/*
+    QC_SshKey.qpp
+
+    Qore Programming Language
+
+    Copyright (C) 2026 Qore Technologies, s.r.o.
+
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; either
+    version 2.1 of the License, or (at your option) any later version.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+*/
+
+#include "ssh-module.h"
+
+#include <mutex>
+#include <string>
+
+/** @brief Validates that a key type constant is one of the supported generation types.
+ */
+static bool ssh_key_type_valid_for_generate(int64 type) {
+    switch (type) {
+        case SSH_KEYTYPE_RSA:
+        case SSH_KEYTYPE_ED25519:
+        case SSH_KEYTYPE_ECDSA_P256:
+        case SSH_KEYTYPE_ECDSA_P384:
+        case SSH_KEYTYPE_ECDSA_P521:
+            return true;
+        default:
+            return false;
+    }
+}
+
+/** @brief Returns the default bit size for key generation based on type.
+ */
+static int ssh_key_default_bits(int64 type) {
+    switch (type) {
+        case SSH_KEYTYPE_RSA:
+            return 4096;
+        case SSH_KEYTYPE_ECDSA_P256:
+            return 256;
+        case SSH_KEYTYPE_ECDSA_P384:
+            return 384;
+        case SSH_KEYTYPE_ECDSA_P521:
+            return 521;
+        case SSH_KEYTYPE_ED25519:
+        default:
+            return 0;
+    }
+}
+
+/** @brief Validates a hash type constant.
+ */
+static bool ssh_hash_type_valid(int64 hash_type) {
+    return hash_type == SSH_PUBLICKEY_HASH_SHA1
+        || hash_type == SSH_PUBLICKEY_HASH_MD5
+        || hash_type == SSH_PUBLICKEY_HASH_SHA256;
+}
+
+/** @brief Validates a file format constant.
+ */
+static bool ssh_file_format_valid(int64 format) {
+    return format == SSH_FILE_FORMAT_DEFAULT
+        || format == SSH_FILE_FORMAT_OPENSSH
+        || format == SSH_FILE_FORMAT_PEM;
+}
+
+class SshKeyPriv : public AbstractPrivateData {
+public:
+    /** @brief Constructs from an owned ssh_key (takes ownership).
+     */
+    explicit SshKeyPriv(ssh_key key) : key(key) {
+    }
+
+    ~SshKeyPriv() {
+        if (key) {
+            ssh_key_free(key);
+        }
+    }
+
+    SshKeyPriv(const SshKeyPriv&) = delete;
+    SshKeyPriv& operator=(const SshKeyPriv&) = delete;
+
+    QoreStringNode* getTypeName(ExceptionSink* xsink) const {
+        std::lock_guard<std::mutex> lock(m);
+        const char* name = ssh_key_type_to_char(ssh_key_type(key));
+        if (!name) {
+            xsink->raiseException("SSHKEY-ERROR", "could not determine key type name");
+            return nullptr;
+        }
+        return new QoreStringNode(name);
+    }
+
+    int64 getType(ExceptionSink* xsink) const {
+        std::lock_guard<std::mutex> lock(m);
+        return static_cast<int64>(ssh_key_type(key));
+    }
+
+    bool isPrivate() const {
+        std::lock_guard<std::mutex> lock(m);
+        return ssh_key_is_private(key) != 0;
+    }
+
+    bool isPublic() const {
+        std::lock_guard<std::mutex> lock(m);
+        return ssh_key_is_public(key) != 0;
+    }
+
+    QoreStringNode* getFingerprint(int64 hash_type, ExceptionSink* xsink) const {
+        std::lock_guard<std::mutex> lock(m);
+        unsigned char* hash = nullptr;
+        size_t hlen = 0;
+        int rc = ssh_get_publickey_hash(key, static_cast<enum ssh_publickey_hash_type>(hash_type),
+            &hash, &hlen);
+        if (rc < 0 || !hash) {
+            xsink->raiseException("SSHKEY-ERROR", "could not compute key fingerprint");
+            return nullptr;
+        }
+        char* fp = ssh_get_fingerprint_hash(static_cast<enum ssh_publickey_hash_type>(hash_type),
+            hash, hlen);
+        ssh_clean_pubkey_hash(&hash);
+        if (!fp) {
+            xsink->raiseException("SSHKEY-ERROR", "could not format key fingerprint");
+            return nullptr;
+        }
+        QoreStringNode* result = new QoreStringNode(fp);
+        SSH_STRING_FREE_CHAR(fp);
+        return result;
+    }
+
+    QoreStringNode* getPublicKeyBase64(ExceptionSink* xsink) const {
+        std::lock_guard<std::mutex> lock(m);
+        char* b64_key = nullptr;
+        if (ssh_pki_export_pubkey_base64(key, &b64_key) != SSH_OK || !b64_key) {
+            SSH_STRING_FREE_CHAR(b64_key);
+            xsink->raiseException("SSHKEY-EXPORT-ERROR", "could not export public key as base64");
+            return nullptr;
+        }
+        QoreStringNode* result = new QoreStringNode(b64_key);
+        SSH_STRING_FREE_CHAR(b64_key);
+        return result;
+    }
+
+    BinaryNode* getPublicKeyBlob(ExceptionSink* xsink) const {
+        std::lock_guard<std::mutex> lock(m);
+        char* b64_key = nullptr;
+        if (ssh_pki_export_pubkey_base64(key, &b64_key) != SSH_OK || !b64_key) {
+            SSH_STRING_FREE_CHAR(b64_key);
+            xsink->raiseException("SSHKEY-EXPORT-ERROR", "could not export public key blob");
+            return nullptr;
+        }
+        SimpleRefHolder<QoreStringNode> b64_str(new QoreStringNode(b64_key));
+        SSH_STRING_FREE_CHAR(b64_key);
+        return b64_str->parseBase64(xsink);
+    }
+
+    QoreHashNode* getInfo(ExceptionSink* xsink) const {
+        std::lock_guard<std::mutex> lock(m);
+
+        const char* type_name = ssh_key_type_to_char(ssh_key_type(key));
+        int64 type = static_cast<int64>(ssh_key_type(key));
+        bool is_priv = ssh_key_is_private(key) != 0;
+        bool is_pub = ssh_key_is_public(key) != 0;
+
+        // Get fingerprint (best effort)
+        QoreStringNode* fp = nullptr;
+        {
+            unsigned char* hash = nullptr;
+            size_t hlen = 0;
+            if (ssh_get_publickey_hash(key, SSH_PUBLICKEY_HASH_SHA256, &hash, &hlen) == SSH_OK && hash) {
+                char* fp_str = ssh_get_fingerprint_hash(SSH_PUBLICKEY_HASH_SHA256, hash, hlen);
+                ssh_clean_pubkey_hash(&hash);
+                if (fp_str) {
+                    fp = new QoreStringNode(fp_str);
+                    SSH_STRING_FREE_CHAR(fp_str);
+                }
+            }
+        }
+
+        // Get public key base64 (best effort)
+        QoreStringNode* pub_b64 = nullptr;
+        {
+            char* b64_key = nullptr;
+            if (ssh_pki_export_pubkey_base64(key, &b64_key) == SSH_OK && b64_key) {
+                pub_b64 = new QoreStringNode(b64_key);
+                SSH_STRING_FREE_CHAR(b64_key);
+            }
+        }
+
+        ReferenceHolder<QoreHashNode> h(new QoreHashNode(hashdeclSshKeyInfo, xsink), xsink);
+        if (*xsink) {
+            if (fp) {
+                fp->deref();
+            }
+            if (pub_b64) {
+                pub_b64->deref();
+            }
+            return nullptr;
+        }
+
+        h->setKeyValue("type_name", new QoreStringNode(type_name ? type_name : "unknown"), xsink);
+        h->setKeyValue("type", type, xsink);
+        h->setKeyValue("is_private", is_priv, xsink);
+        h->setKeyValue("is_public", is_pub, xsink);
+        h->setKeyValue("fingerprint_sha256", fp ? fp : QoreValue(), xsink);
+        h->setKeyValue("public_key_base64", pub_b64 ? pub_b64 : QoreValue(), xsink);
+        if (*xsink) {
+            return nullptr;
+        }
+
+        return h.release();
+    }
+
+    int writePrivateKeyFile(const char* path, const char* passphrase, int64 format,
+            ExceptionSink* xsink) const {
+        std::lock_guard<std::mutex> lock(m);
+        if (!ssh_key_is_private(key)) {
+            xsink->raiseException("SSHKEY-EXPORT-ERROR",
+                "cannot export private key: the key contains only public key material");
+            return -1;
+        }
+        int rc = ssh_pki_export_privkey_file_format(key, passphrase, nullptr, nullptr, path,
+            static_cast<enum ssh_file_format_e>(format));
+        if (rc != SSH_OK) {
+            xsink->raiseException("SSHKEY-EXPORT-ERROR",
+                "could not write private key to file '%s'", path);
+            return -1;
+        }
+        return 0;
+    }
+
+    int writePublicKeyFile(const char* path, ExceptionSink* xsink) const {
+        std::lock_guard<std::mutex> lock(m);
+        int rc = ssh_pki_export_pubkey_file(key, path);
+        if (rc != SSH_OK) {
+            xsink->raiseException("SSHKEY-EXPORT-ERROR",
+                "could not write public key to file '%s'", path);
+            return -1;
+        }
+        return 0;
+    }
+
+    QoreStringNode* getPrivateKeyString(const char* passphrase, int64 format,
+            ExceptionSink* xsink) const {
+        std::lock_guard<std::mutex> lock(m);
+        if (!ssh_key_is_private(key)) {
+            xsink->raiseException("SSHKEY-EXPORT-ERROR",
+                "cannot export private key string: the key contains only public key material");
+            return nullptr;
+        }
+        char* b64_key = nullptr;
+        int rc = ssh_pki_export_privkey_base64_format(key, passphrase, nullptr, nullptr, &b64_key,
+            static_cast<enum ssh_file_format_e>(format));
+        if (rc != SSH_OK || !b64_key) {
+            SSH_STRING_FREE_CHAR(b64_key);
+            xsink->raiseException("SSHKEY-EXPORT-ERROR", "could not export private key as string");
+            return nullptr;
+        }
+        QoreStringNode* result = new QoreStringNode(b64_key);
+        SSH_STRING_FREE_CHAR(b64_key);
+        return result;
+    }
+
+    SshKeyPriv* getPublicKey(ExceptionSink* xsink) const {
+        std::lock_guard<std::mutex> lock(m);
+        ssh_key pub_key = nullptr;
+        if (ssh_pki_export_privkey_to_pubkey(key, &pub_key) != SSH_OK) {
+            xsink->raiseException("SSHKEY-EXPORT-ERROR", "could not extract public key");
+            return nullptr;
+        }
+        return new SshKeyPriv(pub_key);
+    }
+
+    bool equals(const SshKeyPriv* other, ExceptionSink* xsink) const {
+        std::lock_guard<std::mutex> lock(m);
+        return ssh_key_cmp(key, other->key, SSH_KEY_CMP_PUBLIC) == 0;
+    }
+
+    SshKeyPriv* duplicate(ExceptionSink* xsink) const {
+        std::lock_guard<std::mutex> lock(m);
+        ssh_key dup = ssh_key_dup(key);
+        if (!dup) {
+            xsink->raiseException("SSHKEY-ERROR", "could not duplicate key");
+            return nullptr;
+        }
+        return new SshKeyPriv(dup);
+    }
+
+    ssh_key getKey() const {
+        return key;
+    }
+
+private:
+    ssh_key key;
+    mutable std::mutex m;
+};
+
+//! SSH key management class for key generation, import, export, and inspection
+/** Wraps libssh's @c ssh_key object to provide programmatic SSH key management
+    from Qore. Supports RSA, ED25519, and ECDSA key types.
+
+    Keys can be generated, imported from files or strings, exported to files or
+    strings, inspected for type and fingerprint, and compared for equality.
+
+    @par Example: Generate and export an ED25519 key pair
+    @code{.py}
+SshKey key = SshKey::generate(SSH_KEYTYPE_ED25519);
+key.writePrivateKeyFile("/tmp/id_ed25519");
+key.writePublicKeyFile("/tmp/id_ed25519.pub");
+printf("fingerprint: %s\n", key.getFingerprint());
+    @endcode
+
+    @par Example: Import and inspect a key
+    @code{.py}
+SshKey key = SshKey::readPrivateKeyFile("/home/user/.ssh/id_rsa", passphrase);
+printf("type: %s, private: %y\n", key.getTypeName(), key.isPrivate());
+    @endcode
+
+*/
+qclass SshKey [arg=SshKeyPriv* priv; ns=Qore::Ssh; dom=FILESYSTEM; flags=final];
+
+//! Creates an SshKey by importing a private key from a file
+/** @param path the file path to the private key
+    @param passphrase an optional passphrase to decrypt the key
+
+    @throw SSHKEY-IMPORT-ERROR could not import the private key from the given file
+
+    @par Example:
+    @code{.py}
+SshKey key("/home/user/.ssh/id_ed25519");
+    @endcode
+*/
+SshKey::constructor(string path, *string passphrase) {
+    ssh_key key = nullptr;
+    int rc = ssh_pki_import_privkey_file(path->c_str(),
+        passphrase ? passphrase->c_str() : nullptr,
+        nullptr, nullptr, &key);
+    if (rc != SSH_OK || !key) {
+        if (key) {
+            ssh_key_free(key);
+        }
+        xsink->raiseException("SSHKEY-IMPORT-ERROR",
+            "could not import private key from file '%s'", path->c_str());
+        return;
+    }
+    self->setPrivate(CID_SSHKEY, new SshKeyPriv(key));
+}
+
+//! Creates a copy of the SshKey object
+/** @par Example:
+    @code{.py}
+SshKey copy = key.copy();
+    @endcode
+*/
+SshKey::copy() {
+    SshKeyPriv* dup = priv->duplicate(xsink);
+    if (!dup) {
+        return;
+    }
+    self->setPrivate(CID_SSHKEY, dup);
+}
+
+//! Destroys the SshKey object and frees the underlying key material
+/** Releases the underlying libssh key object.
+*/
+SshKey::destructor() {
+    priv->deref();
+}
+
+//! Generates a new SSH key pair
+/** @param type the key type constant (one of @ref SSH_KEYTYPE_RSA, @ref SSH_KEYTYPE_ED25519,
+    @ref SSH_KEYTYPE_ECDSA_P256, @ref SSH_KEYTYPE_ECDSA_P384, @ref SSH_KEYTYPE_ECDSA_P521)
+    @param bits the key size in bits; for RSA defaults to 4096, for ECDSA selects the curve
+    (256, 384, 521), for ED25519 this parameter is ignored
+
+    @return a new SshKey containing both private and public key material
+
+    @throw SSHKEY-ARG-ERROR unsupported key type
+    @throw SSHKEY-GENERATE-ERROR key generation failed
+
+    @par Example:
+    @code{.py}
+SshKey key = SshKey::generate(SSH_KEYTYPE_ED25519);
+SshKey rsa_key = SshKey::generate(SSH_KEYTYPE_RSA, 4096);
+    @endcode
+*/
+static SshKey SshKey::generate(int type, int bits = 0) {
+    if (!ssh_key_type_valid_for_generate(type)) {
+        xsink->raiseException("SSHKEY-ARG-ERROR",
+            "unsupported key type %d for generation; use SSH_KEYTYPE_RSA, SSH_KEYTYPE_ED25519, "
+            "SSH_KEYTYPE_ECDSA_P256, SSH_KEYTYPE_ECDSA_P384, or SSH_KEYTYPE_ECDSA_P521",
+            (int)type);
+        return QoreValue();
+    }
+    int actual_bits = bits ? (int)bits : ssh_key_default_bits(type);
+    ssh_key key = nullptr;
+    int rc = ssh_pki_generate(static_cast<enum ssh_keytypes_e>(type), actual_bits, &key);
+    if (rc != SSH_OK || !key) {
+        if (key) {
+            ssh_key_free(key);
+        }
+        xsink->raiseException("SSHKEY-GENERATE-ERROR",
+            "could not generate SSH key of type %d with %d bits",
+            (int)type, actual_bits);
+        return QoreValue();
+    }
+    ReferenceHolder<QoreObject> obj(new QoreObject(QC_SSHKEY, getProgram()), xsink);
+    obj->setPrivate(CID_SSHKEY, new SshKeyPriv(key));
+    return obj.release();
+}
+
+//! Imports a private key from a file
+/** @param path the file path to the private key
+    @param passphrase an optional passphrase to decrypt the key
+
+    @return a new SshKey containing the imported private key
+
+    @throw SSHKEY-IMPORT-ERROR could not import the private key
+
+    @par Example:
+    @code{.py}
+SshKey key = SshKey::readPrivateKeyFile("/home/user/.ssh/id_rsa");
+    @endcode
+*/
+static SshKey SshKey::readPrivateKeyFile(string path, *string passphrase) {
+    ssh_key key = nullptr;
+    int rc = ssh_pki_import_privkey_file(path->c_str(),
+        passphrase ? passphrase->c_str() : nullptr,
+        nullptr, nullptr, &key);
+    if (rc != SSH_OK || !key) {
+        if (key) {
+            ssh_key_free(key);
+        }
+        xsink->raiseException("SSHKEY-IMPORT-ERROR",
+            "could not import private key from file '%s'", path->c_str());
+        return QoreValue();
+    }
+    ReferenceHolder<QoreObject> obj(new QoreObject(QC_SSHKEY, getProgram()), xsink);
+    obj->setPrivate(CID_SSHKEY, new SshKeyPriv(key));
+    return obj.release();
+}
+
+//! Imports a public key from a file
+/** @param path the file path to the public key
+
+    @return a new SshKey containing the imported public key
+
+    @throw SSHKEY-IMPORT-ERROR could not import the public key
+
+    @par Example:
+    @code{.py}
+SshKey pub = SshKey::readPublicKeyFile("/home/user/.ssh/id_rsa.pub");
+    @endcode
+*/
+static SshKey SshKey::readPublicKeyFile(string path) {
+    ssh_key key = nullptr;
+    int rc = ssh_pki_import_pubkey_file(path->c_str(), &key);
+    if (rc != SSH_OK || !key) {
+        if (key) {
+            ssh_key_free(key);
+        }
+        xsink->raiseException("SSHKEY-IMPORT-ERROR",
+            "could not import public key from file '%s'", path->c_str());
+        return QoreValue();
+    }
+    ReferenceHolder<QoreObject> obj(new QoreObject(QC_SSHKEY, getProgram()), xsink);
+    obj->setPrivate(CID_SSHKEY, new SshKeyPriv(key));
+    return obj.release();
+}
+
+//! Imports a private key from a PEM/base64-encoded string
+/** @param pem the PEM or base64-encoded private key string
+    @param passphrase an optional passphrase to decrypt the key
+
+    @return a new SshKey containing the imported private key
+
+    @throw SSHKEY-IMPORT-ERROR could not import the private key
+
+    @par Example:
+    @code{.py}
+SshKey key = SshKey::readPrivateKeyString(pem_string);
+    @endcode
+*/
+static SshKey SshKey::readPrivateKeyString(string pem, *string passphrase) {
+    ssh_key key = nullptr;
+    int rc = ssh_pki_import_privkey_base64(pem->c_str(),
+        passphrase ? passphrase->c_str() : nullptr,
+        nullptr, nullptr, &key);
+    if (rc != SSH_OK || !key) {
+        if (key) {
+            ssh_key_free(key);
+        }
+        xsink->raiseException("SSHKEY-IMPORT-ERROR",
+            "could not import private key from string");
+        return QoreValue();
+    }
+    ReferenceHolder<QoreObject> obj(new QoreObject(QC_SSHKEY, getProgram()), xsink);
+    obj->setPrivate(CID_SSHKEY, new SshKeyPriv(key));
+    return obj.release();
+}
+
+//! Imports a public key from a base64-encoded string
+/** @param base64 the base64-encoded public key string
+    @param type the key type constant identifying the key algorithm
+
+    @return a new SshKey containing the imported public key
+
+    @throw SSHKEY-IMPORT-ERROR could not import the public key
+
+    @par Example:
+    @code{.py}
+SshKey pub = SshKey::readPublicKeyString(b64_key, SSH_KEYTYPE_ED25519);
+    @endcode
+*/
+static SshKey SshKey::readPublicKeyString(string base64, int type) {
+    ssh_key key = nullptr;
+    int rc = ssh_pki_import_pubkey_base64(base64->c_str(),
+        static_cast<enum ssh_keytypes_e>(type), &key);
+    if (rc != SSH_OK || !key) {
+        if (key) {
+            ssh_key_free(key);
+        }
+        xsink->raiseException("SSHKEY-IMPORT-ERROR",
+            "could not import public key from base64 string");
+        return QoreValue();
+    }
+    ReferenceHolder<QoreObject> obj(new QoreObject(QC_SSHKEY, getProgram()), xsink);
+    obj->setPrivate(CID_SSHKEY, new SshKeyPriv(key));
+    return obj.release();
+}
+
+//! Returns full key metadata as a typed hash
+/** @return a @ref SshKeyInfo hash with the key's type, state, fingerprint, and
+    base64-encoded public key
+
+    @par Example:
+    @code{.py}
+hash<SshKeyInfo> info = key.getInfo();
+printf("type: %s, private: %y, fingerprint: %s\n",
+    info.type_name, info.is_private, info.fingerprint_sha256);
+    @endcode
+*/
+hash<SshKeyInfo> SshKey::getInfo() [flags=RET_VALUE_ONLY] {
+    return priv->getInfo(xsink);
+}
+
+//! Returns the key type name
+/** @return the key type as a human-readable string (e.g. @c "ssh-ed25519", @c "ssh-rsa")
+
+    @par Example:
+    @code{.py}
+string type = key.getTypeName();
+    @endcode
+*/
+string SshKey::getTypeName() [flags=RET_VALUE_ONLY] {
+    return priv->getTypeName(xsink);
+}
+
+//! Returns the numeric key type constant
+/** @return the key type as one of the @c SSH_KEYTYPE_* constants
+
+    @par Example:
+    @code{.py}
+int type = key.getType();
+if (type == SSH_KEYTYPE_ED25519) {
+    printf("ED25519 key\n");
+}
+    @endcode
+*/
+int SshKey::getType() [flags=RET_VALUE_ONLY] {
+    return priv->getType(xsink);
+}
+
+//! Returns whether the key contains private key material
+/** @return @c True when the key contains private key material
+
+    @par Example:
+    @code{.py}
+if (key.isPrivate()) {
+    printf("key has private material\n");
+}
+    @endcode
+*/
+bool SshKey::isPrivate() [flags=CONSTANT] {
+    return priv->isPrivate();
+}
+
+//! Returns whether the key contains public key material
+/** @return @c True when the key contains public key material
+
+    @par Example:
+    @code{.py}
+if (key.isPublic()) {
+    printf("key has public material\n");
+}
+    @endcode
+*/
+bool SshKey::isPublic() [flags=CONSTANT] {
+    return priv->isPublic();
+}
+
+//! Returns the key fingerprint
+/** @param hash_type the hash algorithm to use (default @ref SSH_PUBLICKEY_HASH_SHA256;
+    also @ref SSH_PUBLICKEY_HASH_SHA1 and @ref SSH_PUBLICKEY_HASH_MD5)
+
+    @return the fingerprint as a formatted string
+
+    @throw SSHKEY-ARG-ERROR invalid hash type
+    @throw SSHKEY-ERROR could not compute fingerprint
+
+    @par Example:
+    @code{.py}
+string fp = key.getFingerprint();
+printf("SHA256: %s\n", fp);
+    @endcode
+*/
+string SshKey::getFingerprint(int hash_type = 2) [flags=RET_VALUE_ONLY] {
+    if (!ssh_hash_type_valid(hash_type)) {
+        xsink->raiseException("SSHKEY-ARG-ERROR",
+            "invalid hash type %d; use SSH_PUBLICKEY_HASH_SHA1 (0), "
+            "SSH_PUBLICKEY_HASH_MD5 (1), or SSH_PUBLICKEY_HASH_SHA256 (2)",
+            (int)hash_type);
+        return QoreValue();
+    }
+    return priv->getFingerprint(hash_type, xsink);
+}
+
+//! Writes the private key to a file
+/** @param path the output file path
+    @param passphrase an optional passphrase to encrypt the key
+    @param format the output file format (default @ref SSH_FILE_FORMAT_DEFAULT;
+    also @ref SSH_FILE_FORMAT_OPENSSH and @ref SSH_FILE_FORMAT_PEM)
+
+    @throw SSHKEY-ARG-ERROR invalid file format
+    @throw SSHKEY-EXPORT-ERROR could not write the key (e.g. public-only key, permission denied)
+
+    @par Example:
+    @code{.py}
+key.writePrivateKeyFile("/tmp/id_ed25519", NOTHING, SSH_FILE_FORMAT_OPENSSH);
+key.writePrivateKeyFile("/tmp/id_rsa_encrypted", "my-passphrase");
+    @endcode
+*/
+nothing SshKey::writePrivateKeyFile(string path, *string passphrase, int format = 0) {
+    if (!ssh_file_format_valid(format)) {
+        xsink->raiseException("SSHKEY-ARG-ERROR",
+            "invalid file format %d; use SSH_FILE_FORMAT_DEFAULT (0), "
+            "SSH_FILE_FORMAT_OPENSSH (1), or SSH_FILE_FORMAT_PEM (2)",
+            (int)format);
+        return QoreValue();
+    }
+    priv->writePrivateKeyFile(path->c_str(),
+        passphrase ? passphrase->c_str() : nullptr, format, xsink);
+}
+
+//! Writes the public key to a file
+/** @param path the output file path
+
+    @throw SSHKEY-EXPORT-ERROR could not write the public key
+
+    @par Example:
+    @code{.py}
+key.writePublicKeyFile("/tmp/id_ed25519.pub");
+    @endcode
+*/
+nothing SshKey::writePublicKeyFile(string path) {
+    priv->writePublicKeyFile(path->c_str(), xsink);
+}
+
+//! Returns the private key as a PEM/base64-encoded string
+/** @param passphrase an optional passphrase to encrypt the key
+    @param format the output format (default @ref SSH_FILE_FORMAT_DEFAULT;
+    also @ref SSH_FILE_FORMAT_OPENSSH and @ref SSH_FILE_FORMAT_PEM)
+
+    @return the private key as a PEM-formatted string
+
+    @throw SSHKEY-ARG-ERROR invalid file format
+    @throw SSHKEY-EXPORT-ERROR could not export the key (e.g. public-only key)
+
+    @par Example:
+    @code{.py}
+string pem = key.getPrivateKeyString();
+    @endcode
+*/
+string SshKey::getPrivateKeyString(*string passphrase, int format = 0) [flags=RET_VALUE_ONLY] {
+    if (!ssh_file_format_valid(format)) {
+        xsink->raiseException("SSHKEY-ARG-ERROR",
+            "invalid file format %d; use SSH_FILE_FORMAT_DEFAULT (0), "
+            "SSH_FILE_FORMAT_OPENSSH (1), or SSH_FILE_FORMAT_PEM (2)",
+            (int)format);
+        return QoreValue();
+    }
+    return priv->getPrivateKeyString(passphrase ? passphrase->c_str() : nullptr, format, xsink);
+}
+
+//! Returns the public key as a base64-encoded string
+/** @return the base64-encoded public key
+
+    @throw SSHKEY-EXPORT-ERROR could not export the public key
+
+    @par Example:
+    @code{.py}
+string b64 = key.getPublicKeyBase64();
+printf("public key: %s %s\n", key.getTypeName(), b64);
+    @endcode
+*/
+string SshKey::getPublicKeyBase64() [flags=RET_VALUE_ONLY] {
+    return priv->getPublicKeyBase64(xsink);
+}
+
+//! Returns the public key as a binary blob
+/** The returned binary matches the format of
+    @ref SshAuthContextInfo "SshAuthContextInfo::public_key", enabling direct
+    comparison with keys received during authentication.
+
+    @return the decoded public key binary
+
+    @throw SSHKEY-EXPORT-ERROR could not export the public key blob
+
+    @par Example:
+    @code{.py}
+binary blob = key.getPublicKeyBlob();
+    @endcode
+*/
+binary SshKey::getPublicKeyBlob() [flags=RET_VALUE_ONLY] {
+    return priv->getPublicKeyBlob(xsink);
+}
+
+//! Extracts the public key component as a new SshKey object
+/** @return a new SshKey containing only the public key material
+
+    @throw SSHKEY-EXPORT-ERROR could not extract the public key
+
+    @par Example:
+    @code{.py}
+SshKey pub = key.getPublicKey();
+assertFalse(pub.isPrivate());
+assertTrue(pub.isPublic());
+    @endcode
+*/
+SshKey SshKey::getPublicKey() [flags=RET_VALUE_ONLY] {
+    SshKeyPriv* pub_priv = priv->getPublicKey(xsink);
+    if (!pub_priv) {
+        return QoreValue();
+    }
+    ReferenceHolder<QoreObject> obj(new QoreObject(QC_SSHKEY, getProgram()), xsink);
+    obj->setPrivate(CID_SSHKEY, pub_priv);
+    return obj.release();
+}
+
+//! Compares two keys by their public key material
+/** @param other the SshKey to compare against
+
+    @return @c True when both keys have the same public key material
+
+    @par Example:
+    @code{.py}
+SshKey pub = key.getPublicKey();
+assertTrue(key.equals(pub));
+    @endcode
+*/
+bool SshKey::equals(SshKey[SshKeyPriv] other) [flags=CONSTANT] {
+    return priv->equals(*other, xsink);
+}

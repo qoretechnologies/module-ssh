@@ -56,7 +56,9 @@ DLLLOCAL const TypedHashDecl* hashdeclSshActiveSessionInfo;
 DLLLOCAL const TypedHashDecl* hashdeclSftpSymlinkRequest;
 DLLLOCAL const TypedHashDecl* hashdeclSftpSetstatRequest;
 DLLLOCAL const TypedHashDecl* hashdeclSftpStatvfsResult;
+DLLLOCAL const TypedHashDecl* hashdeclSshKeyInfo;
 
+DLLLOCAL QoreClass* initSshKeyClass(QoreNamespace& ns);
 DLLLOCAL QoreClass* initSshServerClass(QoreNamespace& ns);
 DLLLOCAL QoreClass* initSshSessionClass(QoreNamespace& ns);
 DLLLOCAL QoreClass* initSshAuthContextClass(QoreNamespace& ns);
@@ -787,6 +789,26 @@ hashdecl Qore::Ssh::SftpStatvfsResult {
     int f_namemax;
 }
 
+//! typed SSH key metadata hash
+/** Returned by @ref Qore::Ssh::SshKey::getInfo() "SshKey::getInfo()".
+    Describes the key type, public/private state, fingerprint, and base64
+    representation of the public component.
+*/
+hashdecl Qore::Ssh::SshKeyInfo {
+    //! key type name (e.g. @c "ssh-rsa", @c "ssh-ed25519", @c "ecdsa-sha2-nistp256")
+    string type_name;
+    //! numeric key type constant (one of the @c SSH_KEYTYPE_* constants)
+    int type;
+    //! @c True when the key contains private key material
+    bool is_private;
+    //! @c True when the key contains public key material
+    bool is_public;
+    //! SHA-256 fingerprint hex string, or @ref nothing if unavailable
+    *string fingerprint_sha256;
+    //! base64-encoded public key, or @ref nothing if unavailable
+    *string public_key_base64;
+}
+
 static void ssh_module_init(QoreModuleInitContext& ctx, ExceptionSink& xsink) {
     hashdeclSshListenerConfig = init_hashdecl_SshListenerConfig(SshNS);
     hashdeclSshServerConfig = init_hashdecl_SshServerConfig(SshNS);
@@ -819,7 +841,26 @@ static void ssh_module_init(QoreModuleInitContext& ctx, ExceptionSink& xsink) {
     hashdeclSftpSymlinkRequest = init_hashdecl_SftpSymlinkRequest(SshNS);
     hashdeclSftpSetstatRequest = init_hashdecl_SftpSetstatRequest(SshNS);
     hashdeclSftpStatvfsResult = init_hashdecl_SftpStatvfsResult(SshNS);
+    hashdeclSshKeyInfo = init_hashdecl_SshKeyInfo(SshNS);
 
+    // SSH key type constants
+    SshNS.addConstant("SSH_KEYTYPE_RSA", (int64)SSH_KEYTYPE_RSA);
+    SshNS.addConstant("SSH_KEYTYPE_ED25519", (int64)SSH_KEYTYPE_ED25519);
+    SshNS.addConstant("SSH_KEYTYPE_ECDSA_P256", (int64)SSH_KEYTYPE_ECDSA_P256);
+    SshNS.addConstant("SSH_KEYTYPE_ECDSA_P384", (int64)SSH_KEYTYPE_ECDSA_P384);
+    SshNS.addConstant("SSH_KEYTYPE_ECDSA_P521", (int64)SSH_KEYTYPE_ECDSA_P521);
+
+    // SSH key file format constants
+    SshNS.addConstant("SSH_FILE_FORMAT_DEFAULT", (int64)SSH_FILE_FORMAT_DEFAULT);
+    SshNS.addConstant("SSH_FILE_FORMAT_OPENSSH", (int64)SSH_FILE_FORMAT_OPENSSH);
+    SshNS.addConstant("SSH_FILE_FORMAT_PEM", (int64)SSH_FILE_FORMAT_PEM);
+
+    // SSH public key hash type constants
+    SshNS.addConstant("SSH_PUBLICKEY_HASH_SHA1", (int64)SSH_PUBLICKEY_HASH_SHA1);
+    SshNS.addConstant("SSH_PUBLICKEY_HASH_MD5", (int64)SSH_PUBLICKEY_HASH_MD5);
+    SshNS.addConstant("SSH_PUBLICKEY_HASH_SHA256", (int64)SSH_PUBLICKEY_HASH_SHA256);
+
+    SshNS.addSystemClass(initSshKeyClass(SshNS));
     SshNS.addSystemClass(initSshAuthContextClass(SshNS));
     SshNS.addSystemClass(initSshCommandSessionClass(SshNS));
     SshNS.addSystemClass(initSftpSessionClass(SshNS));
