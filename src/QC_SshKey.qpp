@@ -70,9 +70,7 @@ static bool ssh_hash_type_valid(int64 hash_type) {
 /** @brief Validates a file format constant.
  */
 static bool ssh_file_format_valid(int64 format) {
-    return format == SSH_FILE_FORMAT_DEFAULT
-        || format == SSH_FILE_FORMAT_OPENSSH
-        || format == SSH_FILE_FORMAT_PEM;
+    return format >= 0 && format <= 2;
 }
 
 class SshKeyPriv : public AbstractPrivateData {
@@ -229,8 +227,17 @@ public:
                 "cannot export private key: the key contains only public key material");
             return -1;
         }
+#if HAVE_SSH_FILE_FORMAT
         int rc = ssh_pki_export_privkey_file_format(key, passphrase, nullptr, nullptr, path,
             static_cast<enum ssh_file_format_e>(format));
+#else
+        if (format != 0) {
+            xsink->raiseException("SSHKEY-EXPORT-ERROR",
+                "non-default file format requires libssh >= 0.11.0");
+            return -1;
+        }
+        int rc = ssh_pki_export_privkey_file(key, passphrase, nullptr, nullptr, path);
+#endif
         if (rc != SSH_OK) {
             xsink->raiseException("SSHKEY-EXPORT-ERROR",
                 "could not write private key to file '%s'", path);
@@ -259,8 +266,17 @@ public:
             return nullptr;
         }
         char* b64_key = nullptr;
+#if HAVE_SSH_FILE_FORMAT
         int rc = ssh_pki_export_privkey_base64_format(key, passphrase, nullptr, nullptr, &b64_key,
             static_cast<enum ssh_file_format_e>(format));
+#else
+        if (format != 0) {
+            xsink->raiseException("SSHKEY-EXPORT-ERROR",
+                "non-default file format requires libssh >= 0.11.0");
+            return nullptr;
+        }
+        int rc = ssh_pki_export_privkey_base64(key, passphrase, nullptr, nullptr, &b64_key);
+#endif
         if (rc != SSH_OK || !b64_key) {
             SSH_STRING_FREE_CHAR(b64_key);
             xsink->raiseException("SSHKEY-EXPORT-ERROR", "could not export private key as string");
@@ -674,7 +690,7 @@ key.writePrivateKeyFile("/tmp/id_ed25519", NOTHING, SSH_FILE_FORMAT_OPENSSH);
 key.writePrivateKeyFile("/tmp/id_rsa_encrypted", "my-passphrase");
     @endcode
 */
-nothing SshKey::writePrivateKeyFile(string path, *string passphrase, int format = SSH_FILE_FORMAT_DEFAULT) {
+nothing SshKey::writePrivateKeyFile(string path, *string passphrase, int format = 0) {
     if (!ssh_file_format_valid(format)) {
         xsink->raiseException("SSHKEY-ARG-ERROR",
             "invalid file format %d; use SSH_FILE_FORMAT_DEFAULT (0), "
@@ -715,7 +731,7 @@ nothing SshKey::writePublicKeyFile(string path) {
 string pem = key.getPrivateKeyString();
     @endcode
 */
-string SshKey::getPrivateKeyString(*string passphrase, int format = SSH_FILE_FORMAT_DEFAULT) [flags=RET_VALUE_ONLY] {
+string SshKey::getPrivateKeyString(*string passphrase, int format = 0) [flags=RET_VALUE_ONLY] {
     if (!ssh_file_format_valid(format)) {
         xsink->raiseException("SSHKEY-ARG-ERROR",
             "invalid file format %d; use SSH_FILE_FORMAT_DEFAULT (0), "

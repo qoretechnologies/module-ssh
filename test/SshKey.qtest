@@ -252,7 +252,14 @@ class SshKeyTest inherits QUnit::Test {
     testPrivateKeyFileRoundtripOpenSsh() {
         Qore::Ssh::SshKey orig = Qore::Ssh::SshKey::generate(Qore::Ssh::SSH_KEYTYPE_ED25519);
         string path = tmp_dir + "/test_privkey_openssh";
-        orig.writePrivateKeyFile(path, NOTHING, Qore::Ssh::SSH_FILE_FORMAT_OPENSSH);
+        try {
+            orig.writePrivateKeyFile(path, NOTHING, Qore::Ssh::SSH_FILE_FORMAT_OPENSSH);
+        } catch (hash<ExceptionInfo> ex) {
+            if (ex.err == "SSHKEY-EXPORT-ERROR" && ex.desc =~ /libssh/) {
+                testSkip("requires libssh >= 0.11.0");
+            }
+            rethrow;
+        }
         assertTrue(is_file(path));
         Qore::Ssh::SshKey imported = Qore::Ssh::SshKey::readPrivateKeyFile(path);
         assertTrue(orig.equals(imported));
@@ -262,7 +269,14 @@ class SshKeyTest inherits QUnit::Test {
         # PEM format works with RSA keys
         Qore::Ssh::SshKey orig = Qore::Ssh::SshKey::generate(Qore::Ssh::SSH_KEYTYPE_RSA, 2048);
         string path = tmp_dir + "/test_privkey_pem";
-        orig.writePrivateKeyFile(path, NOTHING, Qore::Ssh::SSH_FILE_FORMAT_PEM);
+        try {
+            orig.writePrivateKeyFile(path, NOTHING, Qore::Ssh::SSH_FILE_FORMAT_PEM);
+        } catch (hash<ExceptionInfo> ex) {
+            if (ex.err == "SSHKEY-EXPORT-ERROR" && ex.desc =~ /libssh/) {
+                testSkip("requires libssh >= 0.11.0");
+            }
+            rethrow;
+        }
         assertTrue(is_file(path));
         Qore::Ssh::SshKey imported = Qore::Ssh::SshKey::readPrivateKeyFile(path);
         assertTrue(orig.equals(imported));

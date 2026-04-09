@@ -11,8 +11,12 @@
 
 #include <atomic>
 #include <libssh/libssh.h>
+#include <libssh/libssh_version.h>
 #include <memory>
 #include <qore/Qore.h>
+
+//! libssh >= 0.11.0 adds ssh_file_format_e and *_format() export functions
+#define HAVE_SSH_FILE_FORMAT (LIBSSH_VERSION_INT >= SSH_VERSION_INT(0, 11, 0))
 
 DLLLOCAL extern const TypedHashDecl* hashdeclSshListenerConfig;
 DLLLOCAL extern const TypedHashDecl* hashdeclSshServerConfig;
