@@ -133,8 +133,8 @@ assertTrue(key1.equals(pub));    # same key material
 # In an auth provider
 hash<SshAuthDecision> authenticate(hash<SshAuthContextInfo> ctx) {
     if (ctx.auth_method == "publickey" && ctx.public_key) {
-        # Load authorized key and compare
-        SshKey authorized = SshKey::readPublicKeyFile("/home/" + ctx.username + "/.ssh/authorized_keys");
+        # Load a single authorized public key file and compare
+        SshKey authorized = SshKey::readPublicKeyFile("/home/" + ctx.username + "/.ssh/id_ed25519.pub");
         if (authorized.getPublicKeyBlob() == ctx.public_key) {
             return <SshAuthDecision>{"accepted": True, "principal": ctx.username};
         }

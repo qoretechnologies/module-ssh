@@ -274,7 +274,10 @@ public:
     SshKeyPriv* getPublicKey(ExceptionSink* xsink) const {
         std::lock_guard<std::mutex> lock(m);
         ssh_key pub_key = nullptr;
-        if (ssh_pki_export_privkey_to_pubkey(key, &pub_key) != SSH_OK) {
+        if (ssh_pki_export_privkey_to_pubkey(key, &pub_key) != SSH_OK || !pub_key) {
+            if (pub_key) {
+                ssh_key_free(pub_key);
+            }
             xsink->raiseException("SSHKEY-EXPORT-ERROR", "could not extract public key");
             return nullptr;
         }
@@ -403,6 +406,27 @@ static SshKey SshKey::generate(int type, int bits = 0) {
         return QoreValue();
     }
     int actual_bits = bits ? (int)bits : ssh_key_default_bits(type);
+    // validate bits for specific key types
+    if (type == SSH_KEYTYPE_RSA && actual_bits < 1024) {
+        xsink->raiseException("SSHKEY-ARG-ERROR",
+            "RSA key size %d is too small; minimum is 1024 bits", actual_bits);
+        return QoreValue();
+    }
+    if (type == SSH_KEYTYPE_ECDSA_P256 && actual_bits != 256) {
+        xsink->raiseException("SSHKEY-ARG-ERROR",
+            "ECDSA P-256 key requires 256 bits, got %d", actual_bits);
+        return QoreValue();
+    }
+    if (type == SSH_KEYTYPE_ECDSA_P384 && actual_bits != 384) {
+        xsink->raiseException("SSHKEY-ARG-ERROR",
+            "ECDSA P-384 key requires 384 bits, got %d", actual_bits);
+        return QoreValue();
+    }
+    if (type == SSH_KEYTYPE_ECDSA_P521 && actual_bits != 521) {
+        xsink->raiseException("SSHKEY-ARG-ERROR",
+            "ECDSA P-521 key requires 521 bits, got %d", actual_bits);
+        return QoreValue();
+    }
     ssh_key key = nullptr;
     int rc = ssh_pki_generate(static_cast<enum ssh_keytypes_e>(type), actual_bits, &key);
     if (rc != SSH_OK || !key) {
@@ -624,7 +648,7 @@ string fp = key.getFingerprint();
 printf("SHA256: %s\n", fp);
     @endcode
 */
-string SshKey::getFingerprint(int hash_type = 2) [flags=RET_VALUE_ONLY] {
+string SshKey::getFingerprint(int hash_type = SSH_PUBLICKEY_HASH_SHA256) [flags=RET_VALUE_ONLY] {
     if (!ssh_hash_type_valid(hash_type)) {
         xsink->raiseException("SSHKEY-ARG-ERROR",
             "invalid hash type %d; use SSH_PUBLICKEY_HASH_SHA1 (0), "
@@ -650,7 +674,7 @@ key.writePrivateKeyFile("/tmp/id_ed25519", NOTHING, SSH_FILE_FORMAT_OPENSSH);
 key.writePrivateKeyFile("/tmp/id_rsa_encrypted", "my-passphrase");
     @endcode
 */
-nothing SshKey::writePrivateKeyFile(string path, *string passphrase, int format = 0) {
+nothing SshKey::writePrivateKeyFile(string path, *string passphrase, int format = SSH_FILE_FORMAT_DEFAULT) {
     if (!ssh_file_format_valid(format)) {
         xsink->raiseException("SSHKEY-ARG-ERROR",
             "invalid file format %d; use SSH_FILE_FORMAT_DEFAULT (0), "
@@ -691,7 +715,7 @@ nothing SshKey::writePublicKeyFile(string path) {
 string pem = key.getPrivateKeyString();
     @endcode
 */
-string SshKey::getPrivateKeyString(*string passphrase, int format = 0) [flags=RET_VALUE_ONLY] {
+string SshKey::getPrivateKeyString(*string passphrase, int format = SSH_FILE_FORMAT_DEFAULT) [flags=RET_VALUE_ONLY] {
     if (!ssh_file_format_valid(format)) {
         xsink->raiseException("SSHKEY-ARG-ERROR",
             "invalid file format %d; use SSH_FILE_FORMAT_DEFAULT (0), "

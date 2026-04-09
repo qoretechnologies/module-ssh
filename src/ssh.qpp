@@ -803,7 +803,7 @@ hashdecl Qore::Ssh::SshKeyInfo {
     bool is_private;
     //! @c True when the key contains public key material
     bool is_public;
-    //! SHA-256 fingerprint hex string, or @ref nothing if unavailable
+    //! OpenSSH-style SHA-256 fingerprint string (e.g. @c "SHA256:<base64>"), or @ref nothing if unavailable
     *string fingerprint_sha256;
     //! base64-encoded public key, or @ref nothing if unavailable
     *string public_key_base64;
