@@ -1,0 +1,419 @@
+#!/usr/bin/env qore
+# -*- mode: qore; indent-tabs-mode: nil -*-
+
+/*  SshKey.qtest Copyright 2026 Qore Technologies, s.r.o.
+
+    Permission is hereby granted, free of charge, to any person obtaining a
+    copy of this software and associated documentation files (the "Software"),
+    to deal in the Software without restriction, including without limitation
+    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+    and/or sell copies of the Software, and to permit persons to whom the
+    Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+*/
+
+%modern
+%requires ssh
+%requires QUnit
+
+%exec-class SshKeyTest
+
+class SshKeyTest inherits QUnit::Test {
+    private {
+        string test_data_dir;
+        string tmp_dir;
+    }
+
+    constructor() : Test("SshKeyTest", "0.1", \ARGV) {
+        test_data_dir = get_script_dir() + "/data";
+        tmp_dir = (ENV.TMPDIR ?? ENV.TEMP ?? "/tmp") + "/ssh-key-test-" + getpid().toString();
+        mkdir(tmp_dir);
+
+        # Key generation tests
+        addTestCase("generate ED25519 key", \testGenerateEd25519());
+        addTestCase("generate RSA key", \testGenerateRsa());
+        addTestCase("generate ECDSA-P256 key", \testGenerateEcdsaP256());
+        addTestCase("generate ECDSA-P384 key", \testGenerateEcdsaP384());
+        addTestCase("generate ECDSA-P521 key", \testGenerateEcdsaP521());
+
+        # Key info tests
+        addTestCase("getInfo returns correct SshKeyInfo", \testGetInfo());
+
+        # Fingerprint tests
+        addTestCase("fingerprint SHA256", \testFingerprintSha256());
+        addTestCase("fingerprint SHA1", \testFingerprintSha1());
+        addTestCase("fingerprint MD5", \testFingerprintMd5());
+
+        # Public key extraction
+        addTestCase("getPublicKey extracts public-only key", \testGetPublicKey());
+
+        # Base64 roundtrip tests
+        addTestCase("private key string roundtrip", \testPrivateKeyStringRoundtrip());
+        addTestCase("public key base64 roundtrip", \testPublicKeyBase64Roundtrip());
+
+        # Public key blob
+        addTestCase("public key blob export", \testPublicKeyBlob());
+
+        # File roundtrip tests
+        addTestCase("private key file roundtrip (no passphrase)", \testPrivateKeyFileRoundtrip());
+        addTestCase("private key file roundtrip (with passphrase)", \testPrivateKeyFileRoundtripPassphrase());
+        addTestCase("private key file roundtrip (OpenSSH format)", \testPrivateKeyFileRoundtripOpenSsh());
+        addTestCase("private key file roundtrip (PEM format)", \testPrivateKeyFileRoundtripPem());
+        addTestCase("public key file roundtrip", \testPublicKeyFileRoundtrip());
+
+        # Import existing test keys
+        addTestCase("import existing host key", \testImportExistingHostKey());
+        addTestCase("import existing client key", \testImportExistingClientKey());
+        addTestCase("import existing public key file", \testImportExistingPublicKey());
+
+        # Constructor import
+        addTestCase("constructor imports private key", \testConstructorImport());
+
+        # Comparison tests
+        addTestCase("different keys are not equal", \testDifferentKeysNotEqual());
+        addTestCase("same key equals itself", \testKeyEqualsItself());
+        addTestCase("private and extracted public are equal", \testPrivatePublicEqual());
+
+        # Copy semantics
+        addTestCase("copy creates independent equal key", \testCopy());
+
+        # Error tests
+        addTestCase("error: import nonexistent file", \testErrorImportBadFile());
+        addTestCase("error: invalid key type for generate", \testErrorInvalidKeyType());
+        addTestCase("error: export private from public-only key", \testErrorExportPrivateFromPublic());
+        addTestCase("error: invalid hash type", \testErrorInvalidHashType());
+        addTestCase("error: invalid file format", \testErrorInvalidFileFormat());
+
+        # Constants
+        addTestCase("constants are defined", \testConstants());
+
+        set_return_value(main());
+    }
+
+    destructor() {
+        # Clean up temp directory
+        if (is_dir(tmp_dir)) {
+            list<string> files = glob(tmp_dir + "/*");
+            foreach string f in (files) {
+                unlink(f);
+            }
+            rmdir(tmp_dir);
+        }
+    }
+
+    # --- Key generation tests ---
+
+    testGenerateEd25519() {
+        Qore::Ssh::SshKey key = Qore::Ssh::SshKey::generate(Qore::Ssh::SSH_KEYTYPE_ED25519);
+        assertEq("ssh-ed25519", key.getTypeName());
+        assertEq(Qore::Ssh::SSH_KEYTYPE_ED25519, key.getType());
+        assertTrue(key.isPrivate());
+        assertTrue(key.isPublic());
+    }
+
+    testGenerateRsa() {
+        Qore::Ssh::SshKey key = Qore::Ssh::SshKey::generate(Qore::Ssh::SSH_KEYTYPE_RSA, 2048);
+        assertEq("ssh-rsa", key.getTypeName());
+        assertEq(Qore::Ssh::SSH_KEYTYPE_RSA, key.getType());
+        assertTrue(key.isPrivate());
+        assertTrue(key.isPublic());
+    }
+
+    testGenerateEcdsaP256() {
+        Qore::Ssh::SshKey key = Qore::Ssh::SshKey::generate(Qore::Ssh::SSH_KEYTYPE_ECDSA_P256);
+        assertEq("ecdsa-sha2-nistp256", key.getTypeName());
+        assertEq(Qore::Ssh::SSH_KEYTYPE_ECDSA_P256, key.getType());
+        assertTrue(key.isPrivate());
+        assertTrue(key.isPublic());
+    }
+
+    testGenerateEcdsaP384() {
+        Qore::Ssh::SshKey key = Qore::Ssh::SshKey::generate(Qore::Ssh::SSH_KEYTYPE_ECDSA_P384);
+        assertEq("ecdsa-sha2-nistp384", key.getTypeName());
+        assertEq(Qore::Ssh::SSH_KEYTYPE_ECDSA_P384, key.getType());
+        assertTrue(key.isPrivate());
+        assertTrue(key.isPublic());
+    }
+
+    testGenerateEcdsaP521() {
+        Qore::Ssh::SshKey key = Qore::Ssh::SshKey::generate(Qore::Ssh::SSH_KEYTYPE_ECDSA_P521);
+        assertEq("ecdsa-sha2-nistp521", key.getTypeName());
+        assertEq(Qore::Ssh::SSH_KEYTYPE_ECDSA_P521, key.getType());
+        assertTrue(key.isPrivate());
+        assertTrue(key.isPublic());
+    }
+
+    # --- Key info tests ---
+
+    testGetInfo() {
+        Qore::Ssh::SshKey key = Qore::Ssh::SshKey::generate(Qore::Ssh::SSH_KEYTYPE_ED25519);
+        hash<Qore::Ssh::SshKeyInfo> info = key.getInfo();
+        assertEq("ssh-ed25519", info.type_name);
+        assertEq(Qore::Ssh::SSH_KEYTYPE_ED25519, info.type);
+        assertTrue(info.is_private);
+        assertTrue(info.is_public);
+        assertEq(Type::String, info.fingerprint_sha256.type());
+        assertTrue(info.fingerprint_sha256.size() > 0);
+        assertEq(Type::String, info.public_key_base64.type());
+        assertTrue(info.public_key_base64.size() > 0);
+    }
+
+    # --- Fingerprint tests ---
+
+    testFingerprintSha256() {
+        Qore::Ssh::SshKey key = Qore::Ssh::SshKey::generate(Qore::Ssh::SSH_KEYTYPE_ED25519);
+        string fp = key.getFingerprint(Qore::Ssh::SSH_PUBLICKEY_HASH_SHA256);
+        assertTrue(fp.size() > 0);
+    }
+
+    testFingerprintSha1() {
+        Qore::Ssh::SshKey key = Qore::Ssh::SshKey::generate(Qore::Ssh::SSH_KEYTYPE_ED25519);
+        string fp = key.getFingerprint(Qore::Ssh::SSH_PUBLICKEY_HASH_SHA1);
+        assertTrue(fp.size() > 0);
+    }
+
+    testFingerprintMd5() {
+        Qore::Ssh::SshKey key = Qore::Ssh::SshKey::generate(Qore::Ssh::SSH_KEYTYPE_ED25519);
+        string fp = key.getFingerprint(Qore::Ssh::SSH_PUBLICKEY_HASH_MD5);
+        assertTrue(fp.size() > 0);
+    }
+
+    # --- Public key extraction ---
+
+    testGetPublicKey() {
+        Qore::Ssh::SshKey priv_key = Qore::Ssh::SshKey::generate(Qore::Ssh::SSH_KEYTYPE_ED25519);
+        Qore::Ssh::SshKey pub_key = priv_key.getPublicKey();
+        assertTrue(pub_key.isPublic());
+        assertFalse(pub_key.isPrivate());
+        assertTrue(priv_key.equals(pub_key));
+    }
+
+    # --- Base64 roundtrip tests ---
+
+    testPrivateKeyStringRoundtrip() {
+        Qore::Ssh::SshKey orig = Qore::Ssh::SshKey::generate(Qore::Ssh::SSH_KEYTYPE_ED25519);
+        string pem = orig.getPrivateKeyString();
+        assertTrue(pem.size() > 0);
+        Qore::Ssh::SshKey imported = Qore::Ssh::SshKey::readPrivateKeyString(pem);
+        assertTrue(orig.equals(imported));
+    }
+
+    testPublicKeyBase64Roundtrip() {
+        Qore::Ssh::SshKey orig = Qore::Ssh::SshKey::generate(Qore::Ssh::SSH_KEYTYPE_ED25519);
+        string b64 = orig.getPublicKeyBase64();
+        assertTrue(b64.size() > 0);
+        Qore::Ssh::SshKey imported = Qore::Ssh::SshKey::readPublicKeyString(b64, Qore::Ssh::SSH_KEYTYPE_ED25519);
+        assertTrue(orig.equals(imported));
+    }
+
+    # --- Public key blob ---
+
+    testPublicKeyBlob() {
+        Qore::Ssh::SshKey key = Qore::Ssh::SshKey::generate(Qore::Ssh::SSH_KEYTYPE_ED25519);
+        binary blob = key.getPublicKeyBlob();
+        assertTrue(blob.size() > 0);
+        # The blob should be the base64-decoded public key
+        string b64 = key.getPublicKeyBase64();
+        binary expected = parse_base64_string(b64);
+        assertEq(expected, blob);
+    }
+
+    # --- File roundtrip tests ---
+
+    testPrivateKeyFileRoundtrip() {
+        Qore::Ssh::SshKey orig = Qore::Ssh::SshKey::generate(Qore::Ssh::SSH_KEYTYPE_ED25519);
+        string path = tmp_dir + "/test_privkey";
+        orig.writePrivateKeyFile(path);
+        assertTrue(is_file(path));
+        Qore::Ssh::SshKey imported = Qore::Ssh::SshKey::readPrivateKeyFile(path);
+        assertTrue(orig.equals(imported));
+        assertTrue(imported.isPrivate());
+    }
+
+    testPrivateKeyFileRoundtripPassphrase() {
+        Qore::Ssh::SshKey orig = Qore::Ssh::SshKey::generate(Qore::Ssh::SSH_KEYTYPE_ED25519);
+        string path = tmp_dir + "/test_privkey_pass";
+        orig.writePrivateKeyFile(path, "test-passphrase");
+        assertTrue(is_file(path));
+        Qore::Ssh::SshKey imported = Qore::Ssh::SshKey::readPrivateKeyFile(path, "test-passphrase");
+        assertTrue(orig.equals(imported));
+    }
+
+    testPrivateKeyFileRoundtripOpenSsh() {
+        Qore::Ssh::SshKey orig = Qore::Ssh::SshKey::generate(Qore::Ssh::SSH_KEYTYPE_ED25519);
+        string path = tmp_dir + "/test_privkey_openssh";
+        orig.writePrivateKeyFile(path, NOTHING, Qore::Ssh::SSH_FILE_FORMAT_OPENSSH);
+        assertTrue(is_file(path));
+        Qore::Ssh::SshKey imported = Qore::Ssh::SshKey::readPrivateKeyFile(path);
+        assertTrue(orig.equals(imported));
+    }
+
+    testPrivateKeyFileRoundtripPem() {
+        # PEM format works with RSA keys
+        Qore::Ssh::SshKey orig = Qore::Ssh::SshKey::generate(Qore::Ssh::SSH_KEYTYPE_RSA, 2048);
+        string path = tmp_dir + "/test_privkey_pem";
+        orig.writePrivateKeyFile(path, NOTHING, Qore::Ssh::SSH_FILE_FORMAT_PEM);
+        assertTrue(is_file(path));
+        Qore::Ssh::SshKey imported = Qore::Ssh::SshKey::readPrivateKeyFile(path);
+        assertTrue(orig.equals(imported));
+    }
+
+    testPublicKeyFileRoundtrip() {
+        Qore::Ssh::SshKey orig = Qore::Ssh::SshKey::generate(Qore::Ssh::SSH_KEYTYPE_ED25519);
+        string pub_path = tmp_dir + "/test_pubkey.pub";
+        orig.writePublicKeyFile(pub_path);
+        assertTrue(is_file(pub_path));
+        Qore::Ssh::SshKey imported = Qore::Ssh::SshKey::readPublicKeyFile(pub_path);
+        assertTrue(orig.equals(imported));
+        assertTrue(imported.isPublic());
+        assertFalse(imported.isPrivate());
+    }
+
+    # --- Import existing test keys ---
+
+    testImportExistingHostKey() {
+        string path = test_data_dir + "/ssh_host_ed25519_key";
+        Qore::Ssh::SshKey key = Qore::Ssh::SshKey::readPrivateKeyFile(path);
+        assertEq("ssh-ed25519", key.getTypeName());
+        assertEq(Qore::Ssh::SSH_KEYTYPE_ED25519, key.getType());
+        assertTrue(key.isPrivate());
+        assertTrue(key.isPublic());
+    }
+
+    testImportExistingClientKey() {
+        string path = test_data_dir + "/ssh_client_ed25519_key";
+        Qore::Ssh::SshKey key = Qore::Ssh::SshKey::readPrivateKeyFile(path);
+        assertEq("ssh-ed25519", key.getTypeName());
+        assertTrue(key.isPrivate());
+    }
+
+    testImportExistingPublicKey() {
+        string path = test_data_dir + "/ssh_client_ed25519_key.pub";
+        Qore::Ssh::SshKey key = Qore::Ssh::SshKey::readPublicKeyFile(path);
+        assertEq("ssh-ed25519", key.getTypeName());
+        assertTrue(key.isPublic());
+        assertFalse(key.isPrivate());
+    }
+
+    # --- Constructor import ---
+
+    testConstructorImport() {
+        string path = test_data_dir + "/ssh_host_ed25519_key";
+        Qore::Ssh::SshKey key = new Qore::Ssh::SshKey(path);
+        assertEq("ssh-ed25519", key.getTypeName());
+        assertTrue(key.isPrivate());
+    }
+
+    # --- Comparison tests ---
+
+    testDifferentKeysNotEqual() {
+        Qore::Ssh::SshKey key1 = Qore::Ssh::SshKey::generate(Qore::Ssh::SSH_KEYTYPE_ED25519);
+        Qore::Ssh::SshKey key2 = Qore::Ssh::SshKey::generate(Qore::Ssh::SSH_KEYTYPE_ED25519);
+        assertFalse(key1.equals(key2));
+    }
+
+    testKeyEqualsItself() {
+        Qore::Ssh::SshKey key = Qore::Ssh::SshKey::generate(Qore::Ssh::SSH_KEYTYPE_ED25519);
+        assertTrue(key.equals(key));
+    }
+
+    testPrivatePublicEqual() {
+        Qore::Ssh::SshKey priv_key = Qore::Ssh::SshKey::generate(Qore::Ssh::SSH_KEYTYPE_ED25519);
+        Qore::Ssh::SshKey pub_key = priv_key.getPublicKey();
+        assertTrue(priv_key.equals(pub_key));
+        assertTrue(pub_key.equals(priv_key));
+    }
+
+    # --- Copy tests ---
+
+    testCopy() {
+        Qore::Ssh::SshKey orig = Qore::Ssh::SshKey::generate(Qore::Ssh::SSH_KEYTYPE_ED25519);
+        Qore::Ssh::SshKey copy = orig.copy();
+        assertTrue(orig.equals(copy));
+        assertEq(orig.getTypeName(), copy.getTypeName());
+        assertEq(orig.getPublicKeyBase64(), copy.getPublicKeyBase64());
+    }
+
+    # --- Error tests ---
+
+    testErrorImportBadFile() {
+        assertThrows("SSHKEY-IMPORT-ERROR", sub() {
+            Qore::Ssh::SshKey::readPrivateKeyFile("/nonexistent/path/key");
+        });
+        assertThrows("SSHKEY-IMPORT-ERROR", sub() {
+            Qore::Ssh::SshKey::readPublicKeyFile("/nonexistent/path/key.pub");
+        });
+        assertThrows("SSHKEY-IMPORT-ERROR", sub() {
+            new Qore::Ssh::SshKey("/nonexistent/path/key");
+        });
+    }
+
+    testErrorInvalidKeyType() {
+        assertThrows("SSHKEY-ARG-ERROR", sub() {
+            Qore::Ssh::SshKey::generate(9999);
+        });
+        assertThrows("SSHKEY-ARG-ERROR", sub() {
+            Qore::Ssh::SshKey::generate(0);
+        });
+    }
+
+    testErrorExportPrivateFromPublic() {
+        Qore::Ssh::SshKey priv_key = Qore::Ssh::SshKey::generate(Qore::Ssh::SSH_KEYTYPE_ED25519);
+        Qore::Ssh::SshKey pub_key = priv_key.getPublicKey();
+
+        assertThrows("SSHKEY-EXPORT-ERROR", sub() {
+            pub_key.writePrivateKeyFile(tmp_dir + "/should_not_exist");
+        });
+        assertThrows("SSHKEY-EXPORT-ERROR", sub() {
+            pub_key.getPrivateKeyString();
+        });
+    }
+
+    testErrorInvalidHashType() {
+        Qore::Ssh::SshKey key = Qore::Ssh::SshKey::generate(Qore::Ssh::SSH_KEYTYPE_ED25519);
+        assertThrows("SSHKEY-ARG-ERROR", sub() {
+            key.getFingerprint(99);
+        });
+    }
+
+    testErrorInvalidFileFormat() {
+        Qore::Ssh::SshKey key = Qore::Ssh::SshKey::generate(Qore::Ssh::SSH_KEYTYPE_ED25519);
+        assertThrows("SSHKEY-ARG-ERROR", sub() {
+            key.writePrivateKeyFile(tmp_dir + "/should_not_exist", NOTHING, 99);
+        });
+        assertThrows("SSHKEY-ARG-ERROR", sub() {
+            key.getPrivateKeyString(NOTHING, 99);
+        });
+    }
+
+    # --- Constants tests ---
+
+    testConstants() {
+        # Key type constants
+        assertEq(2, Qore::Ssh::SSH_KEYTYPE_RSA);
+        assertEq(5, Qore::Ssh::SSH_KEYTYPE_ED25519);
+        assertEq(8, Qore::Ssh::SSH_KEYTYPE_ECDSA_P256);
+        assertEq(9, Qore::Ssh::SSH_KEYTYPE_ECDSA_P384);
+        assertEq(10, Qore::Ssh::SSH_KEYTYPE_ECDSA_P521);
+
+        # File format constants
+        assertEq(0, Qore::Ssh::SSH_FILE_FORMAT_DEFAULT);
+        assertEq(1, Qore::Ssh::SSH_FILE_FORMAT_OPENSSH);
+        assertEq(2, Qore::Ssh::SSH_FILE_FORMAT_PEM);
+
+        # Hash type constants
+        assertEq(0, Qore::Ssh::SSH_PUBLICKEY_HASH_SHA1);
+        assertEq(1, Qore::Ssh::SSH_PUBLICKEY_HASH_MD5);
+        assertEq(2, Qore::Ssh::SSH_PUBLICKEY_HASH_SHA256);
+    }
+}

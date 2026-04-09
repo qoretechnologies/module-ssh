@@ -1,0 +1,145 @@
+/** @page sshkeymanagement SSH Key Management
+
+    @tableofcontents
+
+    @section sshkeyintro Key Management Introduction
+
+    The @ref Qore::Ssh::SshKey "SshKey" class provides programmatic SSH key
+    management from Qore, wrapping the libssh PKI API. It supports key
+    generation, import/export from files and strings, inspection, and
+    comparison.
+
+    Supported key types:
+    - @ref Qore::Ssh::SSH_KEYTYPE_RSA "SSH_KEYTYPE_RSA" -- RSA (configurable bit size, default 4096)
+    - @ref Qore::Ssh::SSH_KEYTYPE_ED25519 "SSH_KEYTYPE_ED25519" -- Ed25519 (recommended for new keys)
+    - @ref Qore::Ssh::SSH_KEYTYPE_ECDSA_P256 "SSH_KEYTYPE_ECDSA_P256" -- ECDSA with NIST P-256 curve
+    - @ref Qore::Ssh::SSH_KEYTYPE_ECDSA_P384 "SSH_KEYTYPE_ECDSA_P384" -- ECDSA with NIST P-384 curve
+    - @ref Qore::Ssh::SSH_KEYTYPE_ECDSA_P521 "SSH_KEYTYPE_ECDSA_P521" -- ECDSA with NIST P-521 curve
+
+    @section sshkeygeneration Key Generation
+
+    Generate a new key pair with @ref Qore::Ssh::SshKey::generate() "SshKey::generate()":
+
+    @code{.py}
+# Generate an Ed25519 key (recommended)
+SshKey key = SshKey::generate(SSH_KEYTYPE_ED25519);
+
+# Generate a 4096-bit RSA key
+SshKey rsa_key = SshKey::generate(SSH_KEYTYPE_RSA, 4096);
+
+# Generate an ECDSA P-256 key
+SshKey ecdsa_key = SshKey::generate(SSH_KEYTYPE_ECDSA_P256);
+    @endcode
+
+    Generated keys contain both private and public material:
+    @code{.py}
+assertTrue(key.isPrivate());
+assertTrue(key.isPublic());
+    @endcode
+
+    @section sshkeyimportexport Import and Export
+
+    @subsection sshkeyfileio File I/O
+
+    Import private and public keys from files:
+    @code{.py}
+# Import private key (with optional passphrase)
+SshKey priv = SshKey::readPrivateKeyFile("/home/user/.ssh/id_ed25519");
+SshKey priv_enc = SshKey::readPrivateKeyFile("/home/user/.ssh/id_rsa", "passphrase");
+
+# Import public key
+SshKey pub = SshKey::readPublicKeyFile("/home/user/.ssh/id_ed25519.pub");
+    @endcode
+
+    Export keys to files:
+    @code{.py}
+# Write private key (optionally encrypted, with format choice)
+key.writePrivateKeyFile("/tmp/id_ed25519");
+key.writePrivateKeyFile("/tmp/id_rsa_enc", "passphrase");
+key.writePrivateKeyFile("/tmp/id_rsa.pem", NOTHING, SSH_FILE_FORMAT_PEM);
+
+# Write public key
+key.writePublicKeyFile("/tmp/id_ed25519.pub");
+    @endcode
+
+    The constructor also supports direct private key import:
+    @code{.py}
+SshKey key("/home/user/.ssh/id_ed25519");
+    @endcode
+
+    @subsection sshkeystringio String I/O
+
+    Import and export keys as base64/PEM strings:
+    @code{.py}
+# Export and reimport private key as PEM string
+string pem = key.getPrivateKeyString();
+SshKey reimported = SshKey::readPrivateKeyString(pem);
+
+# Export and reimport public key as base64
+string b64 = key.getPublicKeyBase64();
+SshKey pub = SshKey::readPublicKeyString(b64, SSH_KEYTYPE_ED25519);
+
+# Export public key as binary blob (matches SshAuthContextInfo.public_key)
+binary blob = key.getPublicKeyBlob();
+    @endcode
+
+    @section sshkeyinspection Key Inspection
+
+    Inspect key properties:
+    @code{.py}
+SshKey key = SshKey::generate(SSH_KEYTYPE_ED25519);
+
+# Type information
+printf("type: %s (%d)\n", key.getTypeName(), key.getType());
+# Output: type: ssh-ed25519 (5)
+
+# Public/private state
+printf("private: %y, public: %y\n", key.isPrivate(), key.isPublic());
+
+# Fingerprint (SHA-256 by default)
+printf("fingerprint: %s\n", key.getFingerprint());
+
+# All metadata at once
+hash<SshKeyInfo> info = key.getInfo();
+    @endcode
+
+    Available fingerprint hash types:
+    - @ref Qore::Ssh::SSH_PUBLICKEY_HASH_SHA256 "SSH_PUBLICKEY_HASH_SHA256" (default, recommended)
+    - @ref Qore::Ssh::SSH_PUBLICKEY_HASH_SHA1 "SSH_PUBLICKEY_HASH_SHA1"
+    - @ref Qore::Ssh::SSH_PUBLICKEY_HASH_MD5 "SSH_PUBLICKEY_HASH_MD5"
+
+    @section sshkeycomparison Key Comparison
+
+    Compare keys by their public key material:
+    @code{.py}
+SshKey key1 = SshKey::generate(SSH_KEYTYPE_ED25519);
+SshKey key2 = SshKey::generate(SSH_KEYTYPE_ED25519);
+
+assertFalse(key1.equals(key2));  # different keys
+
+# Extract public key and compare
+SshKey pub = key1.getPublicKey();
+assertTrue(key1.equals(pub));    # same key material
+    @endcode
+
+    @section sshkeyauthintegration Integration with Authentication
+
+    The @ref Qore::Ssh::SshKey::getPublicKeyBlob() "getPublicKeyBlob()" method
+    returns binary data in the same format as
+    @ref Qore::Ssh::SshAuthContextInfo "SshAuthContextInfo::public_key",
+    enabling key matching in authentication providers:
+
+    @code{.py}
+# In an auth provider
+hash<SshAuthDecision> authenticate(hash<SshAuthContextInfo> ctx) {
+    if (ctx.auth_method == "publickey" && ctx.public_key) {
+        # Load a single authorized public key file and compare
+        SshKey authorized = SshKey::readPublicKeyFile("/home/" + ctx.username + "/.ssh/id_ed25519.pub");
+        if (authorized.getPublicKeyBlob() == ctx.public_key) {
+            return <SshAuthDecision>{"accepted": True, "principal": ctx.username};
+        }
+    }
+    return <SshAuthDecision>{"accepted": False};
+}
+    @endcode
+*/

@@ -25,12 +25,15 @@
     - virtual filesystem persistence with snapshot and write-through modes
     - strongly typed virtual SFTP helper, backend, and provider APIs
     - helper/service logger support through @c Qore::Logger::LoggerInterface
+    - SSH key management through @ref Qore::Ssh::SshKey "SshKey" with key
+      generation, import/export, inspection, and comparison
 
     @section sshnavigation Documentation
 
     - @subpage sshgettingstarted -- quick-start examples for SFTP and command servers
     - @subpage sshauthguide -- authentication methods, multi-factor auth, and providers
     - @subpage sshsftpbackendguide -- SFTP backend types, custom backends, and persistence
+    - @subpage sshkeymanagement -- SSH key generation, import, export, and inspection
     - @subpage sshcookbook -- complete typed code examples for common scenarios
     - @subpage sshtypedcontracts -- typed hash reference index grouped by domain
     - @subpage sshreleasenotes -- version history
@@ -56,6 +59,7 @@
     @section sshquicklinks Quick Links
 
     - @ref Qore::Ssh::SshServer "SshServer class reference"
+    - @ref Qore::Ssh::SshKey "SshKey class reference"
     - @ref Qore::Ssh::SftpSession "SftpSession class reference"
     - @ref sshtypedcontracts "Typed hash index"
     - @ref sshcookbook "Code examples"
