@@ -91,7 +91,7 @@ hashdecl Qore::Ssh::SshListenerConfig {
     *bool allow_sftp_service;
     //! optional low-level listener server options
     *hash<auto> server_options;
-    //! optional keepalive probe interval in seconds
+    //! optional keepalive probe interval in seconds; defaults to 60 if not set; set to 0 or a negative value to disable
     *int keepalive_interval_seconds;
     //! optional idle session timeout in seconds
     *int idle_timeout_seconds;

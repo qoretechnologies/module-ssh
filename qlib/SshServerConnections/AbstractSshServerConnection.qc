@@ -186,7 +186,8 @@ public class AbstractSshServerConnection inherits ConnectionProvider::AbstractCo
                 "short_desc": "Interval in seconds between server-side keepalive probes",
                 "type": "int",
                 "desc": "Interval in seconds between SSH keepalive probes sent by the server. "
-                    "Helps detect dead connections over unreliable networks.",
+                    "Helps detect dead connections over unreliable networks. "
+                    "Defaults to `60` when unset; set to `0` or a negative value to disable keepalive probes.",
             },
             "idle_timeout_seconds": <ConnectionOptionInfo>{
                 "display_name": "Idle Timeout",

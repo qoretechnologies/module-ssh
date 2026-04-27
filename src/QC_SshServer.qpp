@@ -637,7 +637,7 @@ struct SshListenerState {
             last_error(nullptr), running(false), accept_waiters(0), max_sessions(-1), allow_command_service(true),
             allow_sftp_service(false), enabled_auth_methods_mask(SSH_AUTH_METHOD_NONE | SSH_AUTH_METHOD_PASSWORD
                 | SSH_AUTH_METHOD_PUBLICKEY | SSH_AUTH_METHOD_INTERACTIVE),
-            keepalive_interval_seconds(-1), idle_timeout_seconds(-1) {
+            keepalive_interval_seconds(60), idle_timeout_seconds(-1) {
     }
 
     explicit SshListenerState(const QoreHashNode* listener)
@@ -645,7 +645,7 @@ struct SshListenerState {
             last_error(nullptr), running(false), accept_waiters(0), max_sessions(-1), allow_command_service(true),
             allow_sftp_service(false), enabled_auth_methods_mask(SSH_AUTH_METHOD_NONE | SSH_AUTH_METHOD_PASSWORD
                 | SSH_AUTH_METHOD_PUBLICKEY | SSH_AUTH_METHOD_INTERACTIVE),
-            keepalive_interval_seconds(-1), idle_timeout_seconds(-1) {
+            keepalive_interval_seconds(60), idle_timeout_seconds(-1) {
         const QoreStringNode* q_name = listener->getKeyValue("name").get<QoreStringNode>();
         const QoreStringNode* q_bind_address = listener->getKeyValue("bind_address").get<QoreStringNode>();
 
