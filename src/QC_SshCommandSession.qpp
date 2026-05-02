@@ -84,8 +84,12 @@ public:
     }
 
     QoreStringNode* getCommand(ExceptionSink* xsink) const {
-        const QoreStringNode* command = request ? request->getKeyValue("command").get<QoreStringNode>() : nullptr;
-        return command ? command->stringRefSelf() : new QoreStringNode;
+        QoreValue command = request ? request->getKeyValue("command") : QoreValue();
+        if (command.getType() == NT_STRING) {
+            QoreStringNodeValueHelper str(command);
+            return str.getReferencedValue();
+        }
+        return new QoreStringNode;
     }
 
     void setExitStatus(int64 status) {

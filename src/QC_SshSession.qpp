@@ -62,14 +62,20 @@ static int ssh_auth_methods_from_list(const QoreListNode* methods, ExceptionSink
 
     int rv = 0;
     for (size_t i = 0, e = methods->size(); i < e; ++i) {
-        const QoreStringNode* method = methods->retrieveEntry(i).get<QoreStringNode>();
-        if (!method || !method->strlen()) {
+        QoreValue method = methods->retrieveEntry(i);
+        if (method.getType() != NT_STRING) {
+            xsink->raiseException("SSHAUTHCONTEXT-ARG-ERROR",
+                "allowed auth method entry %zu must be a non-empty string", i);
+            return 0;
+        }
+        QoreStringValueHelper method_str(method);
+        if (!method_str->strlen()) {
             xsink->raiseException("SSHAUTHCONTEXT-ARG-ERROR",
                 "allowed auth method entry %zu must be a non-empty string", i);
             return 0;
         }
 
-        std::string m = method->c_str();
+        std::string m = method_str->c_str();
         if (m == "none") {
             rv |= SSH_AUTH_METHOD_NONE;
         } else if (m == "password") {
@@ -229,12 +235,16 @@ static bool ssh_policy_mode_enabled(const QoreHashNode* policy) {
         return false;
     }
 
-    const QoreStringNode* mode = policy->getKeyValue("mode").get<QoreStringNode>();
-    if (!mode || !mode->strlen()) {
+    QoreValue mode = policy->getKeyValue("mode");
+    if (mode.getType() != NT_STRING) {
+        return false;
+    }
+    QoreStringValueHelper mode_str_node(mode);
+    if (!mode_str_node->strlen()) {
         return false;
     }
 
-    std::string mode_str = mode->c_str();
+    std::string mode_str = mode_str_node->c_str();
     return mode_str != "disabled";
 }
 
@@ -243,9 +253,12 @@ static bool ssh_policy_mode_read_only(const QoreHashNode* policy) {
         return false;
     }
 
-    const QoreStringNode* mode = policy->getKeyValue("mode").get<QoreStringNode>();
-    if (mode && !strcmp(mode->c_str(), "read-only")) {
-        return true;
+    QoreValue mode = policy->getKeyValue("mode");
+    if (mode.getType() == NT_STRING) {
+        QoreStringValueHelper mode_str(mode);
+        if (!strcmp(mode_str->c_str(), "read-only")) {
+            return true;
+        }
     }
 
     return policy->getKeyValue("read_only").getAsBool();

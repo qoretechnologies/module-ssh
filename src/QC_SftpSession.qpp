@@ -550,11 +550,14 @@ static bool ssh_sftp_get_real_path(const QoreHashNode* info, const std::string& 
         return false;
     }
 
-    const QoreStringNode* root_dir_node = info->getKeyValue("root_dir").get<QoreStringNode>();
-    if (!root_dir_node || !root_dir_node->strlen()) {
+    QoreValue root_dir_value = info->getKeyValue("root_dir");
+    if (root_dir_value.getType() != NT_STRING) {
         return false;
     }
-
+    QoreStringValueHelper root_dir_node(root_dir_value);
+    if (!root_dir_node->strlen()) {
+        return false;
+    }
     real_path = root_dir_node->c_str();
     if (real_path.empty()) {
         return false;
@@ -567,6 +570,20 @@ static bool ssh_sftp_get_real_path(const QoreHashNode* info, const std::string& 
         real_path += normalized_path;
     }
 
+    return true;
+}
+
+static bool ssh_sftp_get_hash_string(const QoreHashNode* h, const char* key, std::string& value) {
+    value.clear();
+    if (!h) {
+        return false;
+    }
+    QoreValue v = h->getKeyValue(key);
+    if (v.getType() != NT_STRING) {
+        return false;
+    }
+    QoreStringValueHelper str(v);
+    value = str->c_str();
     return true;
 }
 
@@ -979,13 +996,19 @@ public:
                 return -1;
             }
 
-            const QoreStringNode* filename = entry->getKeyValue("filename").get<QoreStringNode>();
-            const QoreStringNode* long_name = entry->getKeyValue("long_name").get<QoreStringNode>();
-            if (!filename || !filename->strlen()) {
+            QoreValue filename = entry->getKeyValue("filename");
+            if (filename.getType() != NT_STRING) {
                 xsink->raiseException("SFTPSESSION-BACKEND-ERROR",
                     "directory entry %zu must contain a non-empty filename", i);
                 return -1;
             }
+            QoreStringValueHelper filename_str(filename);
+            if (!filename_str->strlen()) {
+                xsink->raiseException("SFTPSESSION-BACKEND-ERROR",
+                    "directory entry %zu must contain a non-empty filename", i);
+                return -1;
+            }
+            QoreValue long_name = entry->getKeyValue("long_name");
 
             bool is_directory = ssh_sftp_get_hash_bool(entry, "directory", false, xsink);
             int64_t size = ssh_sftp_get_hash_bigint(entry, "size", 0, xsink);
@@ -997,8 +1020,14 @@ public:
                 return -1;
             }
 
-            std::string name_value = filename->c_str();
-            std::string long_name_value = long_name && long_name->strlen() ? long_name->c_str() : name_value;
+            std::string name_value = filename_str->c_str();
+            std::string long_name_value = name_value;
+            if (long_name.getType() == NT_STRING) {
+                QoreStringValueHelper long_name_str(long_name);
+                if (long_name_str->strlen()) {
+                    long_name_value = long_name_str->c_str();
+                }
+            }
             ssh_sftp_write_u32_be(body, static_cast<uint32_t>(name_value.size()));
             body.append(name_value);
             ssh_sftp_write_u32_be(body, static_cast<uint32_t>(long_name_value.size()));
@@ -1338,7 +1367,8 @@ public:
             if (binary->size()) {
                 data.assign(reinterpret_cast<const char*>(binary->getPtr()), binary->size());
             }
-        } else if (const QoreStringNode* str = data_v.get<QoreStringNode>()) {
+        } else if (data_v.getType() == NT_STRING) {
+            QoreStringValueHelper str(data_v);
             if (str->strlen()) {
                 data.assign(str->c_str(), str->size());
             }
@@ -1966,7 +1996,8 @@ public:
         if (target_val.getType() != NT_STRING) {
             return sendStatus(request_id, SSH_FX_FAILURE, "backend did not return target_path", "en", xsink);
         }
-        std::string target = target_val.get<const QoreStringNode>()->c_str();
+        QoreStringValueHelper target_str(target_val);
+        std::string target = target_str->c_str();
         return sendName(request_id, target, target, xsink);
     }
 
@@ -2134,9 +2165,14 @@ public:
                     return msg.release();
                 }
 
-                const QoreStringNode* backend_path = (*backend_result)->getKeyValue("path").get<QoreStringNode>();
-                const std::string final_path = backend_path && backend_path->strlen() ? backend_path->c_str()
-                    : normalized_path;
+                std::string final_path = normalized_path;
+                QoreValue backend_path = (*backend_result)->getKeyValue("path");
+                if (backend_path.getType() == NT_STRING) {
+                    QoreStringValueHelper str(backend_path);
+                    if (str->strlen()) {
+                        final_path = str->c_str();
+                    }
+                }
                 if (sendName(request_id, final_path, final_path, xsink)) {
                     return nullptr;
                 }
@@ -2814,17 +2850,17 @@ public:
             return nullptr;
         }
 
-        const QoreStringNode* path_node = typed_req->getKeyValue("path").get<QoreStringNode>();
-        if (!path_node || !path_node->strlen()) {
+        std::string path;
+        if (!ssh_sftp_get_hash_string(*typed_req, "path", path) || path.empty()) {
             xsink->raiseException("SFTPSESSION-BACKEND-ERROR",
                 "listAvailable() requires a non-empty request path");
             return nullptr;
         }
 
         std::string normalized_path;
-        if (!ssh_sftp_normalize_virtual_path(path_node->c_str(), normalized_path)) {
+        if (!ssh_sftp_normalize_virtual_path(path, normalized_path)) {
             xsink->raiseException("SFTPSESSION-BACKEND-ERROR",
-                "listAvailable() path '%s' escapes the virtual root", path_node ? path_node->c_str() : "");
+                "listAvailable() path '%s' escapes the virtual root", path.c_str());
             return nullptr;
         }
 
@@ -2875,17 +2911,17 @@ public:
             return nullptr;
         }
 
-        const QoreStringNode* path_node = typed_req->getKeyValue("path").get<QoreStringNode>();
-        if (!path_node || !path_node->strlen()) {
+        std::string path;
+        if (!ssh_sftp_get_hash_string(*typed_req, "path", path) || path.empty()) {
             xsink->raiseException("SFTPSESSION-BACKEND-ERROR",
                 "submit() requires a non-empty request path");
             return nullptr;
         }
 
         std::string normalized_path;
-        if (!ssh_sftp_normalize_virtual_path(path_node->c_str(), normalized_path)) {
+        if (!ssh_sftp_normalize_virtual_path(path, normalized_path)) {
             xsink->raiseException("SFTPSESSION-BACKEND-ERROR",
-                "submit() path '%s' escapes the virtual root", path_node ? path_node->c_str() : "");
+                "submit() path '%s' escapes the virtual root", path.c_str());
             return nullptr;
         }
 
@@ -2901,12 +2937,12 @@ public:
         }
 
         const BinaryNode* data_node = typed_req->getKeyValue("data").get<BinaryNode>();
-        const QoreStringNode* source_path_node = typed_req->getKeyValue("source_path").get<QoreStringNode>();
+        std::string source_path;
+        ssh_sftp_get_hash_string(*typed_req, "source_path", source_path);
         if (data_node) {
             backend_req->setKeyValue("data", data_node->refSelf(), xsink);
             backend_req->setKeyValue("size", static_cast<int64>(data_node->size()), xsink);
-        } else if (source_path_node && source_path_node->strlen()) {
-            std::string source_path = source_path_node->c_str();
+        } else if (!source_path.empty()) {
             if (ssh_sftp_check_fs_access(source_path, QSEC_READ, xsink)) {
                 return nullptr;
             }
@@ -2945,8 +2981,8 @@ public:
         typed_backend_req->setKeyValue("session_info", getInfo(xsink), xsink);
         if (data_node) {
             typed_backend_req->setKeyValue("data", data_node->refSelf(), xsink);
-        } else if (source_path_node && source_path_node->strlen()) {
-            typed_backend_req->setKeyValue("source_path", new QoreStringNode(source_path_node->c_str()), xsink);
+        } else if (!source_path.empty()) {
+            typed_backend_req->setKeyValue("source_path", new QoreStringNode(source_path.c_str()), xsink);
             typed_backend_req->setKeyValue("data", backend_req->getKeyValue("data").refSelf(), xsink);
         }
         if (typed_req->existsKey("metadata")) {
@@ -3000,17 +3036,17 @@ public:
             return nullptr;
         }
 
-        const QoreStringNode* path_node = typed_req->getKeyValue("path").get<QoreStringNode>();
-        if (!path_node || !path_node->strlen()) {
+        std::string path;
+        if (!ssh_sftp_get_hash_string(*typed_req, "path", path) || path.empty()) {
             xsink->raiseException("SFTPSESSION-BACKEND-ERROR",
                 "retrieve() requires a non-empty request path");
             return nullptr;
         }
 
         std::string normalized_path;
-        if (!ssh_sftp_normalize_virtual_path(path_node->c_str(), normalized_path)) {
+        if (!ssh_sftp_normalize_virtual_path(path, normalized_path)) {
             xsink->raiseException("SFTPSESSION-BACKEND-ERROR",
-                "retrieve() path '%s' escapes the virtual root", path_node ? path_node->c_str() : "");
+                "retrieve() path '%s' escapes the virtual root", path.c_str());
             return nullptr;
         }
 
@@ -3085,17 +3121,17 @@ public:
             return nullptr;
         }
 
-        const QoreStringNode* path_node = typed_req->getKeyValue("path").get<QoreStringNode>();
-        if (!path_node || !path_node->strlen()) {
+        std::string path;
+        if (!ssh_sftp_get_hash_string(*typed_req, "path", path) || path.empty()) {
             xsink->raiseException("SFTPSESSION-BACKEND-ERROR",
                 "completeRetrieve() requires a non-empty request path");
             return nullptr;
         }
 
         std::string normalized_path;
-        if (!ssh_sftp_normalize_virtual_path(path_node->c_str(), normalized_path)) {
+        if (!ssh_sftp_normalize_virtual_path(path, normalized_path)) {
             xsink->raiseException("SFTPSESSION-BACKEND-ERROR",
-                "completeRetrieve() path '%s' escapes the virtual root", path_node ? path_node->c_str() : "");
+                "completeRetrieve() path '%s' escapes the virtual root", path.c_str());
             return nullptr;
         }
 
@@ -3152,14 +3188,15 @@ public:
         {
             std::ostringstream os;
             os << "SftpSession completeRetrieve path=" << normalized_path;
-            const QoreStringNode* completion_mode
-                = typed_req->getKeyValue("completion_mode").get<QoreStringNode>();
-            if (!completion_mode) {
+            std::string completion_mode;
+            if (!ssh_sftp_get_hash_string(*typed_req, "completion_mode", completion_mode)) {
                 const QoreHashNode* metadata = typed_req->getKeyValue("metadata").get<QoreHashNode>();
-                completion_mode = metadata ? metadata->getKeyValue("mode").get<QoreStringNode>() : nullptr;
+                if (metadata) {
+                    ssh_sftp_get_hash_string(metadata, "mode", completion_mode);
+                }
             }
-            if (completion_mode && completion_mode->strlen()) {
-                os << " completion_mode=" << completion_mode->c_str();
+            if (!completion_mode.empty()) {
+                os << " completion_mode=" << completion_mode;
             }
             logInfo(os.str());
         }
@@ -3304,19 +3341,23 @@ public:
             }
             ExceptionSink xsink;
             if (finalizeBackendFileState(*i.second, false, 0, &xsink) && xsink) {
-                const QoreStringNode* err = xsink.getExceptionErr().get<const QoreStringNode>();
-                const QoreStringNode* desc = xsink.getExceptionDesc().get<const QoreStringNode>();
                 std::string msg = "SftpSession backend handle finalization failed during close";
-                if (err || desc) {
+                QoreValue err = xsink.getExceptionErr();
+                QoreValue desc = xsink.getExceptionDesc();
+                if (err.getType() == NT_STRING || desc.getType() == NT_STRING) {
                     msg += ": ";
-                    if (err) {
-                        msg += err->c_str();
+                    bool has_err = false;
+                    if (err.getType() == NT_STRING) {
+                        QoreStringValueHelper str(err);
+                        msg += str->c_str();
+                        has_err = true;
                     }
-                    if (desc) {
-                        if (err) {
+                    if (desc.getType() == NT_STRING) {
+                        QoreStringValueHelper str(desc);
+                        if (has_err) {
                             msg += ": ";
                         }
-                        msg += desc->c_str();
+                        msg += str->c_str();
                     }
                 }
                 logWarn(msg);
@@ -3350,15 +3391,15 @@ public:
             return nullptr;
         }
 
-        const QoreStringNode* final_path_node = current_transfer_info->getKeyValue("final_path").get<QoreStringNode>();
-        if (!final_path_node || !final_path_node->strlen()) {
+        std::string final_path;
+        if (!ssh_sftp_get_hash_string(*current_transfer_info, "final_path", final_path) || final_path.empty()) {
             xsink->raiseException("SFTPSESSION-TRANSFER-ERROR",
                 "active transfer info must include a non-empty final_path");
             return nullptr;
         }
 
-        const QoreStringNode* temporary_path_node
-            = current_transfer_info->getKeyValue("temporary_path").get<QoreStringNode>();
+        std::string temporary_path;
+        ssh_sftp_get_hash_string(*current_transfer_info, "temporary_path", temporary_path);
         bool atomic_publish = current_transfer_info->getKeyValue("atomic_publish").getAsBool();
         if (*xsink) {
             xsink->raiseException("SFTPSESSION-TRANSFER-ERROR",
@@ -3366,8 +3407,6 @@ public:
             return nullptr;
         }
 
-        std::string final_path = final_path_node->c_str();
-        std::string temporary_path = temporary_path_node ? temporary_path_node->c_str() : std::string();
         std::string staging_path = atomic_publish && !temporary_path.empty() ? temporary_path : final_path;
 
         if (ssh_sftp_check_fs_access(source_path, move ? QSEC_READ | QSEC_WRITE : QSEC_READ, xsink)) {
@@ -3442,18 +3481,20 @@ public:
             return nullptr;
         }
 
-        const QoreStringNode* final_path_node = current_transfer_info->getKeyValue("final_path").get<QoreStringNode>();
-        const QoreStringNode* temporary_path_node
-            = current_transfer_info->getKeyValue("temporary_path").get<QoreStringNode>();
-        const QoreStringNode* path_node = current_transfer_info->getKeyValue("path").get<QoreStringNode>();
+        std::string final_path;
+        std::string temporary_path;
+        std::string path;
+        ssh_sftp_get_hash_string(*current_transfer_info, "final_path", final_path);
+        ssh_sftp_get_hash_string(*current_transfer_info, "temporary_path", temporary_path);
+        ssh_sftp_get_hash_string(*current_transfer_info, "path", path);
 
         std::string source_path;
-        if (final_path_node && final_path_node->strlen()) {
-            source_path = final_path_node->c_str();
-        } else if (temporary_path_node && temporary_path_node->strlen()) {
-            source_path = temporary_path_node->c_str();
-        } else if (path_node && path_node->strlen()) {
-            source_path = path_node->c_str();
+        if (!final_path.empty()) {
+            source_path = final_path;
+        } else if (!temporary_path.empty()) {
+            source_path = temporary_path;
+        } else if (!path.empty()) {
+            source_path = path;
         } else {
             xsink->raiseException("SFTPSESSION-TRANSFER-ERROR",
                 "active transfer info must include a readable source path");
@@ -3879,10 +3920,11 @@ binary SftpSession::retrieveData(hash<SftpOpenRequest> req) {
     ReferenceHolder<QoreHashNode> result(priv->retrieve(req, xsink), xsink);
     const BinaryNode* data_bin = result ? result->getKeyValue("data").get<BinaryNode>() : nullptr;
     if (!data_bin) {
-        const QoreStringNode* path = req->getKeyValue("path").get<QoreStringNode>();
+        std::string path;
+        ssh_sftp_get_hash_string(req, "path", path);
         xsink->raiseException("SFTPSESSION-BACKEND-ERROR",
             "retrieveData() requires backend retrieve() to return immediate binary data for path '%s'",
-            path ? path->c_str() : "<unknown>");
+            path.empty() ? "<unknown>" : path.c_str());
         return QoreValue();
     }
     return data_bin->refSelf();
@@ -4171,11 +4213,12 @@ hash<SftpOperationResult> SftpSession::retrieveToLocalFile(hash<SftpOpenRequest>
         *string completion_mode, bool create_parents = True) {
     ReferenceHolder<QoreHashNode> result(priv->retrieve(req, xsink), xsink);
     const BinaryNode* data_bin = result ? result->getKeyValue("data").get<BinaryNode>() : nullptr;
-    const QoreStringNode* path = req->getKeyValue("path").get<QoreStringNode>();
+    std::string path;
+    ssh_sftp_get_hash_string(req, "path", path);
     if (!data_bin) {
         xsink->raiseException("SFTPSESSION-BACKEND-ERROR",
             "retrieveToLocalFile() requires backend retrieve() to return immediate binary data for path '%s'",
-            path ? path->c_str() : "<unknown>");
+            path.empty() ? "<unknown>" : path.c_str());
         return QoreValue();
     }
 
@@ -4184,7 +4227,7 @@ hash<SftpOperationResult> SftpSession::retrieveToLocalFile(hash<SftpOpenRequest>
     }
 
     ReferenceHolder<QoreHashNode> final_result(new QoreHashNode(autoTypeInfo), xsink);
-    final_result->setKeyValue("path", path ? path->refSelf() : new QoreStringNode(""), xsink);
+    final_result->setKeyValue("path", new QoreStringNode(path.c_str()), xsink);
     final_result->setKeyValue("exists", true, xsink);
     final_result->setKeyValue("completed", false, xsink);
 
@@ -4202,7 +4245,7 @@ hash<SftpOperationResult> SftpSession::retrieveToLocalFile(hash<SftpOpenRequest>
             : new QoreHashNode(autoTypeInfo), xsink);
 
     ReferenceHolder<QoreHashNode> complete_req(new QoreHashNode(autoTypeInfo), xsink);
-    complete_req->setKeyValue("path", path ? path->refSelf() : new QoreStringNode(""), xsink);
+    complete_req->setKeyValue("path", new QoreStringNode(path.c_str()), xsink);
     complete_req->setKeyValue("operation", new QoreStringNode("complete-retrieve"), xsink);
     complete_req->setKeyValue("completion_mode", completion_mode->refSelf(), xsink);
     complete_req->setKeyValue("target_path", target_path->refSelf(), xsink);
