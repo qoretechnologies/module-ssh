@@ -105,7 +105,8 @@ class SftpServerDataProviderDataProviderTest inherits QUnit::Test {
 
         assertEq(SftpServerDataProvider::FactoryName, provider.getName());
         list<string> children = provider.getChildProviderNames();
-        assertEq(11, children.size());
+        # DP4: includes the inbound-file-rejected event provider
+        assertEq(12, children.size());
         assertTrue(inlist("list-outbound", children));
         assertTrue(inlist("retrieve-outbound", children));
         assertTrue(inlist("submit-inbound", children));
@@ -117,7 +118,8 @@ class SftpServerDataProviderDataProviderTest inherits QUnit::Test {
     testSchemeBridge() {
         SftpServerDataProvider::VirtualSftpExchangeRecordStore store = getStore();
         list<hash<DataProviderActionInfo>> actions = DataProviderActionCatalog::getActionsForScheme("sftpserver");
-        assertEq(11, actions.size());
+        # DP4: includes the inbound-file-rejected event action
+        assertEq(12, actions.size());
         assertTrue(inlist("cleanup-expired", map $1.action, actions.iterator()));
         assertTrue(inlist("list-outbound", map $1.action, actions.iterator()));
         assertTrue(inlist(SftpServerDataProvider::EventInboundFileAccepted, map $1.action, actions.iterator()));
@@ -193,7 +195,8 @@ class SftpServerDataProviderDataProviderTest inherits QUnit::Test {
         hash<auto> stat = store.getExchange().stat(<Qore::Ssh::SftpPathRequest>{"path": "/inbound/tenant/old.dat"});
         hash<auto> cleanup_result = provider.getChildProviderEx("cleanup-expired").doRequest({
             "queue": SftpServerDataProvider::RetentionQueueInbound,
-            "now_s": stat.metadata.expires_at,
+            # DP3: the cleanup-expired action surfaces the evaluation time as a date
+            "now_s": 1970-01-01Z + seconds(stat.metadata.expires_at),
             "remove_empty_directories": True,
         });
 
@@ -252,7 +255,8 @@ class SftpServerDataProviderDataProviderTest inherits QUnit::Test {
         hash<auto> alpha_stat = store.getExchange().stat(<Qore::Ssh::SftpPathRequest>{"path": "/inbound/tenant/alpha.dat"});
         hash<auto> alpha_cleanup = provider.getChildProviderEx("cleanup-expired").doRequest({
             "queue": SftpServerDataProvider::RetentionQueueInbound,
-            "now_s": alpha_stat.metadata.expires_at,
+            # DP3: the cleanup-expired action surfaces the evaluation time as a date
+            "now_s": 1970-01-01Z + seconds(alpha_stat.metadata.expires_at),
             "principal": "principal:alpha",
         });
         assertEq("principal:alpha", alpha_cleanup.principal);

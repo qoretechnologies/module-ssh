@@ -23,6 +23,28 @@
 */
 
 public namespace SftpServerDataProvider {
+    # DP3: the underlying virtual SFTP exchange uses Unix epoch seconds for timestamps, but
+    # the DataProvider schema surfaces date types so the UI renders date pickers.  These
+    # helpers convert at the provider boundary; the int contract with the exchange backend is
+    # unchanged.
+    #! converts the named Unix-epoch-second int keys of a hash to @ref date "date" values
+    public hash<auto> sub sftpServerEpochKeysToDate(hash<auto> h, softlist<string> field_names) {
+        # cast to an untyped hash so a hashdecl int member can be replaced with a date value
+        # (a plain copy preserves the source hashdecl's per-member int typing)
+        hash<auto> rv = cast<hash>(h);
+        foreach string fk in (field_names) {
+            if (rv{fk}.typeCode() == NT_INT) {
+                rv{fk} = 1970-01-01Z + seconds(rv{fk});
+            }
+        }
+        return rv;
+    }
+
+    #! converts an optional @ref date "date" to Unix epoch seconds (NOTHING passes through)
+    public *int sub sftpServerDateToEpoch(auto v) {
+        return v.typeCode() == NT_DATE ? get_epoch_seconds(v) : v;
+    }
+
     public class SftpServerDataProviderFactory inherits AbstractDataProviderFactory {
         private {
             static Class cls = new Class("SftpServerDataProvider");
@@ -120,8 +142,13 @@ public namespace SftpServerDataProvider {
             "display_name": "Inbound Event Payload Mode",
             "short_desc": "Control whether inbound events include payload data",
             "type": AbstractDataProviderTypeMap."string",
-            "desc": "Optional typed payload mode for inbound submission events. Supported values are "
-                "`none` and `inline`. The default is `none`.",
+            "desc": "Optional typed payload mode for inbound submission events.\n\n"
+                "- `none` -- inbound events carry no payload data (the default)\n"
+                "- `inline` -- inbound events include the submitted payload",
+            "allowed_values": (
+                <AllowedValueInfo>{"value": InboundEventPayloadNone, "display_name": "None"},
+                <AllowedValueInfo>{"value": InboundEventPayloadInline, "display_name": "Inline"},
+            ),
         },
         "generate_inbound_checksum": <DataProviderOptionInfo>{
             "display_name": "Generate Inbound Checksum",
@@ -233,8 +260,13 @@ public namespace SftpServerDataProvider {
             "display_name": "Inbound Event Payload Mode",
             "short_desc": "Control whether inbound events include payload data",
             "type": AbstractDataProviderTypeMap."string",
-            "desc": "Optional typed payload mode for inbound submission events. Supported values are "
-                "`none` and `inline`. The default is `none`.",
+            "desc": "Optional typed payload mode for inbound submission events.\n\n"
+                "- `none` -- inbound events carry no payload data (the default)\n"
+                "- `inline` -- inbound events include the submitted payload",
+            "allowed_values": (
+                <AllowedValueInfo>{"value": InboundEventPayloadNone, "display_name": "None"},
+                <AllowedValueInfo>{"value": InboundEventPayloadInline, "display_name": "Inline"},
+            ),
             "loc": "constructor",
         },
         "generate_inbound_checksum": <ActionOptionInfo>{
@@ -371,6 +403,8 @@ public namespace SftpServerDataProvider {
                 "delete-outbound": Class::forName("SftpServerDataProvider::SftpServerDeleteOutboundDataProvider"),
                 "cleanup-expired": Class::forName("SftpServerDataProvider::SftpServerCleanupExpiredDataProvider"),
                 EventInboundFileAccepted: Class::forName(
+                    "SftpServerDataProvider::SftpServerInboundAcceptedEventDataProvider"),
+                EventInboundFileRejected: Class::forName(
                     "SftpServerDataProvider::SftpServerInboundAcceptedEventDataProvider"),
                 EventOutboundFileClaimed: Class::forName(
                     "SftpServerDataProvider::SftpServerOutboundClaimedEventDataProvider"),
@@ -593,7 +627,14 @@ public namespace SftpServerDataProvider {
         }
 
         private auto doRequestImpl(auto req, *hash<auto> request_options) {
-            return getExchange().cleanupExpired(cast<hash<VirtualSftpRetentionCleanupRequest>>(req));
+            # DP3: surface/accept the evaluation time as a date; the exchange uses epoch seconds
+            hash<auto> sreq = req;
+            if (sreq.now_s.typeCode() == NT_DATE) {
+                sreq.now_s = sftpServerDateToEpoch(sreq.now_s);
+            }
+            hash<auto> result =
+                getExchange().cleanupExpired(cast<hash<VirtualSftpRetentionCleanupRequest>>(sreq));
+            return sftpServerEpochKeysToDate(result, "evaluated_at");
         }
 
         private *AbstractDataProviderType getRequestTypeImpl() {
@@ -662,17 +703,44 @@ public namespace SftpServerDataProvider {
             };
         }
 
+        private auto getExampleEventDataImpl(string event_id) {
+            bool rejected = event_id == EventInboundFileRejected;
+            return {
+                "event_type": event_id,
+                "queue": "inbound",
+                "name": "order-12345.csv",
+                "path": "/inbound/order-12345.csv",
+                "size": 1024,
+                "metadata": {"kind": "order", "tenant": "acme"},
+                "data": NOTHING,
+                "submitted_at": now_us(),
+                "source": "sftp",
+                "session_id": "main:1715000000:42",
+                "server_name": "sftp-exchange",
+                "listener_name": "main",
+                "principal": "principal:acme",
+                "accepted": !rejected,
+                "reason_code": rejected ? InboundRejectMaxFileCount : NOTHING,
+                "reason_desc": rejected ? "inbound file-count quota exceeded" : NOTHING,
+                "checksum": rejected ? NOTHING : "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "checksum_algorithm": rejected ? NOTHING : "SHA-256",
+                "transfer_info": NOTHING,
+            };
+        }
+
         private hash<DataProviderInfo> getStaticInfoImpl() {
             return ProviderInfo;
         }
 
         private nothing registerInboundListener() {
             listener_id = getExchange().registerInboundEventListener(sub(hash<VirtualSftpInboundEventInfo> event) {
-                if (event.accepted) {
-                    notifyObservers(EventInboundFileAccepted, event);
+                # DP3: emit submitted_at as a date (the exchange records epoch seconds)
+                hash<auto> ev = sftpServerEpochKeysToDate(event, "submitted_at");
+                if (ev.accepted) {
+                    notifyObservers(EventInboundFileAccepted, ev);
                     return;
                 }
-                notifyObservers(EventInboundFileRejected, event);
+                notifyObservers(EventInboundFileRejected, ev);
             });
         }
     }
@@ -742,11 +810,39 @@ public namespace SftpServerDataProvider {
             };
         }
 
+        private auto getExampleEventDataImpl(string event_id) {
+            string operation = event_id == EventOutboundFileClaimed
+                ? "claim"
+                : (event_id == EventOutboundFileArchived ? "archive" : "delete");
+            return {
+                "event_type": event_id,
+                "queue": "outbound",
+                "name": "report-2026-05.csv",
+                "path": "/outbound/report-2026-05.csv",
+                "size": 4096,
+                "metadata": {"kind": "report", "tenant": "acme"},
+                "completed_at": now_us(),
+                "source": "sftp",
+                "session_id": "main:1715000000:43",
+                "server_name": "sftp-exchange",
+                "listener_name": "main",
+                "principal": "principal:acme",
+                "final_name": operation == "delete" ? NOTHING : "report-2026-05.csv",
+                "operation": operation,
+                "reason_code": NOTHING,
+                "reason_desc": NOTHING,
+                "checksum": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "checksum_algorithm": "SHA-256",
+                "transfer_info": NOTHING,
+            };
+        }
+
         private nothing registerOutboundListener() {
             string event_name = getName();
             listener_id = getExchange().registerOutboundEventListener(sub(hash<VirtualSftpOutboundEventInfo> event) {
                 if (event.event_type == event_name) {
-                    notifyObservers(event_name, event);
+                    # DP3: emit completed_at as a date (the exchange records epoch seconds)
+                    notifyObservers(event_name, sftpServerEpochKeysToDate(event, "completed_at"));
                 }
             });
         }

@@ -210,6 +210,20 @@ module SftpServerDataProvider {
         });
         DataProviderActionCatalog::registerAction(<DataProviderActionInfo>{
             "app": SftpServerDataProvider::AppName,
+            "path": "/" + SftpServerDataProvider::EventInboundFileRejected,
+            "action": SftpServerDataProvider::EventInboundFileRejected,
+            "display_name": "Inbound File Rejected",
+            "short_desc": "Raise an event when an inbound file is rejected",
+            "desc": "Raises a typed event when an inbound file submission is rejected by the configured "
+                "virtual SFTP exchange inbound acceptance policy, including uploads through SFTP "
+                "sessions; the event carries the typed `reason_code` and `reason_desc`.",
+            "action_code": DPAT_EVENT,
+            "action_val": SftpServerDataProvider::EventInboundFileRejected,
+            "output_type": SftpServerInboundEventInfoDataType,
+            "options": SftpServerDataProvider::ConstructorActionOptions,
+        });
+        DataProviderActionCatalog::registerAction(<DataProviderActionInfo>{
+            "app": SftpServerDataProvider::AppName,
             "path": "/" + SftpServerDataProvider::EventOutboundFileClaimed,
             "action": SftpServerDataProvider::EventOutboundFileClaimed,
             "display_name": "Outbound File Claimed",
