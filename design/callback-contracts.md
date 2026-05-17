@@ -192,7 +192,7 @@ Easy backend option:
   inbound/outbound exchange backend on top of the same contract for
   queue-style file submission and retrieval scenarios
 - `SftpServerDataProvider::VirtualSftpExchangeRecordStore` now provides a
-  record-oriented facade on top of `VirtualSftpExchange` for Qorus-style
+  record-oriented facade on top of `VirtualSftpExchange` for integration-style
   submit/list/retrieve/claim/archive workflows
 
 Current implementation step:
@@ -288,7 +288,7 @@ Contract:
   `SftpOperationRequest` rather than encoding the mode in loose metadata
 - these helpers may be implemented on top of a virtual backend with no real
   filesystem paths
-- this is the preferred integration API for Qorus-style atomic file exchanges
+- this is the preferred integration API for atomic file exchanges
 - the current implementation exposes these helpers directly on `SftpSession`
 - `submit()` may be called with either inline binary `data` or a local
   `source_path`; when `source_path` is used, the module reads the file and

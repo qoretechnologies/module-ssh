@@ -71,7 +71,7 @@ Use case:
 
 - inbound file submissions
 - outbound retrieval queues
-- Qorus-style interface exchanges
+- interface-style file exchanges
 
 Behavior:
 

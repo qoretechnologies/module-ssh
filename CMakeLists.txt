@@ -103,7 +103,6 @@ qore_external_user_module("qlib/SftpServerDataProvider" "")
 qore_external_user_module("qlib/SshServerAuthProvider" "")
 qore_external_user_module("qlib/SshServerConnections" "")
 qore_external_user_module("qlib/SshServerCommandProvider" "SshServerConnections")
-qore_external_user_module("qlib/QorusSshIntegration" "")
 
 # Two-phase doc build so the binary module's mainpage and doc pages can @ref
 # into user sub-module symbols.  qore_external_user_module() already wires
@@ -111,4 +110,4 @@ qore_external_user_module("qlib/QorusSshIntegration" "")
 # SshServerCommandProvider -> SshServerConnections cross-reference is supplied
 # via that macro's dependency list above.
 qore_binary_module_two_phase_docs(${module_name}
-    "SftpServerDataProvider;SshServerAuthProvider;SshServerConnections;SshServerCommandProvider;QorusSshIntegration")
+    "SftpServerDataProvider;SshServerAuthProvider;SshServerConnections;SshServerCommandProvider")

@@ -51,8 +51,6 @@ class ScaffoldTest inherits QUnit::Test {
         assertTrue(is_file(repoPath("qlib/SftpServerDataProvider/SftpServerDataProvider.qm")));
         assertTrue(is_dir(repoPath("qlib/SshServerCommandProvider")));
         assertTrue(is_file(repoPath("qlib/SshServerCommandProvider/SshServerCommandProvider.qm")));
-        assertTrue(is_dir(repoPath("qlib/QorusSshIntegration")));
-        assertTrue(is_file(repoPath("qlib/QorusSshIntegration/QorusSshIntegration.qm")));
     }
 
     phase1DesignFilesExist() {

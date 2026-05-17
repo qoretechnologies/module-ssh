@@ -530,7 +530,7 @@ class SftpSessionTest inherits QUnit::Test {
         return <Qore::Ssh::SftpSessionInfo>{
             "session_info": getSessionInfo(),
             "principal": "principal:user",
-            "root_dir": "/tmp/qorus-inbound",
+            "root_dir": "/tmp/integration-inbound",
             "read_only": False,
             "session_data": {"tenant": "test"},
         };
@@ -564,7 +564,7 @@ class SftpSessionTest inherits QUnit::Test {
         Qore::Ssh::SftpSession s(getSftpInfo());
         hash<Qore::Ssh::SftpSessionInfo> info = s.getInfo();
         assertEq("principal:user", info.principal);
-        assertEq("/tmp/qorus-inbound", info.root_dir);
+        assertEq("/tmp/integration-inbound", info.root_dir);
         assertEq("sftp-1", info.session_info.session_id);
     }
 

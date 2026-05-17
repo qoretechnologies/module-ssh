@@ -796,7 +796,7 @@ class SshServerTest inherits QUnit::Test {
                 "principal": sprintf("principal:%s", ctx.username),
                 "command_policy": {
                     "mode": "command-and-subsystem",
-                    "allowed_subsystems": ("qorus-test",),
+                    "allowed_subsystems": ("integration-test",),
                 },
                 "sftp_policy": {"mode": "disabled"},
             };
@@ -1857,7 +1857,7 @@ class SshServerTest inherits QUnit::Test {
 
         int ssh_rc = 0;
         Counter done(1);
-        string cmd = makeSshSubsystemClientCommand(port, "qorus-test", stdout_path, stderr_path);
+        string cmd = makeSshSubsystemClientCommand(port, "integration-test", stdout_path, stderr_path);
         background sub() {
             try {
                 ssh_rc = system(cmd);
@@ -1880,9 +1880,9 @@ class SshServerTest inherits QUnit::Test {
         assertTrue(result.accepted);
         assertEq(37, result.exit_status);
         assertEq("subsystem", result.result_data.request_type);
-        assertEq("qorus-test", result.result_data.subsystem);
-        assertEq("stdout:subsystem:qorus-test\n", stdout_data);
-        assertEq("stderr:subsystem:qorus-test\n", stderr_data);
+        assertEq("integration-test", result.result_data.subsystem);
+        assertEq("stdout:subsystem:integration-test\n", stdout_data);
+        assertEq("stderr:subsystem:integration-test\n", stderr_data);
         assertEq(37, ssh_rc);
     }
 
@@ -1981,7 +1981,7 @@ class SshServerTest inherits QUnit::Test {
 
         int ssh_rc = 0;
         Counter done(1);
-        string cmd = makeSshSubsystemClientCommand(port, "qorus-test", stdout_path, stderr_path);
+        string cmd = makeSshSubsystemClientCommand(port, "integration-test", stdout_path, stderr_path);
         background sub() {
             try {
                 ssh_rc = system(cmd);

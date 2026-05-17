@@ -50,9 +50,9 @@ class SshCommandSessionTest inherits QUnit::Test {
             "listener_name": "lst",
             "username": "user",
             "principal": "user@example.com",
-            "command": "qorus-action",
+            "command": "integration-action",
             "arguments": ("--id", "42"),
-            "environment": {"QORUS_ENV": "test"},
+            "environment": {"INTEGRATION_ENV": "test"},
             "metadata": {"source": "unit-test"},
         };
     }
@@ -61,13 +61,13 @@ class SshCommandSessionTest inherits QUnit::Test {
         Qore::Ssh::SshCommandSession s(getRequest());
         hash<Qore::Ssh::SshCommandRequest> req = s.getRequest();
         assertEq("s-1", req.session_id);
-        assertEq("qorus-action", req.command);
+        assertEq("integration-action", req.command);
         assertEq(2, req.arguments.size());
     }
 
     testGetCommand() {
         Qore::Ssh::SshCommandSession s(getRequest());
-        assertEq("qorus-action", s.getCommand());
+        assertEq("integration-action", s.getCommand());
     }
 
     testExitStatusLifecycle() {
