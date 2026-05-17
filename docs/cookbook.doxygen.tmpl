@@ -13,7 +13,7 @@
     Creates an exchange with an inbound policy, adds outbound data, retrieves
     it, and archives the retrieval.
 
-    @code
+    @code{.py}
     SftpServerDataProvider::VirtualSftpExchange exchange(
         <SftpServerDataProvider::VirtualSftpExchangeOptions>{
             "archive_dir": "/archive",
@@ -43,7 +43,7 @@
 
     Uses the record-oriented queue API on top of a virtual exchange.
 
-    @code
+    @code{.py}
     SftpServerDataProvider::VirtualSftpExchangeRecordStore store(
         <SftpServerDataProvider::VirtualSftpExchangeOptions>{
             "archive_dir": "/archive",
@@ -69,7 +69,7 @@
 
     Demonstrates the low-level typed backend verbs on a virtual filesystem.
 
-    @code
+    @code{.py}
     SftpServerDataProvider::VirtualSftpFilesystem vfs();
     vfs.addOutboundText("report.txt", "payload\n");
 
@@ -93,7 +93,7 @@
 
     Implements a custom streamed read backend using typed hashes.
 
-    @code
+    @code{.py}
     class TypedStreamBackend {
         hash<Qore::Ssh::SftpOpenResult> openRead(hash<Qore::Ssh::SftpOpenRequest> req) {
             return {
@@ -128,7 +128,7 @@
     directly. For the grouped helper-driven configuration surface, prefer the
     @ref sshserverconnectionsintro "SshServerConnections" examples below.
 
-    @code
+    @code{.py}
     SftpServerDataProvider::VirtualSftpExchange exchange(
         <SftpServerDataProvider::VirtualSftpExchangeOptions>{
             "archive_dir": "/archive",
@@ -180,7 +180,7 @@
     This example uses the grouped connection-helper surface through
     @ref SshServerConnections::SftpServerConnection.
 
-    @code
+    @code{.py}
     SftpServerDataProvider::VirtualSftpExchange exchange(
         <SftpServerDataProvider::VirtualSftpExchangeOptions>{
             "inbound_policy": <SftpServerDataProvider::VirtualSftpInboundPolicy>{
@@ -241,7 +241,7 @@
     This example uses the grouped connection-helper and command-service
     configuration surfaces.
 
-    @code
+    @code{.py}
     SshServerCommandProvider::VirtualSshCommandService service(
         <SshServerCommandProvider::VirtualSshCommandServiceOptions>{
             "policy": <SshServerCommandProvider::VirtualSshCommandPolicy>{
@@ -364,7 +364,7 @@
     Registers observers on the DataProvider event layer for inbound SFTP
     uploads.
 
-    @code
+    @code{.py}
     SftpServerDataProvider::VirtualSftpExchange exchange();
 
     AbstractDataProvider provider = DataProvider::getFactory("sftpserver").create({

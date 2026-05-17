@@ -79,7 +79,7 @@
       \c max_total_bytes, \c max_file_count, and \c max_file_size, enforced for
       every write regardless of any inbound policy
 
-    @code
+    @code{.py}
     SftpServerDataProvider::VirtualSftpFilesystem vfs(
         <SftpServerDataProvider::VirtualSftpFilesystemOptions>{
             "max_total_bytes": 64 * 1024 * 1024,
@@ -128,7 +128,7 @@
       \c claimOutbound(), \c archiveOutbound(), \c deleteOutbound()
     - Event listeners, retention policies, live upload policy enforcement
 
-    @code
+    @code{.py}
     SftpServerDataProvider::VirtualSftpExchange exchange(
         <SftpServerDataProvider::VirtualSftpExchangeOptions>{
             "archive_dir": "/archive",
@@ -157,7 +157,7 @@
     - Records typed as
       @ref SftpServerDataProvider::VirtualSftpRecordInfo "VirtualSftpRecordInfo"
 
-    @code
+    @code{.py}
     SftpServerDataProvider::VirtualSftpExchangeRecordStore store();
     store.submitInboundRecord("order.json", binary("{\"id\": 1}"));
     list<hash<SftpServerDataProvider::VirtualSftpRecordInfo>> records
@@ -169,7 +169,7 @@
     Define a class with at least \c stat() and \c list(); add optional methods
     for the operations you need.
 
-    @code
+    @code{.py}
     class MyReadOnlyBackend {
         hash<Qore::Ssh::SftpPathInfo> stat(hash<Qore::Ssh::SftpPathRequest> req) {
             return <Qore::Ssh::SftpPathInfo>{
@@ -223,7 +223,7 @@
     In \c "write-through" mode the entire snapshot is re-serialized after every
     mutation; configure the global resource caps above to bound that cost (and
     server memory) for write-heavy workloads.
-    @code
+    @code{.py}
     SftpServerDataProvider::VirtualSftpFilesystem vfs(
         <SftpServerDataProvider::VirtualSftpFilesystemOptions>{"persistence":
             <SftpServerDataProvider::VirtualSftpPersistenceOptions>{

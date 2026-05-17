@@ -857,18 +857,23 @@ static void ssh_module_init(QoreModuleInitContext& ctx, ExceptionSink& xsink) {
     SshNS.addConstant("SSH_KEYTYPE_ECDSA_P384", (int64)SSH_KEYTYPE_ECDSA_P384);
     SshNS.addConstant("SSH_KEYTYPE_ECDSA_P521", (int64)SSH_KEYTYPE_ECDSA_P521);
 
-    // SSH key file format constants
-#if HAVE_SSH_FILE_FORMAT
+    // SSH key file format constants.  libssh < 0.11.0 does not define the
+    // ssh_file_format_e enumerators; fall back to sentinel values matching the
+    // libssh >= 0.11.0 enum so the constants are always exported.  Attempting a
+    // non-default format on an unsupported library yields a clear runtime error
+    // from the export methods that consume the value (see QC_SshKey.qpp).
+#ifndef SSH_FILE_FORMAT_DEFAULT
+#define SSH_FILE_FORMAT_DEFAULT 0
+#endif
+#ifndef SSH_FILE_FORMAT_OPENSSH
+#define SSH_FILE_FORMAT_OPENSSH 1
+#endif
+#ifndef SSH_FILE_FORMAT_PEM
+#define SSH_FILE_FORMAT_PEM 2
+#endif
     SshNS.addConstant("SSH_FILE_FORMAT_DEFAULT", (int64)SSH_FILE_FORMAT_DEFAULT);
     SshNS.addConstant("SSH_FILE_FORMAT_OPENSSH", (int64)SSH_FILE_FORMAT_OPENSSH);
     SshNS.addConstant("SSH_FILE_FORMAT_PEM", (int64)SSH_FILE_FORMAT_PEM);
-#else
-    // Define constants with the same values as libssh >= 0.11.0 for API consistency;
-    // non-default formats will raise a runtime error
-    SshNS.addConstant("SSH_FILE_FORMAT_DEFAULT", (int64)0);
-    SshNS.addConstant("SSH_FILE_FORMAT_OPENSSH", (int64)1);
-    SshNS.addConstant("SSH_FILE_FORMAT_PEM", (int64)2);
-#endif
 
     // SSH public key hash type constants
     SshNS.addConstant("SSH_PUBLICKEY_HASH_SHA1", (int64)SSH_PUBLICKEY_HASH_SHA1);

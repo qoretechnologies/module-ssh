@@ -320,7 +320,9 @@ class SshServerConnectionsTest inherits QUnit::Test {
         hash<auto> retained_stat = store.getExchange().stat(<Qore::Ssh::SftpPathRequest>{"path": "/inbound/tenant/bridge-old.dat"});
         hash<auto> cleanup_result = provider.getChildProviderEx("cleanup-expired").doRequest({
             "queue": SftpServerDataProvider::RetentionQueueInbound,
-            "now_s": retained_stat.metadata.expires_at,
+            # the DP boundary surfaces/accepts the evaluation time as a date; the
+            # exchange backend stores expires_at as epoch seconds
+            "now_s": 1970-01-01Z + seconds(retained_stat.metadata.expires_at),
             "remove_empty_directories": True,
         });
         assertEq(1, cleanup_result.removed_count);
@@ -375,7 +377,9 @@ class SshServerConnectionsTest inherits QUnit::Test {
         hash<auto> alpha_stat = store.getExchange().stat(<Qore::Ssh::SftpPathRequest>{"path": "/inbound/tenant/bridge-alpha.dat"});
         hash<auto> alpha_cleanup = provider.getChildProviderEx("cleanup-expired").doRequest({
             "queue": SftpServerDataProvider::RetentionQueueInbound,
-            "now_s": alpha_stat.metadata.expires_at,
+            # the DP boundary surfaces/accepts the evaluation time as a date; the
+            # exchange backend stores expires_at as epoch seconds
+            "now_s": 1970-01-01Z + seconds(alpha_stat.metadata.expires_at),
             "principal": "principal:alpha",
         });
         assertEq("principal:alpha", alpha_cleanup.principal);

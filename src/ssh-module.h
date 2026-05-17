@@ -18,8 +18,19 @@
 #include <qore/Qore.h>
 #include <string>
 
+#include "config.h"
+
 //! libssh >= 0.11.0 adds ssh_file_format_e and *_format() export functions
-#define HAVE_SSH_FILE_FORMAT (LIBSSH_VERSION_INT >= SSH_VERSION_INT(0, 11, 0))
+/** HAVE_SSH_FILE_FORMAT is probed at configure time via check_symbol_exists()
+    and propagated through config.h.  If the configure-time probe is unavailable
+    (e.g. the header is compiled outside the CMake build), fall back to a libssh
+    version test so the header remains self-contained.  The flag is presence-
+    based: defined when the API is available, otherwise left undefined. */
+#ifndef HAVE_SSH_FILE_FORMAT
+#if LIBSSH_VERSION_INT >= SSH_VERSION_INT(0, 11, 0)
+#define HAVE_SSH_FILE_FORMAT 1
+#endif
+#endif
 
 //! Thread-safe registry of live accepted SSH sessions.
 /** Owned by @ref SshServerPriv through a @c std::shared_ptr and referenced by each live

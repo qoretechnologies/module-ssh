@@ -101,7 +101,7 @@ module SshServerAuthProvider {
     The following example creates a password-only auth provider with a single
     user:
 
-    @code
+    @code{.py}
     VirtualSshAuthProvider provider(<VirtualSshAuthProviderOptions>{
         "methods": ("password",),
         "password": <VirtualSshPasswordAuthOptions>{

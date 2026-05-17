@@ -9,6 +9,36 @@ pkg_check_modules(LIBSSH REQUIRED libssh)
 
 include_directories(${LIBSSH_INCLUDE_DIRS})
 include_directories(${CMAKE_SOURCE_DIR}/src)
+include_directories(${CMAKE_BINARY_DIR})
+
+# Optional libssh feature probe: the file-format export API
+# (ssh_file_format_e + ssh_pki_export_*_format()) was added in libssh 0.11.0.
+# Detect it by symbol presence rather than a version macro so the module also
+# builds against vendor backports/patched libssh where the version int lags.
+include(CheckSymbolExists)
+set(_saved_cmake_required_includes "${CMAKE_REQUIRED_INCLUDES}")
+set(_saved_cmake_required_libraries "${CMAKE_REQUIRED_LIBRARIES}")
+list(APPEND CMAKE_REQUIRED_INCLUDES ${LIBSSH_INCLUDE_DIRS})
+# ssh_pki_export_privkey_file_format is a function, so check_symbol_exists must
+# link libssh to resolve it; without the library it fails with a spurious
+# "undefined reference" even though the declaration is present.
+if (LIBSSH_LINK_LIBRARIES)
+    list(APPEND CMAKE_REQUIRED_LIBRARIES ${LIBSSH_LINK_LIBRARIES})
+else()
+    list(APPEND CMAKE_REQUIRED_LIBRARIES ${LIBSSH_LDFLAGS})
+endif()
+check_symbol_exists(ssh_pki_export_privkey_file_format "libssh/libssh.h"
+    HAVE_SSH_FILE_FORMAT)
+set(CMAKE_REQUIRED_INCLUDES "${_saved_cmake_required_includes}")
+set(CMAKE_REQUIRED_LIBRARIES "${_saved_cmake_required_libraries}")
+if (HAVE_SSH_FILE_FORMAT)
+    message(STATUS "libssh file-format export API: present (HAVE_SSH_FILE_FORMAT)")
+else()
+    message(STATUS "libssh file-format export API: absent "
+        "(libssh < 0.11.0; non-default key formats will raise a runtime error)")
+endif()
+configure_file(${CMAKE_SOURCE_DIR}/cmake/config.h.cmake
+    ${CMAKE_BINARY_DIR}/config.h)
 
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
 if(COMPILER_SUPPORTS_CXX11)
@@ -67,101 +97,18 @@ if (DOXYGEN_FOUND)
         "    @brief Generic SFTP Server Exchange DataProvider logo file.\n"
         "*/\n"
     )
-
-    # Two-phase doc build for the external binary module plus user sub-modules.
-    # The initial docs-module pass generates ssh.tag. User-module docs are then
-    # built with ssh.tag available, producing their own tag files. The final
-    # docs-module-final pass rebuilds the binary module docs with user-module
-    # tag files enabled so cross-references from the binary-module mainpage into
-    # user-module symbols resolve deterministically.
-    file(APPEND ${CMAKE_BINARY_DIR}/Doxyfile
-        "\n# Suppress unresolved user-module cross-reference warnings in the initial pass\n"
-        "WARN_IF_DOC_ERROR = NO\n")
-
-    file(COPY_FILE ${CMAKE_BINARY_DIR}/Doxyfile ${CMAKE_BINARY_DIR}/Doxyfile.final)
-    file(APPEND ${CMAKE_BINARY_DIR}/Doxyfile.final
-        "\n# Final pass: enable user-module cross-references and re-enable doc error warnings\n"
-        "TAGFILES = "
-        "${CMAKE_BINARY_DIR}/SftpServerDataProvider.tag=../../SftpServerDataProvider/html "
-        "${CMAKE_BINARY_DIR}/SshServerAuthProvider.tag=../../SshServerAuthProvider/html "
-        "${CMAKE_BINARY_DIR}/SshServerConnections.tag=../../SshServerConnections/html "
-        "${CMAKE_BINARY_DIR}/SshServerCommandProvider.tag=../../SshServerCommandProvider/html "
-        "${CMAKE_BINARY_DIR}/QorusSshIntegration.tag=../../QorusSshIntegration/html "
-        "\n")
-    file(APPEND ${CMAKE_BINARY_DIR}/Doxyfile.final
-        "WARN_IF_DOC_ERROR = YES\n")
-
-    add_custom_target(docs-module-final
-        COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/Doxyfile.final
-        COMMAND ${QORE_DOCS_ENV} ${QORE_QDX_COMMAND} --post ${CMAKE_BINARY_DIR}/docs/${module_name}/html
-            ${CMAKE_BINARY_DIR}/docs/${module_name}/html/search
-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-        COMMENT "Generating API documentation with Doxygen (final pass with user-module cross-references)"
-        VERBATIM
-    )
 endif()
 
 qore_external_user_module("qlib/SftpServerDataProvider" "")
 qore_external_user_module("qlib/SshServerAuthProvider" "")
 qore_external_user_module("qlib/SshServerConnections" "")
-qore_external_user_module("qlib/SshServerCommandProvider" "")
+qore_external_user_module("qlib/SshServerCommandProvider" "SshServerConnections")
 qore_external_user_module("qlib/QorusSshIntegration" "")
 
-if (DOXYGEN_FOUND)
-    set(SSH_USER_MODULES
-        SftpServerDataProvider
-        SshServerAuthProvider
-        SshServerConnections
-        SshServerCommandProvider
-        QorusSshIntegration
-    )
-
-    foreach(ssh_user_module IN LISTS SSH_USER_MODULES)
-        file(APPEND ${CMAKE_BINARY_DIR}/doxygen/Doxyfile.${ssh_user_module}
-            "\n# Suppress unresolved cross-reference warnings in the initial pass\n"
-            "WARN_IF_DOC_ERROR = NO\n")
-
-        file(COPY_FILE
-            ${CMAKE_BINARY_DIR}/doxygen/Doxyfile.${ssh_user_module}
-            ${CMAKE_BINARY_DIR}/doxygen/Doxyfile.${ssh_user_module}.final)
-
-        set(ssh_user_tagfiles
-            "TAGFILES = ${CMAKE_BINARY_DIR}/ssh.tag=../../ssh/html ")
-        foreach(other_user_module IN LISTS SSH_USER_MODULES)
-            if (NOT other_user_module STREQUAL ssh_user_module)
-                string(APPEND ssh_user_tagfiles
-                    "${CMAKE_BINARY_DIR}/${other_user_module}.tag=../../${other_user_module}/html ")
-            endif()
-        endforeach()
-
-        file(APPEND ${CMAKE_BINARY_DIR}/doxygen/Doxyfile.${ssh_user_module}.final
-            "\n# Final pass: enable cross-references to the binary module and all user modules\n"
-            "${ssh_user_tagfiles}\n"
-            "WARN_IF_DOC_ERROR = YES\n")
-
-        add_custom_target(docs-${ssh_user_module}-final
-            COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/doxygen/Doxyfile.${ssh_user_module}.final
-            COMMAND ${QORE_DOCS_ENV} ${QORE_QDX_COMMAND} --post ${CMAKE_BINARY_DIR}/docs/${ssh_user_module}/html
-                ${CMAKE_BINARY_DIR}/docs/${ssh_user_module}/html/search
-            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-            COMMENT "Generating API documentation with Doxygen (final pass with cross-references) for: ${ssh_user_module}"
-            VERBATIM
-        )
-        add_dependencies(docs-${ssh_user_module}-final
-            docs-SftpServerDataProvider
-            docs-SshServerAuthProvider
-            docs-SshServerConnections
-            docs-SshServerCommandProvider
-            docs-QorusSshIntegration
-        )
-    endforeach()
-
-    add_dependencies(docs-module-final
-        docs-SftpServerDataProvider-final
-        docs-SshServerAuthProvider-final
-        docs-SshServerConnections-final
-        docs-SshServerCommandProvider-final
-        docs-QorusSshIntegration-final
-    )
-    add_dependencies(docs docs-module-final)
-endif()
+# Two-phase doc build so the binary module's mainpage and doc pages can @ref
+# into user sub-module symbols.  qore_external_user_module() already wires
+# ssh.tag into each user module's TAGFILES for the reverse direction, and the
+# SshServerCommandProvider -> SshServerConnections cross-reference is supplied
+# via that macro's dependency list above.
+qore_binary_module_two_phase_docs(${module_name}
+    "SftpServerDataProvider;SshServerAuthProvider;SshServerConnections;SshServerCommandProvider;QorusSshIntegration")

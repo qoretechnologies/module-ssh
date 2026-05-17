@@ -249,7 +249,7 @@ public:
         if (ssh_key_check_fs_access(path, QSEC_WRITE | QSEC_CREATE, xsink)) {
             return -1;
         }
-#if HAVE_SSH_FILE_FORMAT
+#ifdef HAVE_SSH_FILE_FORMAT
         int rc = ssh_pki_export_privkey_file_format(key, passphrase, nullptr, nullptr, path,
             static_cast<enum ssh_file_format_e>(format));
 #else
@@ -299,7 +299,7 @@ public:
             return nullptr;
         }
         char* b64_key = nullptr;
-#if HAVE_SSH_FILE_FORMAT
+#ifdef HAVE_SSH_FILE_FORMAT
         int rc = ssh_pki_export_privkey_base64_format(key, passphrase, nullptr, nullptr, &b64_key,
             static_cast<enum ssh_file_format_e>(format));
 #else
