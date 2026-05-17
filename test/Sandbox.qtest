@@ -41,6 +41,9 @@ class SshSandboxTest inherits QUnit::Test {
         addTestCase("SSH key file I/O is denied under a filesystem-deny sandbox", \testKeyFsDenied());
         addTestCase("SSH key file I/O is allowed for an allow-listed sandbox path", \testKeyFsAllowed());
         addTestCase("host key load is denied under a filesystem-deny sandbox", \testHostKeyDenied());
+        addTestCase("listener bind is denied under a network-deny sandbox (S6)", \testBindNetworkDenied());
+        addTestCase("listener bind is allowed for an allow-listed sandbox host (S6)",
+            \testBindNetworkAllowed());
         addTestCase("a blocking accept wait is interruptible via the sandbox interrupt",
             \testAcceptInterruptible());
         set_return_value(main());
@@ -131,6 +134,74 @@ string sub startServer(string hk) {
         p.setSandboxManager(sm);
         # loading the host key file during start() must be blocked by the sandbox (S3)
         assertThrows("FILESYSTEM-ACCESS-DENIED", sub() { p.callFunction("startServer", host_key); });
+    }
+
+    # S6: with the filesystem permitted (so the host key loads and execution reaches the
+    # pre-bind gate), an explicitly denied IP range covering the bind address must block
+    # the listener bind before libssh opens the listening socket.  (checkBind() is
+    # permissive by design -- it ignores the default policy/allow-list and only denies on
+    # a denied IP range or a restricted port -- so blockLocalhost(), which adds
+    # 127.0.0.0/8 to the denied ranges, is the deterministic deny trigger here.)
+    testBindNetworkDenied() {
+        Program p = makeChildProgram("%modern
+%requires ssh
+string sub startServer(string hk) {
+    hash<Qore::Ssh::SshServerConfig> config = <Qore::Ssh::SshServerConfig>{
+        \"name\": \"sandbox-net-deny\",
+        \"listeners\": (
+            <Qore::Ssh::SshListenerConfig>{
+                \"name\": \"main\",
+                \"bind_address\": \"127.0.0.1\",
+                \"port\": 0,
+                \"host_keys\": (hk,),
+                \"enabled_auth_methods\": (\"none\",),
+            },
+        ),
+    };
+    Qore::Ssh::SshServer server(config);
+    server.start();
+    on_exit server.stop();
+    return \"ok\";
+}");
+        SandboxManager sm();
+        sm.setFilesystemDefaultPolicy(True);    # allow FS so the host key loads
+        sm.blockLocalhost();                    # adds 127.0.0.0/8 + ::1/128 to denied ranges
+        p.setSandboxManager(sm);
+        assertThrows("NETWORK-ACCESS-DENIED", sub() { p.callFunction("startServer", host_key); });
+    }
+
+    # S6 positive control: a denied IP range that does NOT cover the bind address must
+    # leave the listener bind permitted, proving the gate actually evaluates the denied
+    # ranges (rather than blanket-allowing or blanket-denying).  Paired with
+    # testBindNetworkDenied (same setup but loopback denied) this deterministically
+    # exercises both sides of the S6 pre-bind network gate.
+    testBindNetworkAllowed() {
+        Program p = makeChildProgram("%modern
+%requires ssh
+string sub startServer(string hk) {
+    hash<Qore::Ssh::SshServerConfig> config = <Qore::Ssh::SshServerConfig>{
+        \"name\": \"sandbox-net-allow\",
+        \"listeners\": (
+            <Qore::Ssh::SshListenerConfig>{
+                \"name\": \"main\",
+                \"bind_address\": \"127.0.0.1\",
+                \"port\": 0,
+                \"host_keys\": (hk,),
+                \"enabled_auth_methods\": (\"none\",),
+            },
+        ),
+    };
+    Qore::Ssh::SshServer server(config);
+    server.start();
+    on_exit server.stop();
+    return \"ok\";
+}");
+        SandboxManager sm();
+        sm.setFilesystemDefaultPolicy(True);
+        sm.addNetworkDeniedIPRange("10.0.0.0/8");   # denies a range that excludes 127.0.0.1
+        p.setSandboxManager(sm);
+        assertEq("ok", p.callFunction("startServer", host_key),
+            "a denied range not covering the bind address must let the listener start");
     }
 
     testAcceptInterruptible() {

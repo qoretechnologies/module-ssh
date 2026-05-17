@@ -29,9 +29,11 @@
 %requires(reexport) Logger
 %modern
 
-namespace Priv {
+public namespace SftpServerDataProvider {
 #! SFTP server exchange logo (loaded at initialization)
-const SftpServerWhiteLogo = File::readTextFile(get_script_dir() + "/generic-sftp-server-exchange-logo.svg");
+/** Declared as a @c public @c const so it is available to @ref DataProvider::DataProviderActionCatalog::registerApp()
+    "registerApp()" and to connection schemes, per the data-provider App Icon convention. */
+public const SftpServerWhiteLogo = File::readTextFile(get_script_dir() + "/generic-sftp-server-exchange-logo.svg");
 }
 
 module SftpServerDataProvider {
@@ -59,7 +61,7 @@ module SftpServerDataProvider {
                 "The app is served by the `sftpserver` connection scheme through "
                 "`SshServerConnections::SftpServerConnection`.",
             "groups": (DataProvider::AppGroup::FileTransfer,),
-            "logo": Priv::SftpServerWhiteLogo,
+            "logo": SftpServerDataProvider::SftpServerWhiteLogo,
             "logo_file_name": "generic-sftp-server-exchange-logo.svg",
             "logo_mime_type": MimeTypeSvg,
         });

@@ -118,6 +118,7 @@ public namespace SftpServerDataProvider {
                     "short_desc": "The binary payload to submit",
                     "type": BinaryType,
                     "desc": "The binary payload to submit.",
+                    "example_value": binary("order-id,amount\n12345,100.00\n"),
                 },
                 "metadata": {
                     "display_name": "Metadata",
@@ -165,6 +166,7 @@ public namespace SftpServerDataProvider {
                     "short_desc": "Optional final entry name for claim or archive",
                     "type": StringOrNothingType,
                     "desc": "Optional final entry name for `claim` or `archive` operations.",
+                    "example_value": "archived/order-12345.csv",
                 },
                 "completion_mode": {
                     "display_name": "Completion Mode",
@@ -203,12 +205,14 @@ public namespace SftpServerDataProvider {
                     "type": DateOrNothingType,
                     "desc": "Optional deterministic evaluation time used to compute retention "
                         "expiration; defaults to the current time when not set.",
+                    "example_value": 2024-01-15Z,
                 },
                 "principal": {
                     "display_name": "Principal",
                     "short_desc": "Optional principal to scope retention cleanup",
                     "type": StringOrNothingType,
                     "desc": "Optional authenticated principal to scope retention cleanup.",
+                    "example_value": "tenant-acme",
                 },
                 "remove_empty_directories": {
                     "display_name": "Remove Empty Directories",
