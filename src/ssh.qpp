@@ -345,6 +345,13 @@ hashdecl Qore::Ssh::SftpSessionInfo {
     *string root_dir;
     //! @c True when the session is read-only
     bool read_only;
+    //! optional hard cap (in bytes) on a non-streamed (buffered) SFTP upload
+    /** When set to a positive value, an in-memory buffered upload that would exceed this many
+        bytes is rejected with @c SSH_FX_FAILURE instead of being buffered, bounding server
+        memory use against a malicious client sending a huge write offset.  When absent or
+        not positive, a built-in default (256 MiB) is used.  Streamed backend writes are not
+        buffered and are not subject to this limit. */
+    *int max_buffered_upload_bytes;
     //! optional session-specific backend data
     *hash<auto> session_data;
 }

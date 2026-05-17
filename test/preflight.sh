@@ -20,6 +20,7 @@ qore --enable-debug test/SftpServerDataProviderDataProvider.qtest -v
 qore --enable-debug test/VirtualSftpServer.qtest -v
 qore --enable-debug test/VirtualSftpInboundPolicyServer.qtest -v
 qore --enable-debug test/SshServer.qtest -v
+qore --enable-debug test/Sandbox.qtest -v
 
 qore --enable-debug examples/VirtualSshCommandLiveServer.qr
 qore --enable-debug examples/VirtualSftpServer.qr

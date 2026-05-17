@@ -62,6 +62,23 @@
     Port @c 0 lets the OS pick a free port; read the actual port from
     @c getStatus() as shown above.
 
+    @note Threading contract: a single accepted @ref Qore::Ssh::SshSession
+    "SshSession" must be driven by one thread at a time.  The underlying libssh
+    session object is not thread-safe, so concurrent @c waitAuthContext() /
+    @c waitCommandSession() / @c waitSftpSession() calls on the same session are
+    rejected with @c SSHSESSION-STATE-ERROR.  Use one driver thread per session
+    (distinct sessions may be driven concurrently).
+
+    @note Cooperative cancellation: all blocking operations (accept, key exchange,
+    auth/command/SFTP waits, SFTP protocol reads) are *cooperatively* cancellable
+    via the sandbox interrupt (@ref Qore::SandboxManager "SandboxManager") or
+    @ref Qore::cancel_thread() "cancel_thread()".  Cancellation is not necessarily
+    immediate: blocking waits poll on a bounded interval, so a cancelled or
+    interrupted thread typically unblocks within ~500ms and raises
+    @c PROGRAM-INTERRUPTED or @c THREAD-CANCELLED.  An indefinite-timeout SFTP
+    read (the default @c timeout_ms of @c 0) waits for the next protocol message
+    but remains interruptible on the same ~500ms cadence.
+
     @section sshgettingstartedcommand Minimal SSH Command Server
 
     The example below creates a virtual command server that responds to

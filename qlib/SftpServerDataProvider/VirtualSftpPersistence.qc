@@ -12,6 +12,7 @@ public namespace SftpServerDataProvider {
             int snapshot_interval_seconds;
             *LoggerInterface logger;
             string snapshot_path;
+            int max_snapshot_bytes;
         }
 
         constructor(hash<VirtualSftpPersistenceOptions> options, *LoggerInterface logger) {
@@ -21,6 +22,7 @@ public namespace SftpServerDataProvider {
             persistence_dir = options.persistence_dir;
             persistence_mode = options.persistence_mode ?? "snapshot";
             snapshot_interval_seconds = options.snapshot_interval_seconds ?? 60;
+            max_snapshot_bytes = options.max_snapshot_bytes ?? (256 * 1024 * 1024);
             self.logger = logger;
             snapshot_path = persistence_dir + "/vfs-snapshot.json";
 
@@ -72,6 +74,13 @@ public namespace SftpServerDataProvider {
             if (!is_file(snapshot_path)) {
                 logDetail(sprintf("no snapshot file found at %s", snapshot_path));
                 return NOTHING;
+            }
+            # Low/Info: bound the on-disk snapshot before loading it wholesale into memory
+            int snapshot_size = hstat(snapshot_path).size;
+            if (snapshot_size > max_snapshot_bytes) {
+                throw "VIRTUAL-SFTP-PERSISTENCE-ERROR",
+                    sprintf("refusing to restore snapshot %s: size %d exceeds max_snapshot_bytes %d",
+                        snapshot_path, snapshot_size, max_snapshot_bytes);
             }
             string json_data = ReadOnlyFile::readTextFile(snapshot_path);
             hash<auto> raw = parse_json(json_data);

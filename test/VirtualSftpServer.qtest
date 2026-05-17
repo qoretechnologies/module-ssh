@@ -32,6 +32,9 @@
 class VirtualSftpServerTest inherits QUnit::Test {
     constructor() : Test("VirtualSftpServerTest", "0.1", \ARGV) {
         addTestCase("real SshServer can serve a virtual SFTP exchange backend", \testVirtualSftpServer());
+        addTestCase("read-only SFTP session denies writes but allows reads", \testReadOnlySftpSessionDeniesWrites());
+        addTestCase("writable SFTP session allows the same write (control)", \testWritableSftpSessionAllowsWrites());
+        addTestCase("buffered upload exceeding the configured cap is rejected", \testBufferedUploadCapEnforced());
         set_return_value(main());
     }
 
@@ -173,5 +176,179 @@ class VirtualSftpServerTest inherits QUnit::Test {
         assertEq("hello from a real SshServer-backed virtual exchange\n", target_data);
         assertEq("/archive", snapshot.directory_paths[1]);
         assertEq("/outbound/hello.txt", snapshot.file_paths[0]);
+    }
+
+    # Drives a real /usr/bin/sftp client through a real SshServer against a writable virtual
+    # filesystem backend, with the session's read-only flag controlled by the factory callback.
+    # Returns the sftp client exit code; backend state is asserted by the caller.
+    private int runVirtualSftpScenario(SftpServerDataProvider::VirtualSftpFilesystem vfs, bool read_only,
+            string batch_commands, reference<string> stderr_data, *int max_buffered_upload_bytes) {
+        hash<Qore::Ssh::SshServerConfig> config = <Qore::Ssh::SshServerConfig>{
+            "name": "ro-test",
+            "listeners": (
+                <Qore::Ssh::SshListenerConfig>{
+                    "name": "main",
+                    "bind_address": "127.0.0.1",
+                    "port": 0,
+                    "host_keys": ("test/data/ssh_host_ed25519_key",),
+                    "enabled_auth_methods": ("none",),
+                    "allow_command_service": False,
+                    "allow_sftp_service": True,
+                },
+            ),
+        };
+        config.auth_callback = hash<auto> sub(hash<Qore::Ssh::SshAuthContextInfo> ctx) {
+            return {
+                "accepted": True,
+                "principal": "principal:" + ctx.username,
+                "command_policy": {"mode": "subsystem-only", "allowed_subsystems": ("sftp",)},
+                "sftp_policy": {"mode": "enabled"},
+            };
+        };
+        config.sftp_factory_callback = hash<auto> sub(hash<Qore::Ssh::SftpSessionInfo> info) {
+            hash<auto> result = {"backend": vfs, "read_only": read_only};
+            if (exists max_buffered_upload_bytes) {
+                result.max_buffered_upload_bytes = max_buffered_upload_bytes;
+            }
+            return result;
+        };
+
+        Qore::Ssh::SshServer server(config);
+        server.start();
+        on_exit server.stop();
+        int port = server.getStatus().listeners[0].bound_port;
+
+        string batch_path = getTmpFile(".ro.batch");
+        string stdout_path = getTmpFile(".ro.out");
+        string stderr_path = getTmpFile(".ro.err");
+        on_exit {
+            cleanupFile(batch_path);
+            cleanupFile(stdout_path);
+            cleanupFile(stderr_path);
+        }
+        writeTextFile(batch_path, batch_commands);
+
+        int sftp_rc = 0;
+        Counter done(1);
+        string cmd = makeSftpClientCommand(port, batch_path, stdout_path, stderr_path);
+        background sub() {
+            try {
+                sftp_rc = system(cmd);
+            } catch (hash<ExceptionInfo> ex) {
+                sftp_rc = -1;
+            }
+            done.dec();
+        }();
+
+        Qore::Ssh::SshSession session = server.acceptSession(5000);
+        server.authenticateSession(session, 15000);
+        Qore::Ssh::SftpSession sftp = server.dispatchSftpSession(session, 15000);
+
+        Counter service_done(1);
+        background sub() {
+            while (True) {
+                auto msg = sftp.processNextRequest(15000);
+                if (msg == NOTHING) {
+                    break;
+                }
+            }
+            service_done.dec();
+        }();
+
+        done.waitForZero(15s);
+        sftp.close();
+        service_done.waitForZero(5s);
+        stderr_data = is_file(stderr_path) ? ReadOnlyFile::readTextFile(stderr_path) : "";
+        session.disconnect();
+        return sftp_rc;
+    }
+
+    testReadOnlySftpSessionDeniesWrites() {
+        SftpServerDataProvider::VirtualSftpFilesystem vfs();
+        vfs.addTextFile("/data/readme.txt", "read me\n");
+
+        string src = getTmpFile(".ro.src");
+        string target = getTmpFile(".ro.target");
+        on_exit {
+            cleanupFile(src);
+            cleanupFile(target);
+        }
+        writeTextFile(src, "this upload must be rejected\n");
+
+        # leading "-" tells batch-mode sftp to continue after a failed command so the
+        # subsequent read is still attempted on the same read-only session
+        string batch = sprintf("-put %s /data/upload.txt\n-mkdir /data/newdir\n-rm /data/readme.txt\n"
+            "get /data/readme.txt %s\nquit\n", src, target);
+
+        string stderr_data;
+        runVirtualSftpScenario(vfs, True, batch, \stderr_data);
+
+        # the mutating operations must have been denied by the binary module read-only gate
+        assertFalse(vfs.exists("/data/upload.txt"), "write (put) must be denied on a read-only session");
+        assertFalse(vfs.exists("/data/newdir"), "mkdir must be denied on a read-only session");
+        assertTrue(vfs.exists("/data/readme.txt"), "rm must be denied on a read-only session");
+        # reads on the same read-only session must still succeed
+        assertEq("read me\n", is_file(target) ? ReadOnlyFile::readTextFile(target) : "");
+    }
+
+    testWritableSftpSessionAllowsWrites() {
+        SftpServerDataProvider::VirtualSftpFilesystem vfs();
+        vfs.addTextFile("/data/readme.txt", "read me\n");
+
+        string src = getTmpFile(".rw.src");
+        string target = getTmpFile(".rw.target");
+        on_exit {
+            cleanupFile(src);
+            cleanupFile(target);
+        }
+        writeTextFile(src, "this upload is allowed\n");
+
+        string batch = sprintf("put %s /data/upload.txt\nget /data/readme.txt %s\nquit\n", src, target);
+
+        string stderr_data;
+        int rc = runVirtualSftpScenario(vfs, False, batch, \stderr_data);
+
+        # the identical write succeeds when the session is not read-only, proving the negative
+        # test above is blocked by the read-only gate and not by an unrelated backend rejection
+        assertEq(0, rc);
+        assertTrue(vfs.exists("/data/upload.txt"), "write (put) must succeed on a writable session");
+        assertEq("this upload is allowed\n", vfs.getFileText("/data/upload.txt"));
+        assertEq("read me\n", is_file(target) ? ReadOnlyFile::readTextFile(target) : "");
+    }
+
+    testBufferedUploadCapEnforced() {
+        SftpServerDataProvider::VirtualSftpFilesystem vfs();
+
+        int cap = 4096;
+        string big_src = getTmpFile(".cap.big");
+        string small_src = getTmpFile(".cap.small");
+        on_exit {
+            cleanupFile(big_src);
+            cleanupFile(small_src);
+        }
+        # 64 KiB upload: far above the 4096-byte session cap, so the buffered write must be
+        # rejected before the in-memory buffer is grown (H-3 DoS guard)
+        {
+            File f();
+            f.open(big_src, O_WRONLY | O_CREAT | O_TRUNC, 0600);
+            f.write(strmul("A", 64 * 1024));
+            f.close();
+        }
+        writeTextFile(small_src, "small ok\n");
+
+        # leading "-" keeps batch-mode sftp going after the rejected large put
+        string batch = sprintf("-put %s /big.bin\nput %s /small.txt\nquit\n", big_src, small_src);
+
+        string stderr_data;
+        runVirtualSftpScenario(vfs, False, batch, \stderr_data, cap);
+
+        # the oversized payload must not have been buffered/stored; an upload comfortably under
+        # the cap on the same session must still succeed
+        assertTrue(!vfs.exists("/big.bin") || vfs.getFileData("/big.bin").size() <= cap,
+            "oversized buffered upload must be rejected, not stored");
+        assertFalse(vfs.exists("/big.bin") && vfs.getFileData("/big.bin").size() == 64 * 1024,
+            "the full oversized payload must never be buffered");
+        assertTrue(vfs.exists("/small.txt"), "an upload under the cap must still succeed");
+        assertEq("small ok\n", vfs.getFileText("/small.txt"));
     }
 }

@@ -24,6 +24,8 @@
 #include "ssh-module.h"
 
 #include <cerrno>
+#include <climits>
+#include <cstdlib>
 #include <qore/QoreAbstractLoggerInterface.h>
 #include <fcntl.h>
 #include <qore/QoreSandboxManager.h>
@@ -156,6 +158,11 @@ static int ssh_sftp_ensure_parent_dirs(const std::string& path, ExceptionSink* x
                 current += "/";
             }
             current += part;
+            // sandbox-check each ancestor directory we actually create, not only the
+            // top-level parent (filesystem-completeness hardening)
+            if (ssh_sftp_check_fs_access(current, QSEC_CREATE, xsink)) {
+                return -1;
+            }
             if (::mkdir(current.c_str(), 0700) && errno != EEXIST) {
                 xsink->raiseErrnoException("SFTPSESSION-FILESYSTEM-ERROR", errno,
                     "cannot create parent directory '%s'", current.c_str());
@@ -367,6 +374,19 @@ static void ssh_sftp_write_u64_be(std::string& out, uint64_t value) {
 #define SSH_FILEXFER_ATTR_PERMISSIONS 0x00000004
 #define SSH_FILEXFER_ATTR_ACMODTIME   0x00000008
 
+// Hard cap on the total in-memory size of a non-streamed (buffered) SFTP upload.  The write
+// offset and length come straight off the wire from the client; without this bound a single
+// SSH_FXP_WRITE with a huge offset would force a multi-terabyte std::string::resize() and
+// OOM-kill the server (remote DoS).  Streamed backend writes are not buffered and are not
+// subject to this limit.  256 MiB is well above any reasonable buffered upload.
+static const uint64_t SSH_SFTP_MAX_BUFFERED_FILE_BYTES = 256ULL * 1024 * 1024;
+
+// M-3: bounds for virtual path validation.  Embedded NUL/control bytes are rejected (a NUL
+// truncates the path at c_str() and desyncs audit logs from the real access; newlines enable
+// audit-log injection via crafted file names) and overall/component lengths are capped.
+static const size_t SSH_SFTP_MAX_PATH_BYTES = 4096;
+static const size_t SSH_SFTP_MAX_NAME_BYTES = 255;
+
 // Parse SFTP attrs block from raw payload bytes
 // Returns true on success, false if the payload is too short
 static bool ssh_sftp_parse_attrs(const unsigned char* ptr, size_t size, size_t& offset,
@@ -487,8 +507,16 @@ static const char* ssh_sftp_packet_type_name(uint8_t type) {
 }
 
 static bool ssh_sftp_normalize_virtual_path(const std::string& raw_path, std::string& normalized_path) {
-    if (raw_path.empty()) {
+    if (raw_path.empty() || raw_path.size() > SSH_SFTP_MAX_PATH_BYTES) {
         return false;
+    }
+
+    // M-3: reject embedded NUL and other control characters (incl. DEL) before any parsing so
+    // the validated path cannot differ from what the kernel/backend later sees.
+    for (unsigned char c : raw_path) {
+        if (c < 0x20 || c == 0x7f) {
+            return false;
+        }
     }
 
     std::vector<std::string> components;
@@ -497,6 +525,9 @@ static bool ssh_sftp_normalize_virtual_path(const std::string& raw_path, std::st
         size_t slash = raw_path.find('/', pos);
         std::string part = slash == std::string::npos ? raw_path.substr(pos) : raw_path.substr(pos, slash - pos);
         if (!part.empty() && part != ".") {
+            if (part.size() > SSH_SFTP_MAX_NAME_BYTES) {
+                return false;
+            }
             if (part == "..") {
                 if (components.empty()) {
                     return false;
@@ -541,7 +572,7 @@ static bool ssh_sftp_read_string_field(const char* ptr, size_t size, size_t& off
 }
 
 static bool ssh_sftp_get_real_path(const QoreHashNode* info, const std::string& raw_path, std::string& normalized_path,
-        std::string& real_path) {
+        std::string& real_path, std::string& root_dir_out) {
     if (!info) {
         return false;
     }
@@ -562,6 +593,7 @@ static bool ssh_sftp_get_real_path(const QoreHashNode* info, const std::string& 
     if (real_path.empty()) {
         return false;
     }
+    root_dir_out = real_path;
 
     if (normalized_path != "/") {
         if (real_path.size() > 1 && real_path[real_path.size() - 1] == '/') {
@@ -571,6 +603,46 @@ static bool ssh_sftp_get_real_path(const QoreHashNode* info, const std::string& 
     }
 
     return true;
+}
+
+// M-4: verify that real_path, after resolving symlinks, is still confined within the canonical
+// SFTP root.  The lexical real_path is already root_dir + a normalized ("/"-rooted, no "..")
+// virtual path, so the only escape vector is a symlink in an existing path component.
+// follow_final=true models SSH_FXP_STAT (the final symlink is followed); follow_final=false
+// models SSH_FXP_LSTAT (the final component is not followed, so only the parent is resolved).
+// A residual realpath()->stat() TOCTOU window remains and is documented; it requires the
+// ability to swap an in-root component between the two syscalls.
+static bool ssh_sftp_path_within_root(const std::string& root_dir, const std::string& real_path,
+        bool follow_final) {
+    char canon_root[PATH_MAX];
+    if (!realpath(root_dir.c_str(), canon_root)) {
+        return false;
+    }
+
+    std::string check = real_path;
+    if (!follow_final) {
+        size_t slash = check.find_last_of('/');
+        if (slash == std::string::npos) {
+            return false;
+        }
+        check = slash == 0 ? std::string("/") : check.substr(0, slash);
+    }
+
+    char canon[PATH_MAX];
+    if (!realpath(check.c_str(), canon)) {
+        // a non-existent path/parent cannot have resolved any symlink, and the lexical path is
+        // already root + normalized (no ".."), so it is contained by construction
+        return errno == ENOENT || errno == ENOTDIR;
+    }
+
+    std::string resolved(canon);
+    std::string root(canon_root);
+    if (resolved == root) {
+        return true;
+    }
+    return resolved.size() > root.size()
+        && resolved.compare(0, root.size(), root) == 0
+        && resolved[root.size()] == '/';
 }
 
 static bool ssh_sftp_get_hash_string(const QoreHashNode* h, const char* key, std::string& value) {
@@ -678,13 +750,43 @@ public:
     }
 
     QoreHashNode* getInfo(ExceptionSink* xsink) const {
+        // M-9: info is mutated under m by applyFactoryResult(); read it under the same lock so a
+        // concurrent factory-result application cannot race the doRuntimeCast() copy.  Consistent
+        // with the other m-locked accessors (isReadOnly/getMaxBufferedUploadBytes); the mutators
+        // never call back into this accessor, so no re-entrant lock is possible.
+        std::lock_guard<std::mutex> lock(m);
         return info ? reinterpret_cast<QoreHashNode*>(hashdeclSftpSessionInfo->doRuntimeCast(info, xsink))
                     : new QoreHashNode(hashdeclSftpSessionInfo, xsink);
     }
 
     QoreHashNode* getTransferInfo(ExceptionSink* xsink) const {
+        // M-9: transfer_info is swapped under m by applyFactoryResult()/applyTransferInfo()/
+        // clearTransferInfo(); read it under the same lock.
+        std::lock_guard<std::mutex> lock(m);
         return transfer_info ? reinterpret_cast<QoreHashNode*>(hashdeclSftpTransferInfo->doRuntimeCast(transfer_info, xsink))
                              : nullptr;
+    }
+
+    // returns true if this session has been configured read-only; "read_only" is opt-in (absent/false => writable)
+    bool isReadOnly() const {
+        std::lock_guard<std::mutex> lock(m);
+        return info ? info->getKeyValue("read_only").getAsBool() : false;
+    }
+
+    // effective hard cap for non-streamed (buffered) uploads; honors a positive session-configured
+    // "max_buffered_upload_bytes" override, otherwise the built-in default
+    uint64_t getMaxBufferedUploadBytes() const {
+        std::lock_guard<std::mutex> lock(m);
+        if (info) {
+            const QoreValue cap_v = info->getKeyValue("max_buffered_upload_bytes");
+            if (cap_v.getType() == NT_INT) {
+                int64 cap = cap_v.getAsBigInt();
+                if (cap > 0) {
+                    return static_cast<uint64_t>(cap);
+                }
+            }
+        }
+        return SSH_SFTP_MAX_BUFFERED_FILE_BYTES;
     }
 
     void setLogger(const QoreObject* q_logger, ExceptionSink* xsink) {
@@ -1553,9 +1655,13 @@ public:
             ExceptionSink* xsink) {
         logDebug("SFTP write handle=" + handle + " offset=" + std::to_string(offset) + " length=" + std::to_string(data.size()));
         bool invalid = false;
+        bool too_large = false;
         bool stream_write = false;
         QoreHashNode* metadata = nullptr;
         std::string path;
+        // resolved before taking the handle lock: getMaxBufferedUploadBytes() locks m itself and
+        // std::mutex is not recursive
+        const uint64_t max_buffered_bytes = getMaxBufferedUploadBytes();
         {
             std::lock_guard<std::mutex> lock(m);
             auto i = file_handles.find(handle);
@@ -1568,16 +1674,25 @@ public:
                     metadata = state->metadata ? state->metadata->copy() : nullptr;
                     path = state->path;
                 } else {
-                    if (offset > state->data.size()) {
-                        state->data.resize(static_cast<size_t>(offset), '\0');
-                    }
+                    // H-3: offset and length are attacker-controlled wire values; reject any
+                    // buffered write that would grow the in-memory buffer past the hard cap.
+                    // Testing data.size() against (CAP - offset) (offset already <= CAP here)
+                    // also prevents the offset + data.size() addition from overflowing.
+                    if (offset > max_buffered_bytes
+                            || data.size() > max_buffered_bytes - offset) {
+                        too_large = true;
+                    } else {
+                        if (offset > state->data.size()) {
+                            state->data.resize(static_cast<size_t>(offset), '\0');
+                        }
 
-                    size_t required_size = static_cast<size_t>(offset) + data.size();
-                    if (required_size > state->data.size()) {
-                        state->data.resize(required_size);
-                    }
-                    if (!data.empty()) {
-                        memcpy(&state->data[static_cast<size_t>(offset)], data.data(), data.size());
+                        size_t required_size = static_cast<size_t>(offset) + data.size();
+                        if (required_size > state->data.size()) {
+                            state->data.resize(required_size);
+                        }
+                        if (!data.empty()) {
+                            memcpy(&state->data[static_cast<size_t>(offset)], data.data(), data.size());
+                        }
                     }
                 }
             }
@@ -1586,6 +1701,12 @@ public:
 
         if (invalid) {
             return sendStatus(request_id, SSH_FX_INVALID_HANDLE, "invalid file handle", "en", xsink);
+        }
+        if (too_large) {
+            logWarn("SFTP buffered write rejected: exceeds the " + std::to_string(
+                max_buffered_bytes) + "-byte in-memory buffered-upload limit");
+            return sendStatus(request_id, SSH_FX_FAILURE,
+                "buffered upload exceeds the maximum in-memory size limit", "en", xsink);
         }
         if (stream_write) {
             ReferenceHolder<QoreHashNode> req(new QoreHashNode(hashdeclSftpWriteRequest, xsink), xsink);
@@ -2101,6 +2222,32 @@ public:
             return nullptr;
         }
 
+        // H-1: enforce read-only sessions for all unconditionally-mutating SFTP operations before any
+        // backend dispatch or local filesystem access.  SSH_FXP_OPEN is conditionally mutating and is
+        // gated separately below once its pflags are decoded.
+        switch (type) {
+            case SSH_FXP_WRITE:
+            case SSH_FXP_SETSTAT:
+            case SSH_FXP_FSETSTAT:
+            case SSH_FXP_REMOVE:
+            case SSH_FXP_MKDIR:
+            case SSH_FXP_RMDIR:
+            case SSH_FXP_RENAME:
+            case SSH_FXP_SYMLINK:
+                if (isReadOnly()) {
+                    logWarn("SFTP write operation denied for read-only session: type="
+                        + std::to_string(type));
+                    if (sendStatus(request_id, SSH_FX_PERMISSION_DENIED,
+                            "read-only SFTP session: write operations are not permitted", "en", xsink)) {
+                        return nullptr;
+                    }
+                    return msg.release();
+                }
+                break;
+            default:
+                break;
+        }
+
         if (type == SSH_FXP_REALPATH) {
             const BinaryNode* payload = msg->getKeyValue("payload").get<BinaryNode>();
             if (!payload || payload->size() < 4) {
@@ -2262,7 +2409,17 @@ public:
                 return msg.release();
             }
 
-            if (!ssh_sftp_get_real_path(*current_info, raw_path, normalized_path, real_path)) {
+            std::string root_dir;
+            if (!ssh_sftp_get_real_path(*current_info, raw_path, normalized_path, real_path, root_dir)) {
+                if (sendStatus(request_id, SSH_FX_NO_SUCH_PATH, "path escapes the configured SFTP root", "en", xsink)) {
+                    return nullptr;
+                }
+                return msg.release();
+            }
+
+            // M-4: confine the resolved (symlink-followed) path within the canonical root so a
+            // symlinked component cannot leak metadata for files outside the virtual root.
+            if (!ssh_sftp_path_within_root(root_dir, real_path, type != SSH_FXP_LSTAT)) {
                 if (sendStatus(request_id, SSH_FX_NO_SUCH_PATH, "path escapes the configured SFTP root", "en", xsink)) {
                     return nullptr;
                 }
@@ -2353,6 +2510,17 @@ public:
             std::string normalized_path;
             if (!ssh_sftp_normalize_virtual_path(raw_path, normalized_path)) {
                 if (sendStatus(request_id, SSH_FX_NO_SUCH_PATH, "path escapes the configured SFTP root", "en", xsink)) {
+                    return nullptr;
+                }
+                return msg.release();
+            }
+
+            // H-1: an OPEN that requests write/create/append/truncate is a mutating operation; deny it
+            // on read-only sessions before resolving the backend.
+            if ((pflags & (SSH_FXF_WRITE | SSH_FXF_CREAT | SSH_FXF_APPEND | SSH_FXF_TRUNC)) && isReadOnly()) {
+                logWarn("SFTP write-open denied for read-only session");
+                if (sendStatus(request_id, SSH_FX_PERMISSION_DENIED,
+                        "read-only SFTP session: write operations are not permitted", "en", xsink)) {
                     return nullptr;
                 }
                 return msg.release();
@@ -3234,6 +3402,20 @@ public:
                 }
             }
 
+            if (result->existsKey("max_buffered_upload_bytes")) {
+                const QoreValue cap_v = result->getKeyValue("max_buffered_upload_bytes");
+                if (cap_v.getType() != NT_NOTHING && cap_v.getType() != NT_INT) {
+                    xsink->raiseException("SFTPSESSION-FACTORY-ERROR",
+                        "the factory result \"max_buffered_upload_bytes\" key must be an integer "
+                        "or NOTHING when present");
+                    return -1;
+                }
+                info->setKeyValue("max_buffered_upload_bytes", cap_v.refSelf(), xsink);
+                if (*xsink) {
+                    return -1;
+                }
+            }
+
             if (result->existsKey("session_data")) {
                 info->setKeyValue("session_data", result->getKeyValue("session_data").refSelf(), xsink);
                 if (*xsink) {
@@ -3544,20 +3726,44 @@ private:
     int readChannelExact(ssh_channel current_channel, void* ptr, size_t size, int timeout_ms, ExceptionSink* xsink,
             const char* what) const {
         size_t offset = 0;
+        // C1: cap each libssh read wait at QORE_IO_POLL_INTERVAL_MS so an idle SFTP read
+        // (the documented timeout_ms==0 "wait indefinitely" default of waitProtocolMessage()/
+        // processNextRequest()) re-checks qore_check_cancel() ~every 500ms and is therefore
+        // interruptible.  The caller's total timeout is preserved across iterations; the
+        // 0 (full read) / 1 (EOF/closed/timeout) / -1 (error or cancel) contract is unchanged.
+        int remaining_ms = timeout_ms;
         while (offset < size) {
             if (qore_check_cancel(xsink, "sftp protocol read")) {
                 return -1;
             }
 
+            int chunk;
+            if (timeout_ms <= 0) {
+                chunk = QORE_IO_POLL_INTERVAL_MS;
+            } else {
+                chunk = remaining_ms < QORE_IO_POLL_INTERVAL_MS ? remaining_ms : QORE_IO_POLL_INTERVAL_MS;
+            }
+
             int rc = ssh_channel_read_timeout(current_channel, reinterpret_cast<char*>(ptr) + offset,
-                size - offset, 0, timeout_ms ? timeout_ms : -1);
+                size - offset, 0, chunk);
             if (rc == SSH_ERROR) {
                 xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR", "cannot read %s: %s",
                     what ? what : "SFTP data", ssh_get_error(current_channel));
                 return -1;
             }
             if (!rc) {
-                return 1;
+                // ssh_channel_read_timeout() returns 0 on EOF/closed *or* on a timeout slice;
+                // only treat genuine EOF/closed as end-of-stream, otherwise keep polling.
+                if (ssh_channel_is_eof(current_channel) || !ssh_channel_is_open(current_channel)) {
+                    return 1;
+                }
+                if (timeout_ms > 0) {
+                    remaining_ms -= chunk;
+                    if (remaining_ms <= 0) {
+                        return 1;
+                    }
+                }
+                continue;
             }
             offset += rc;
         }

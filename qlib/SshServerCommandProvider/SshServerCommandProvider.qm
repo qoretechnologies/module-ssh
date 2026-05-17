@@ -191,8 +191,11 @@ public namespace SshServerCommandProvider {
             *hash<Qore::Ssh::SshCommandResult> default_result;
             list<hash<Qore::Ssh::SshCommandRequest>> requests = ();
             *LoggerInterface logger;
-            int request_history_limit = -1;
-            bool capture_environment = True;
+            # Low/Info: bound retained request history by default, and do NOT capture the SSH
+            # environment by default (it routinely carries secrets/tokens); both remain
+            # configurable for deployments that explicitly want fuller audit capture.
+            int request_history_limit = 1000;
+            bool capture_environment = False;
             bool capture_arguments = True;
             bool capture_identity = True;
             int captured_string_limit = -1;
@@ -876,9 +879,17 @@ public namespace SshServerCommandProvider {
                 return NOTHING;
             }
 
-            if (denied_commands{req.command}
-                    || listContains(principal_policy ? principal_policy.denied_commands : NOTHING, req.command)) {
-                return getCommandDeniedResultUnlocked(req.command);
+            # M-6: evaluate deny lists against normalized command tokens (trimmed line, argv0,
+            # and argv0 basename) as well as the raw command, so a deny-listed command cannot be
+            # bypassed with surrounding whitespace or a path prefix (" rm ", "rm\t-rf", "/bin/rm").
+            # The allow-list check is intentionally left as an exact match on req.command so
+            # allow-list semantics are unchanged (no silent broadening).
+            list<string> deny_tokens = commandDenyTokens(req.command);
+            foreach string token in (deny_tokens) {
+                if (denied_commands{token}
+                        || listContains(principal_policy ? principal_policy.denied_commands : NOTHING, token)) {
+                    return getCommandDeniedResultUnlocked(req.command);
+                }
             }
             if (!getAllowAllCommandsUnlocked(principal_policy)
                     && !(allowed_commands{req.command}
@@ -886,6 +897,34 @@ public namespace SshServerCommandProvider {
                 return getCommandDeniedResultUnlocked(req.command);
             }
             return NOTHING;
+        }
+
+        # M-6: distinct candidate tokens a deny list is matched against for a given command line
+        private list<string> commandDenyTokens(string command) {
+            list<string> tokens = ();
+            string trimmed = trim(command);
+            if (trimmed.size()) {
+                tokens += trimmed;
+                string argv0 = trimmed;
+                *list<*string> caps = (trimmed =~ x/^(\S+)/);
+                if (caps && exists caps[0]) {
+                    argv0 = caps[0];
+                }
+                if (!inlist(argv0, tokens)) {
+                    tokens += argv0;
+                }
+                int slash = argv0.rfind("/");
+                if (slash >= 0 && slash < argv0.size() - 1) {
+                    string base = argv0.substr(slash + 1);
+                    if (!inlist(base, tokens)) {
+                        tokens += base;
+                    }
+                }
+            }
+            if (!inlist(command, tokens)) {
+                tokens += command;
+            }
+            return tokens;
         }
 
         private bool listContains(*list<string> values, string value) {

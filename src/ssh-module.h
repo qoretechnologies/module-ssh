@@ -12,11 +12,35 @@
 #include <atomic>
 #include <libssh/libssh.h>
 #include <libssh/libssh_version.h>
+#include <map>
 #include <memory>
+#include <mutex>
 #include <qore/Qore.h>
+#include <string>
 
 //! libssh >= 0.11.0 adds ssh_file_format_e and *_format() export functions
 #define HAVE_SSH_FILE_FORMAT (LIBSSH_VERSION_INT >= SSH_VERSION_INT(0, 11, 0))
+
+//! Thread-safe registry of live accepted SSH sessions.
+/** Owned by @ref SshServerPriv through a @c std::shared_ptr and referenced by each live
+    @c SshSession through a @c std::weak_ptr.  This decouples the registry entry lifetime from
+    both the server and the session: a session that outlives its server unregisters safely
+    (the weak_ptr has expired and the erase is a no-op), and the registry frees any remaining
+    entries when the last owner (the server) is destroyed.  Entries are removed deterministically
+    when the owning session disconnects, so the map cannot grow without bound. */
+struct SshActiveSessionRegistry {
+    std::mutex mutex;
+    //! session_id -> referenced SshSessionInfo hash
+    std::map<std::string, QoreHashNode*> sessions;
+
+    DLLLOCAL ~SshActiveSessionRegistry() {
+        for (auto& pair : sessions) {
+            if (pair.second) {
+                pair.second->deref(nullptr);
+            }
+        }
+    }
+};
 
 DLLLOCAL extern const TypedHashDecl* hashdeclSshListenerConfig;
 DLLLOCAL extern const TypedHashDecl* hashdeclSshServerConfig;
@@ -98,5 +122,9 @@ DLLLOCAL int ssh_sftp_session_apply_transfer_info(const QoreObject* sftp_obj, co
     ExceptionSink* xsink);
 DLLLOCAL int ssh_sftp_session_clear_transfer_info(const QoreObject* sftp_obj, ExceptionSink* xsink);
 DLLLOCAL int ssh_session_send_banner(const QoreObject* session_obj, const std::string& banner, ExceptionSink* xsink);
+//! Binds a live SshSession to the server's active-session registry so it deterministically
+//! unregisters itself on disconnect (see SshActiveSessionRegistry).
+DLLLOCAL void ssh_session_set_registry(const QoreObject* session_obj,
+    std::weak_ptr<SshActiveSessionRegistry> registry, const std::string& session_id);
 
 #endif

@@ -24,6 +24,7 @@
 
 #include "ssh-module.h"
 #include <qore/QoreAbstractLoggerInterface.h>
+#include <qore/QoreSandboxManager.h>
 
 #include <atomic>
 #include <arpa/inet.h>
@@ -36,10 +37,11 @@
 #include <memory>
 #include <set>
 #include <sstream>
-#include <sys/select.h>
+#include <poll.h>
 #include <string.h>
 #include <string>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <vector>
 
@@ -47,6 +49,26 @@ static QoreHashNode* ssh_make_exception_info(const char* err, const std::string&
     ExceptionSink xs;
     xs.raiseException(err, "%s", desc.c_str());
     return xs.getExceptionInfo();
+}
+
+// Enforces the active program's filesystem sandbox policy (if any) before a host key file
+// is read.  Returns 0 when permitted (or no sandbox active), -1 with FILESYSTEM-ACCESS-DENIED
+// raised when denied (fail closed).  checkFilesystemAccess() does not re-enter SshServerPriv,
+// so this is safe to call while the server mutex is held (e.g. from startListener()).
+// C3: upper bound (seconds) for the blocking SSH handshake so a stalled/slowloris client
+// cannot pin a worker thread indefinitely.  The per-wait timeout set later by SshSession
+// overrides this once the session is handed off.
+static const long SSH_HANDSHAKE_TIMEOUT_SECONDS = 60;
+
+static int ssh_server_check_fs_access(const char* path, int mode, ExceptionSink* xsink) {
+    if (!path || !*path) {
+        return 0;
+    }
+    QoreSandboxManagerHelper smh;
+    if (smh && !smh->checkFilesystemAccess(path, mode, xsink)) {
+        return -1;
+    }
+    return 0;
 }
 
 static std::string ssh_get_libssh_error(void* ptr) {
@@ -875,7 +897,8 @@ struct SshListenerState {
 class SshServerPriv : public AbstractPrivateData {
 public:
     explicit SshServerPriv(const QoreHashNode* config) : config(config ? config->copy() : nullptr), running(false),
-            started(nullptr), logger(nullptr) {
+            started(nullptr), logger(nullptr),
+            active_session_registry(std::make_shared<SshActiveSessionRegistry>()) {
         if (config) {
             QoreObject* q_logger = config->getKeyValue("logger").get<QoreObject>();
             logger = q_logger ? q_logger->objectRefSelf() : nullptr;
@@ -904,7 +927,7 @@ public:
 
         QoreObject* old_logger = nullptr;
         {
-            std::lock_guard<std::mutex> lock(mutex);
+            std::lock_guard<std::mutex> lock(logger_mutex);
             old_logger = logger;
             logger = q_logger ? q_logger->objectRefSelf() : nullptr;
         }
@@ -914,7 +937,7 @@ public:
     }
 
     QoreObject* getLogger() const {
-        std::lock_guard<std::mutex> lock(mutex);
+        std::lock_guard<std::mutex> lock(logger_mutex);
         return logger ? logger->objectRefSelf() : nullptr;
     }
 
@@ -1031,12 +1054,15 @@ public:
             started->deref(nullptr);
             started = nullptr;
         }
-        for (auto& pair : active_sessions) {
-            if (pair.second) {
-                pair.second->deref(nullptr);
+        {
+            std::lock_guard<std::mutex> reg_lock(active_session_registry->mutex);
+            for (auto& pair : active_session_registry->sessions) {
+                if (pair.second) {
+                    pair.second->deref(nullptr);
+                }
             }
+            active_session_registry->sessions.clear();
         }
-        active_sessions.clear();
     }
 
     int startListener(SshListenerState& listener, ExceptionSink* xsink) {
@@ -1044,11 +1070,25 @@ public:
         listener.clearLastError();
 
         for (const auto& host_key_path : listener.host_keys) {
+            if (ssh_server_check_fs_access(host_key_path.c_str(), QSEC_READ, xsink)) {
+                listener.setLastError(ssh_make_exception_info("SSHLISTENER-START-ERROR",
+                    "host key file access denied by sandbox policy: \"" + host_key_path + "\""));
+                return -1;
+            }
             if (access(host_key_path.c_str(), R_OK) != 0) {
                 std::string msg = "cannot read host key file \"" + host_key_path + "\"";
                 listener.setLastError(ssh_make_exception_info("SSHLISTENER-START-ERROR", msg));
                 xsink->raiseErrnoException("SSHLISTENER-START-ERROR", errno, "%s", msg.c_str());
                 return -1;
+            }
+            // Low/Info: warn (do not hard-fail, for deployment compatibility) when the private
+            // host key file is accessible by group or other; such a key should be mode 0600.
+            struct stat hk_st;
+            if (stat(host_key_path.c_str(), &hk_st) == 0 && (hk_st.st_mode & (S_IRWXG | S_IRWXO))) {
+                logWarn("host key file \"" + host_key_path + "\" for listener \"" + listener.name
+                    + "\" is accessible by group/other (mode "
+                    + std::to_string(hk_st.st_mode & 0777) + " octal-ish); private host keys "
+                    "should be readable only by the owner (chmod 600)");
             }
         }
 
@@ -1135,6 +1175,11 @@ public:
         }
 
         for (const auto& host_key_path : listener.host_keys) {
+            if (ssh_server_check_fs_access(host_key_path.c_str(), QSEC_READ, xsink)) {
+                listener.setLastError(ssh_make_exception_info("SSHLISTENER-START-ERROR",
+                    "host key file access denied by sandbox policy: \"" + host_key_path + "\""));
+                return -1;
+            }
             ssh_key key = nullptr;
             if (ssh_pki_import_privkey_file(host_key_path.c_str(), nullptr, nullptr, nullptr, &key) != SSH_OK) {
                 std::string msg = "could not import host key file \"" + host_key_path + "\" for listener \""
@@ -1211,12 +1256,20 @@ public:
             return -1;
         }
 
-        fd_set read_fds;
-        socket_t max_fd = SSH_INVALID_SOCKET;
+        // poll() over all listener fds instead of select()/FD_SET: a listener socket fd can
+        // exceed FD_SETSIZE in a busy server, making FD_SET()/select() write out of bounds
+        // (UB) — this completes the H-2 select()->poll() conversion (the session wait loops
+        // were already converted).  The per-iteration qore_check_cancel() and the
+        // QORE_IO_POLL_INTERVAL_MS-capped wait make a long accept timeout interruptible.
+        std::set<socket_t> ready_fds;
+        int remaining_ms = timeout_ms;
         while (true) {
+            if (qore_check_cancel(xsink, "waiting for SSH session")) {
+                return -1;
+            }
+
             // phase 1: collect listener fds under the lock
-            FD_ZERO(&read_fds);
-            max_fd = SSH_INVALID_SOCKET;
+            std::vector<struct pollfd> pfds;
             {
                 std::lock_guard<std::mutex> lock(mutex);
                 if (!running.load()) {
@@ -1235,34 +1288,49 @@ public:
                         continue;
                     }
 
-                    FD_SET(fd, &read_fds);
-                    if (max_fd == SSH_INVALID_SOCKET || fd > max_fd) {
-                        max_fd = fd;
-                    }
+                    struct pollfd pfd;
+                    pfd.fd = fd;
+                    pfd.events = POLLIN;
+                    pfd.revents = 0;
+                    pfds.push_back(pfd);
                 }
 
-                if (max_fd == SSH_INVALID_SOCKET) {
+                if (pfds.empty()) {
                     xsink->raiseException("SSHSERVER-STATE-ERROR",
                         "server has no active listeners to accept sessions");
                     return -1;
                 }
             }
 
-            // phase 2: select() without the lock so stop()/getStatus() are not blocked
-            timeval tv;
-            tv.tv_sec = timeout_ms / 1000;
-            tv.tv_usec = static_cast<suseconds_t>((timeout_ms % 1000) * 1000);
-            int select_rc = select(max_fd + 1, &read_fds, nullptr, nullptr, &tv);
-            if (select_rc < 0) {
+            // phase 2: poll() without the lock so stop()/getStatus() are not blocked.  The
+            // wait is capped at QORE_IO_POLL_INTERVAL_MS and the full timeout_ms is preserved
+            // across iterations; timeout_ms == 0 means a single non-blocking poll.
+            int chunk = (timeout_ms == 0)
+                ? 0
+                : (remaining_ms < QORE_IO_POLL_INTERVAL_MS ? remaining_ms : QORE_IO_POLL_INTERVAL_MS);
+            int poll_rc = poll(pfds.data(), pfds.size(), chunk);
+            if (poll_rc < 0) {
                 if (errno == EINTR) {
                     continue;
                 }
                 xsink->raiseErrnoException("SSHSERVER-ACCEPT-ERROR", errno,
-                    "select() failed while waiting for an incoming SSH session");
+                    "poll() failed while waiting for an incoming SSH session");
                 return -1;
             }
-            if (!select_rc) {
-                return 0;
+            if (poll_rc == 0) {
+                if (timeout_ms == 0) {
+                    return 0;
+                }
+                remaining_ms -= chunk;
+                if (remaining_ms <= 0) {
+                    return 0;
+                }
+                continue;
+            }
+            for (const auto& pfd : pfds) {
+                if (pfd.revents & (POLLIN | POLLERR | POLLHUP)) {
+                    ready_fds.insert(pfd.fd);
+                }
             }
             break;
         }
@@ -1284,7 +1352,7 @@ public:
                 }
 
                 socket_t fd = ssh_bind_get_fd(listener.bind);
-                if (fd != SSH_INVALID_SOCKET && FD_ISSET(fd, &read_fds)) {
+                if (fd != SSH_INVALID_SOCKET && ready_fds.count(fd)) {
                     listener.accept_waiters++;
                     selected_listener_index = static_cast<ssize_t>(i);
                     selected_bind = listener.bind;
@@ -1411,6 +1479,12 @@ public:
             return -1;
         }
 
+        // C3: bound the blocking handshake (libssh applies SSH_OPTIONS_TIMEOUT to the
+        // handshake socket operations) so a slow/malicious client cannot hang this thread.
+        {
+            long handshake_timeout = SSH_HANDSHAKE_TIMEOUT_SECONDS;
+            ssh_options_set(session, SSH_OPTIONS_TIMEOUT, &handshake_timeout);
+        }
         if (ssh_handle_key_exchange(session) != SSH_OK) {
             std::string msg = "SSH key exchange failed for listener \"" + selected_listener_name + "\": "
                 + ssh_get_libssh_error(session);
@@ -1964,6 +2038,15 @@ public:
             ssh_disconnect(session);
             ssh_free(session);
         });
+        // this transient path returns only the info hash and never creates a live SshSession,
+        // so nothing else would ever remove its registry entry: unregister it now (H-4)
+        if (info) {
+            QoreValue sid = info->getKeyValue("session_id");
+            if (sid.getType() == NT_STRING) {
+                QoreStringValueHelper str(sid);
+                unregisterActiveSession(str->c_str());
+            }
+        }
         return info;
     }
 
@@ -1992,21 +2075,21 @@ public:
     }
 
     void registerActiveSession(const std::string& session_id, QoreHashNode* session_info, ExceptionSink* xsink) {
-        std::lock_guard<std::mutex> lock(mutex);
-        if (active_sessions.find(session_id) != active_sessions.end()) {
+        std::lock_guard<std::mutex> lock(active_session_registry->mutex);
+        if (active_session_registry->sessions.find(session_id) != active_session_registry->sessions.end()) {
             return;
         }
-        active_sessions[session_id] = session_info ? session_info->hashRefSelf() : nullptr;
+        active_session_registry->sessions[session_id] = session_info ? session_info->hashRefSelf() : nullptr;
     }
 
     void unregisterActiveSession(const std::string& session_id) {
         QoreHashNode* old_info = nullptr;
         {
-            std::lock_guard<std::mutex> lock(mutex);
-            auto it = active_sessions.find(session_id);
-            if (it != active_sessions.end()) {
+            std::lock_guard<std::mutex> lock(active_session_registry->mutex);
+            auto it = active_session_registry->sessions.find(session_id);
+            if (it != active_session_registry->sessions.end()) {
                 old_info = it->second;
-                active_sessions.erase(it);
+                active_session_registry->sessions.erase(it);
             }
         }
         if (old_info) {
@@ -2015,10 +2098,10 @@ public:
     }
 
     QoreListNode* listActiveSessions(ExceptionSink* xsink) {
-        std::lock_guard<std::mutex> lock(mutex);
+        std::lock_guard<std::mutex> lock(active_session_registry->mutex);
         ReferenceHolder<QoreListNode> result(
             new QoreListNode(hashdeclSshActiveSessionInfo->getTypeInfo(false)), xsink);
-        for (const auto& pair : active_sessions) {
+        for (const auto& pair : active_session_registry->sessions) {
             if (!pair.second) {
                 continue;
             }
@@ -2046,10 +2129,16 @@ public:
     std::vector<SshListenerState> listener_states;
     mutable std::mutex mutex;
     mutable std::condition_variable cv;
+    // dedicated leaf lock for the logger member: getLogger()/logWarn()/logInfo()/... are
+    // called from contexts that already hold `mutex` (e.g. start()->startListener()), so the
+    // logger must NOT be guarded by `mutex` or those log calls would self-deadlock on the
+    // non-recursive mutex
+    mutable std::mutex logger_mutex;
     std::atomic<bool> running;
     DateTimeNode* started;
     QoreObject* logger;
-    std::map<std::string, QoreHashNode*> active_sessions;
+    //! shared so each live SshSession can hold a weak_ptr and unregister itself on disconnect
+    std::shared_ptr<SshActiveSessionRegistry> active_session_registry;
 };
 
 //! Server-side SSH listener manager
@@ -2190,11 +2279,25 @@ printf("accepted %y:%d on %y\n", info.remote_address, info.remote_port, info.lis
             idle_timeout = listener->idle_timeout_seconds;
         }
     }
+    // capture the session id before info ownership transfers into the session object
+    std::string registry_session_id;
+    if (info) {
+        QoreValue sid = info->getKeyValue("session_id");
+        if (sid.getType() == NT_STRING) {
+            QoreStringValueHelper str(sid);
+            registry_session_id = str->c_str();
+        }
+    }
     ReferenceHolder<QoreObject> logger(priv->getLogger(), xsink);
     QoreObject* obj = ssh_new_session_object(getProgram(), info, nullptr, logger.release(), session,
         active_session_counter, enabled_auth_methods_mask, keepalive_interval, idle_timeout, xsink);
     if (*xsink && active_session_counter) {
         active_session_counter->fetch_sub(1);
+    }
+    if (obj && !*xsink && !registry_session_id.empty()) {
+        // bind the live session to the registry so it unregisters itself deterministically on
+        // disconnect; without this the active_sessions map would grow without bound (H-4)
+        ssh_session_set_registry(obj, priv->active_session_registry, registry_session_id);
     }
     return obj;
 }

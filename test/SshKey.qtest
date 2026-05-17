@@ -65,6 +65,7 @@ class SshKeyTest inherits QUnit::Test {
         addTestCase("public key blob export", \testPublicKeyBlob());
 
         # File roundtrip tests
+        addTestCase("RSA minimum key size is enforced", \testRsaMinimumKeySize());
         addTestCase("private key file roundtrip (no passphrase)", \testPrivateKeyFileRoundtrip());
         addTestCase("private key file roundtrip (with passphrase)", \testPrivateKeyFileRoundtripPassphrase());
         addTestCase("private key file roundtrip (OpenSSH format)", \testPrivateKeyFileRoundtripOpenSsh());
@@ -235,9 +236,19 @@ class SshKeyTest inherits QUnit::Test {
         string path = tmp_dir + "/test_privkey";
         orig.writePrivateKeyFile(path);
         assertTrue(is_file(path));
+        # Low/Info: a written private key file must not be readable by group/other
+        assertEq(0600, hstat(path).mode & 0777, "private key file must be created mode 0600");
         Qore::Ssh::SshKey imported = Qore::Ssh::SshKey::readPrivateKeyFile(path);
         assertTrue(orig.equals(imported));
         assertTrue(imported.isPrivate());
+    }
+
+    testRsaMinimumKeySize() {
+        # Low/Info: 1024-bit RSA is deprecated and must be rejected; >= 2048 is accepted
+        assertThrows("SSHKEY-ARG-ERROR", "minimum is 2048",
+            sub() { Qore::Ssh::SshKey::generate(Qore::Ssh::SSH_KEYTYPE_RSA, 1024); });
+        Qore::Ssh::SshKey ok = Qore::Ssh::SshKey::generate(Qore::Ssh::SSH_KEYTYPE_RSA, 2048);
+        assertTrue(ok.isPrivate());
     }
 
     testPrivateKeyFileRoundtripPassphrase() {

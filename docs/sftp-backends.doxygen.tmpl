@@ -74,14 +74,41 @@
     - Atomic exchange: \c submit(), \c listAvailable(), \c retrieve(),
       \c completeRetrieve()
     - Optional persistence and snapshot export/import
+    - Global resource caps via
+      @ref SftpServerDataProvider::VirtualSftpFilesystemOptions "VirtualSftpFilesystemOptions"
+      \c max_total_bytes, \c max_file_count, and \c max_file_size, enforced for
+      every write regardless of any inbound policy
 
     @code
-    SftpServerDataProvider::VirtualSftpFilesystem vfs();
+    SftpServerDataProvider::VirtualSftpFilesystem vfs(
+        <SftpServerDataProvider::VirtualSftpFilesystemOptions>{
+            "max_total_bytes": 64 * 1024 * 1024,
+            "max_file_count": 10000,
+            "max_file_size": 8 * 1024 * 1024,
+        });
     vfs.addDirectory("/reports");
     vfs.addTextFile("/reports/summary.txt", "Q1 results\n");
     # attach to an SftpSession
     session.setBackend(vfs);
     @endcode
+
+    @note Read-only sessions: when a session is configured read-only (via the
+    SFTP factory result or session policy), the binary module rejects every
+    mutating SFTP operation (write-mode \c open, \c write, \c remove, \c mkdir,
+    \c rmdir, \c rename, \c symlink, \c setstat, \c fsetstat) before it reaches
+    the backend.
+
+    @note Buffered upload bound: a non-streamed upload is held in memory and is
+    bounded by @ref Qore::Ssh::SftpSessionInfo "SftpSessionInfo.max_buffered_upload_bytes"
+    (default 256 MiB; overridable per session from the SFTP factory callback).
+    Use a streamed backend (\c backend_handle) for large transfers.
+
+    @note Server-local \c source_path submissions are fail-closed: reading a
+    local file via a submission \c source_path is rejected unless
+    @ref SftpServerDataProvider::VirtualSftpFilesystemOptions "VirtualSftpFilesystemOptions.allowed_source_path_roots"
+    is configured, and the canonicalized file must resolve within one of the
+    canonicalized allow-listed roots.  (This path is a server-side helper
+    convenience and is never reachable from a remote SFTP client.)
 
     @section sshsftpbackendexchange VirtualSftpExchange
 
@@ -186,10 +213,16 @@
       \c "write-through" (save after every mutation)
     - \c snapshot_interval_seconds -- periodic snapshot interval (default 60)
     - \c restore_on_construct -- restore state on construction
+    - \c max_snapshot_bytes -- maximum accepted on-disk snapshot size when
+      restoring (default 256 MiB); a larger snapshot file is refused rather than
+      loaded wholesale into memory
 
     Snapshots use JSON
     (@ref SftpServerDataProvider::VirtualSftpSnapshot "VirtualSftpSnapshot")
     with atomic writes (write to \c .tmp, then rename) to prevent corruption.
+    In \c "write-through" mode the entire snapshot is re-serialized after every
+    mutation; configure the global resource caps above to bound that cost (and
+    server memory) for write-heavy workloads.
     @code
     SftpServerDataProvider::VirtualSftpFilesystem vfs(
         <SftpServerDataProvider::VirtualSftpFilesystemOptions>{"persistence":

@@ -1,0 +1,187 @@
+#!/usr/bin/env qore
+# -*- mode: qore; indent-tabs-mode: nil -*-
+
+/*  Sandbox.qtest Copyright 2026 Qore Technologies, s.r.o.
+
+    Permission is hereby granted, free of charge, to any person obtaining a
+    copy of this software and associated documentation files (the "Software"),
+    to deal in the Software without restriction, including without limitation
+    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+    and/or sell copies of the Software, and to permit persons to whom the
+    Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+*/
+
+%modern
+%no-child-restrictions
+%requires ssh
+%requires QUnit
+
+%exec-class SshSandboxTest
+
+# Verifies that the ssh module honours the program filesystem sandbox for SSH key and
+# host-key file I/O (P1), and that blocking server waits are cooperatively interruptible
+# via the sandbox interrupt (P2).
+class SshSandboxTest inherits QUnit::Test {
+    private {
+        string host_key = get_script_dir() + "/data/ssh_host_ed25519_key";
+    }
+
+    constructor() : Test("SshSandboxTest", "1.0", \ARGV) {
+        addTestCase("SSH key file I/O is denied under a filesystem-deny sandbox", \testKeyFsDenied());
+        addTestCase("SSH key file I/O is allowed for an allow-listed sandbox path", \testKeyFsAllowed());
+        addTestCase("host key load is denied under a filesystem-deny sandbox", \testHostKeyDenied());
+        addTestCase("a blocking accept wait is interruptible via the sandbox interrupt",
+            \testAcceptInterruptible());
+        set_return_value(main());
+    }
+
+    private string tmpPath(string suffix) {
+        return sprintf("/tmp/module-ssh-sandbox-%d-%d%s", getpid(), now_us(), suffix);
+    }
+
+    # builds a child Program whose code uses the ssh module; the sandbox is attached AFTER
+    # parsing so loading the binary module itself is not filesystem-restricted
+    private Program makeChildProgram(string code) {
+        Program p(PO_NO_CHILD_PO_RESTRICTIONS);
+        p.parse(code, "sandbox-child");
+        return p;
+    }
+
+    testKeyFsDenied() {
+        Program p = makeChildProgram("%modern
+%requires ssh
+string sub writeKey(string path) {
+    Qore::Ssh::SshKey k = Qore::Ssh::SshKey::generate(Qore::Ssh::SSH_KEYTYPE_ED25519);
+    k.writePrivateKeyFile(path);
+    return \"ok\";
+}
+string sub readKey(string path) {
+    Qore::Ssh::SshKey::readPrivateKeyFile(path);
+    return \"ok\";
+}");
+        SandboxManager sm();
+        sm.setFilesystemDefaultPolicy(False);   # deny all filesystem access
+        p.setSandboxManager(sm);
+
+        string wpath = tmpPath(".key");
+        on_exit if (is_file(wpath)) { unlink(wpath); }
+        # write of a private key file must be blocked by the sandbox (S1/S2)
+        assertThrows("FILESYSTEM-ACCESS-DENIED", sub() { p.callFunction("writeKey", wpath); });
+        assertFalse(is_file(wpath), "denied key write must not create the file");
+        # read of an existing key file must also be blocked
+        assertThrows("FILESYSTEM-ACCESS-DENIED", sub() { p.callFunction("readKey", host_key); });
+    }
+
+    testKeyFsAllowed() {
+        Program p = makeChildProgram("%modern
+%requires ssh
+string sub roundtrip(string path) {
+    Qore::Ssh::SshKey k = Qore::Ssh::SshKey::generate(Qore::Ssh::SSH_KEYTYPE_ED25519);
+    k.writePrivateKeyFile(path);
+    Qore::Ssh::SshKey imported = Qore::Ssh::SshKey::readPrivateKeyFile(path);
+    return imported.isPrivate() ? \"ok\" : \"bad\";
+}");
+        SandboxManager sm();
+        sm.setFilesystemDefaultPolicy(False);
+        sm.addFilesystemAllowedPath("/tmp", QSEC_READ | QSEC_WRITE | QSEC_CREATE);
+        p.setSandboxManager(sm);
+
+        string wpath = tmpPath(".key");
+        on_exit if (is_file(wpath)) { unlink(wpath); }
+        # the same operations succeed when the path is allow-listed (the gate is policy-scoped,
+        # not a blanket block)
+        assertEq("ok", p.callFunction("roundtrip", wpath));
+        assertTrue(is_file(wpath), "allowed key write must create the file");
+    }
+
+    testHostKeyDenied() {
+        Program p = makeChildProgram("%modern
+%requires ssh
+string sub startServer(string hk) {
+    hash<Qore::Ssh::SshServerConfig> config = <Qore::Ssh::SshServerConfig>{
+        \"name\": \"sandbox-test\",
+        \"listeners\": (
+            <Qore::Ssh::SshListenerConfig>{
+                \"name\": \"main\",
+                \"bind_address\": \"127.0.0.1\",
+                \"port\": 0,
+                \"host_keys\": (hk,),
+                \"enabled_auth_methods\": (\"none\",),
+            },
+        ),
+    };
+    Qore::Ssh::SshServer server(config);
+    server.start();
+    server.stop();
+    return \"ok\";
+}");
+        SandboxManager sm();
+        sm.setFilesystemDefaultPolicy(False);   # deny all filesystem access
+        p.setSandboxManager(sm);
+        # loading the host key file during start() must be blocked by the sandbox (S3)
+        assertThrows("FILESYSTEM-ACCESS-DENIED", sub() { p.callFunction("startServer", host_key); });
+    }
+
+    testAcceptInterruptible() {
+        # filesystem must be permitted so the server can load its host key and start; the
+        # point of this test is that the blocking accept wait honours the sandbox interrupt
+        Program p = makeChildProgram("%modern
+%requires ssh
+string sub acceptBlock(string hk) {
+    hash<Qore::Ssh::SshServerConfig> config = <Qore::Ssh::SshServerConfig>{
+        \"name\": \"sandbox-int\",
+        \"listeners\": (
+            <Qore::Ssh::SshListenerConfig>{
+                \"name\": \"main\",
+                \"bind_address\": \"127.0.0.1\",
+                \"port\": 0,
+                \"host_keys\": (hk,),
+                \"enabled_auth_methods\": (\"none\",),
+            },
+        ),
+    };
+    Qore::Ssh::SshServer server(config);
+    server.start();
+    on_exit server.stop();
+    # no client ever connects: this blocks until interrupted
+    server.acceptSession(60000);
+    return \"returned\";
+}");
+        SandboxManager sm();
+        sm.setFilesystemDefaultPolicy(True);    # allow FS so the server can start
+        p.setSandboxManager(sm);
+
+        string err = "";
+        Counter done(1);
+        background sub() {
+            try {
+                p.callFunction("acceptBlock", host_key);
+            } catch (hash<ExceptionInfo> ex) {
+                err = ex.err;
+            }
+            done.dec();
+        }();
+
+        # give the worker time to start the server and enter the blocking accept wait,
+        # then request the program interrupt
+        sleep(2s);
+        sm.requestInterrupt();
+
+        # with the 500ms-capped poll loop the accept wait must unblock promptly;
+        # Counter::waitForZero() returns 0 when the counter reaches zero (worker finished)
+        assertEq(0, done.waitForZero(15s), "interrupted accept wait must return");
+        assertEq("PROGRAM-INTERRUPTED", err,
+            "a blocking accept wait must raise PROGRAM-INTERRUPTED when the sandbox is interrupted");
+    }
+}

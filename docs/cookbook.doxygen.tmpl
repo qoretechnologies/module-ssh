@@ -320,6 +320,18 @@
     });
     @endcode
 
+    @note Command deny lists are matched against normalized command tokens (the
+    trimmed command line, its first whitespace-delimited token, and that token's
+    basename), so a deny-listed command such as @c "rm" also blocks @c " rm ",
+    @c "rm -rf /", and @c "/bin/rm".  Allow-list entries are matched exactly
+    against the request command (allow-list semantics are unchanged).
+
+    @note By default the command service does @b not capture the SSH
+    environment (it routinely carries secrets) and retains at most 1000
+    requests; set
+    @ref SshServerCommandProvider::VirtualSshCommandAuditOptions "VirtualSshCommandAuditOptions.capture_environment"
+    and @c request_history_limit explicitly for fuller audit capture.
+
     @subsection sshcommandlivecookbook Live Virtual Command Server Example
     See @c examples/VirtualSshCommandLiveServer.qr for a full example that:
     - starts a local SSH server from

@@ -37,6 +37,8 @@ class SshServerCommandProviderTest inherits QUnit::Test {
         addTestCase("virtual command service handles static and dynamic subsystem results", \testSubsystemHandlers());
         addTestCase("virtual command service enforces typed command and subsystem policy",
             \testCommandPolicy());
+        addTestCase("deny-listed commands cannot be bypassed via whitespace/path variants",
+            \testCommandDenyListBypass());
         addTestCase("virtual command service supports principal-aware policy overrides",
             \testPrincipalCommandPolicy());
         addTestCase("virtual command service supports bundled advanced configuration",
@@ -179,6 +181,38 @@ class SshServerCommandProviderTest inherits QUnit::Test {
         hash<Qore::Ssh::SshCommandResult> denylist_command = service.handle(getRequest("status"));
         assertEq(False, denylist_command.accepted);
         assertEq(SshServerCommandProvider::CommandRejectPolicyCommand, denylist_command.result_data.reason_code);
+    }
+
+    testCommandDenyListBypass() {
+        # allow_all_commands=True is the default posture; the deny list must still be effective
+        # against whitespace- and path-decorated variants of a denied command (M-6)
+        SshServerCommandProvider::VirtualSshCommandService service();
+        service.setAllowAllCommands(True);
+        service.addDeniedCommand("rm");
+
+        list<string> bypass_attempts = (
+            "rm",
+            " rm ",
+            "rm -rf /",
+            "\trm\t-rf /tmp",
+            "/bin/rm",
+            "/usr/bin/rm -rf /var",
+            "  /bin/rm   -rf   /",
+        );
+        foreach string attempt in (bypass_attempts) {
+            hash<Qore::Ssh::SshCommandResult> r = service.handle(getRequest(attempt));
+            assertEq(False, r.accepted, sprintf("deny-listed command must block %y", attempt));
+            assertEq(SshServerCommandProvider::CommandRejectPolicyCommand, r.result_data.reason_code,
+                sprintf("%y must be denied by command policy", attempt));
+        }
+
+        # an unrelated command is still permitted under allow_all_commands=True (deny logic
+        # must not over-block); use an exactly-registered command since command dispatch is
+        # still an exact lookup on req.command (M-6 only hardened policy matching)
+        service.addTextCommand("ls", "listing\n");
+        hash<Qore::Ssh::SshCommandResult> ok = service.handle(getRequest("ls"));
+        assertEq(True, ok.accepted, "non-denied command must remain allowed");
+        assertEq(binary("listing\n"), ok.stdout);
     }
 
     testPrincipalCommandPolicy() {

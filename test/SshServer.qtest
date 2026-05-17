@@ -854,7 +854,12 @@ class SshServerTest inherits QUnit::Test {
         return config;
     }
 
-    private hash<SshServerConfig> getSftpEnabledConfig() {
+    # read_only defaults to True so the factory-application test (testDispatchSftpSession) still
+    # verifies the factory's read_only override is reflected in getInfo(); tests that exercise
+    # write/mutation operations against the factory backend pass read_only=False explicitly.
+    # Before the H-1 fix the read_only flag was silently ignored on the backend request path,
+    # so write tests using this helper passed despite the True default.
+    private hash<SshServerConfig> getSftpEnabledConfig(bool read_only = True) {
         TestSftpBackend backend("factory-backend");
         hash<SshServerConfig> config = getTestConfig();
         config.listeners[0].allow_command_service = True;
@@ -877,7 +882,7 @@ class SshServerTest inherits QUnit::Test {
         config.sftp_factory_callback = hash<auto> sub(hash<Qore::Ssh::SftpSessionInfo> info) {
             return {
                 "root_dir": sprintf("%s/%s", info.root_dir, info.principal),
-                "read_only": True,
+                "read_only": read_only,
                 "session_data": {
                     "tenant": info.session_data.tenant,
                     "source": info.session_data.source,
@@ -900,7 +905,14 @@ class SshServerTest inherits QUnit::Test {
         config.sftp_factory_callback = hash<auto> sub(hash<Qore::Ssh::SftpSessionInfo> info) {
             return {
                 "root_dir": sprintf("%s/%s", info.root_dir, info.principal),
-                "read_only": True,
+                # NOTE: every consumer of this helper exercises write/mutation/upload operations
+                # and asserts they succeed, so the session must be writable.  Before the H-1 fix
+                # the "read_only" flag was silently ignored on the backend request path, which is
+                # why this previously read True without breaking the write tests.  Read-only
+                # enforcement is covered explicitly by VirtualSftpServer.qtest (the
+                # processNextRequest gate), testDispatchSftpSession (info reflection), and the
+                # transfer-policy read-only denial test.
+                "read_only": False,
                 "session_data": {
                     "tenant": info.session_data.tenant,
                     "source": info.session_data.source,
@@ -2225,7 +2237,8 @@ class SshServerTest inherits QUnit::Test {
     }
 
     testSftpProtocolPutVirtualFile() {
-        Qore::Ssh::SshServer server(getSftpEnabledConfig());
+        # writable session: this test uploads a file and asserts the backend write path runs
+        Qore::Ssh::SshServer server(getSftpEnabledConfig(False));
         server.start();
         hash<SshServerStatus> status = server.getStatus();
         int port = status.listeners[0].bound_port;
@@ -2743,7 +2756,8 @@ class SshServerTest inherits QUnit::Test {
     }
 
     testSftpProtocolPutStreamedVirtualFile() {
-        Qore::Ssh::SshServer server(getSftpEnabledConfig());
+        # writable session: this test streams an upload and asserts the backend write path runs
+        Qore::Ssh::SshServer server(getSftpEnabledConfig(False));
         server.start();
         hash<SshServerStatus> status = server.getStatus();
         int port = status.listeners[0].bound_port;
@@ -2840,7 +2854,8 @@ class SshServerTest inherits QUnit::Test {
     }
 
     testSftpProtocolVirtualMutations() {
-        Qore::Ssh::SshServer server(getSftpEnabledConfig());
+        # writable session: this test exercises mkdir/rename/remove/rmdir mutation operations
+        Qore::Ssh::SshServer server(getSftpEnabledConfig(False));
         server.start();
         hash<SshServerStatus> status = server.getStatus();
         int port = status.listeners[0].bound_port;
@@ -5269,6 +5284,58 @@ class SshServerTest inherits QUnit::Test {
         on_exit server.stop();
         list<hash<SshActiveSessionInfo>> running_list = server.listActiveSessions();
         assertEq(0, running_list.size());
+
+        int port = server.getStatus().listeners[0].bound_port;
+
+        # H-4: a live accepted session must be registered, and must be removed from the registry
+        # again deterministically when it disconnects (no unbounded growth / no stale entries)
+        {
+            int ssh_rc = 0;
+            Counter done(1);
+            string cmd = makeSshClientCommand(port);
+            background sub() {
+                try {
+                    ssh_rc = system(cmd);
+                } catch (hash<ExceptionInfo> ex) {
+                    ssh_rc = -1;
+                }
+                done.dec();
+            }();
+
+            Qore::Ssh::SshSession session = server.acceptSession(5000);
+            string sid = session.getInfo().session_id;
+            list<hash<SshActiveSessionInfo>> active = server.listActiveSessions();
+            assertEq(1, active.size());
+            assertEq(sid, active[0].session_id);
+
+            # disconnect() runs the registry erase synchronously before returning
+            session.disconnect();
+            assertEq(0, server.listActiveSessions().size(),
+                "session must unregister from the active-session registry on disconnect");
+            done.waitForZero(10s);
+        }
+
+        # H-4: the transient acceptSessionInfo() path frees the transport immediately and never
+        # creates a live SshSession, so it must not leave a stale registry entry behind
+        {
+            int ssh_rc = 0;
+            Counter done(1);
+            string cmd = makeSshClientCommand(port);
+            background sub() {
+                try {
+                    ssh_rc = system(cmd);
+                } catch (hash<ExceptionInfo> ex) {
+                    ssh_rc = -1;
+                }
+                done.dec();
+            }();
+
+            hash<SshSessionInfo> info = server.acceptSessionInfo(5000);
+            assertTrue(info.session_id.val());
+            assertEq(0, server.listActiveSessions().size(),
+                "transient acceptSessionInfo() must not leak a registry entry");
+            done.waitForZero(10s);
+        }
     }
 
     testCopyDenied() {

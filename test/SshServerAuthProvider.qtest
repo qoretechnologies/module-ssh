@@ -50,6 +50,8 @@ class SshServerAuthProviderTest inherits QUnit::Test {
         addTestCase("virtual auth provider accepts LoggerInterface and logs auth outcomes", \testLoggerSupport());
         addTestCase("custom auth providers implement the same interface", \testCustomAuthProvider());
         addTestCase("multi-factor auth requires all methods to complete", \testMultiFactorAuth());
+        addTestCase("none must not be allowed as a multi-factor requirement", \testNoneNotAllowedInMfa());
+        addTestCase("auth provider fails closed on validator exception", \testFailClosedValidator());
         set_return_value(main());
     }
 
@@ -225,13 +227,12 @@ class SshServerAuthProviderTest inherits QUnit::Test {
     }
 
     testMultiFactorAuth() {
-        # Require both "none" and "password" to succeed
+        binary key_data = binary("ed25519-public-key-material");
+        # Require two real credential factors (password + publickey).  "none" must NOT be used
+        # as an MFA factor (H-6) and is rejected at construction; see testNoneNotAllowedInMfa.
         SshServerAuthProvider::VirtualSshAuthProvider provider(<SshServerAuthProvider::VirtualSshAuthProviderOptions>{
-            "methods": ("none", "password"),
-            "required_methods": ("none", "password"),
-            "none": <SshServerAuthProvider::VirtualSshStaticAuthMethodOptions>{
-                "allowed_usernames": ("alice",),
-            },
+            "methods": ("password", "publickey"),
+            "required_methods": ("password", "publickey"),
             "password": <SshServerAuthProvider::VirtualSshPasswordAuthOptions>{
                 "users": (
                     <SshServerAuthProvider::VirtualSshPasswordUserInfo>{
@@ -240,38 +241,76 @@ class SshServerAuthProviderTest inherits QUnit::Test {
                     },
                 ),
             },
+            "publickey": <SshServerAuthProvider::VirtualSshPublicKeyAuthOptions>{
+                "authorized_keys": (
+                    <SshServerAuthProvider::VirtualSshAuthorizedKeyInfo>{
+                        "username": "alice",
+                        "public_key": key_data,
+                    },
+                ),
+            },
         });
 
-        # Step 1: none auth succeeds but returns partial (password still needed)
-        hash<Qore::Ssh::SshAuthContextInfo> none_ctx = getAuthContext("none", "alice");
-        hash<Qore::Ssh::SshAuthDecision> none_decision = provider.authenticate(none_ctx);
-        assertEq(True, none_decision.accepted);
-        assertEq(True, none_decision.partial);
-        assertEq(("password",), none_decision.allowed_auth_methods);
-        assertTrue(none_decision.session_data{SshServerAuthProvider::SessionDataCompletedMethodsKey}.size() > 0);
+        # Step 1: password succeeds but returns partial (publickey still needed)
+        hash<Qore::Ssh::SshAuthContextInfo> pw1_ctx = getAuthContext("password", "alice");
+        pw1_ctx.password = "secret";
+        hash<Qore::Ssh::SshAuthDecision> pw1_decision = provider.authenticate(pw1_ctx);
+        assertEq(True, pw1_decision.accepted);
+        assertEq(True, pw1_decision.partial);
+        assertEq(("publickey",), pw1_decision.allowed_auth_methods);
+        assertTrue(pw1_decision.session_data{SshServerAuthProvider::SessionDataCompletedMethodsKey}.size() > 0);
+        # H-6: the completed-methods state must carry an integrity signature
+        assertTrue(exists pw1_decision.session_data{SshServerAuthProvider::SessionDataCompletedMethodsSigKey});
 
-        # Step 2: password with session_data from partial decision completes MFA
-        hash<Qore::Ssh::SshAuthContextInfo> pw_ctx = getAuthContext("password", "alice");
-        pw_ctx.password = "secret";
-        pw_ctx.metadata = {"session_data": none_decision.session_data};
-        hash<Qore::Ssh::SshAuthDecision> pw_decision = provider.authenticate(pw_ctx);
-        assertEq(True, pw_decision.accepted);
-        assertFalse(pw_decision.partial ?? False);
+        # Step 2: publickey with signed session_data from the partial decision completes MFA
+        hash<Qore::Ssh::SshAuthContextInfo> pk_ctx = getAuthContext("publickey", "alice");
+        pk_ctx.public_key = key_data;
+        pk_ctx.metadata = {"session_data": pw1_decision.session_data};
+        hash<Qore::Ssh::SshAuthDecision> pk_decision = provider.authenticate(pk_ctx);
+        assertEq(True, pk_decision.accepted);
+        assertFalse(pk_decision.partial ?? False);
 
-        # Failure case: wrong password, multi-factor rejects
-        hash<Qore::Ssh::SshAuthContextInfo> fail_ctx = getAuthContext("password", "alice");
-        fail_ctx.password = "wrong";
+        # Failure case: wrong key, multi-factor rejects
+        hash<Qore::Ssh::SshAuthContextInfo> fail_ctx = getAuthContext("publickey", "alice");
+        fail_ctx.public_key = binary("wrong-key");
+        fail_ctx.metadata = {"session_data": pw1_decision.session_data};
         hash<Qore::Ssh::SshAuthDecision> fail_decision = provider.authenticate(fail_ctx);
         assertFalse(fail_decision.accepted);
         assertFalse(fail_decision.partial ?? False);
 
         # Same method twice doesn't satisfy a different required method
-        hash<Qore::Ssh::SshAuthContextInfo> double_ctx = getAuthContext("none", "alice");
-        double_ctx.metadata = {"session_data": none_decision.session_data};
+        hash<Qore::Ssh::SshAuthContextInfo> double_ctx = getAuthContext("password", "alice");
+        double_ctx.password = "secret";
+        double_ctx.metadata = {"session_data": pw1_decision.session_data};
         hash<Qore::Ssh::SshAuthDecision> double_decision = provider.authenticate(double_ctx);
         assertEq(True, double_decision.accepted);
         assertEq(True, double_decision.partial);
-        assertEq(("password",), double_decision.allowed_auth_methods);
+        assertEq(("publickey",), double_decision.allowed_auth_methods);
+
+        # H-6: a FORGED completed-methods state (no signature) must be ignored, so the publickey
+        # factor is still required — a client cannot skip a factor by pre-seeding session_data
+        hash<Qore::Ssh::SshAuthContextInfo> forged_ctx = getAuthContext("password", "alice");
+        forged_ctx.password = "secret";
+        forged_ctx.metadata = {
+            "session_data": {
+                SshServerAuthProvider::SessionDataCompletedMethodsKey: ("password", "publickey"),
+            },
+        };
+        hash<Qore::Ssh::SshAuthDecision> forged_decision = provider.authenticate(forged_ctx);
+        assertEq(True, forged_decision.accepted);
+        assertEq(True, forged_decision.partial, "unsigned forged completed-methods must be ignored");
+        assertEq(("publickey",), forged_decision.allowed_auth_methods);
+
+        # H-6: a TAMPERED completed-methods list with a now-stale signature must also be rejected
+        hash<auto> tampered_sd = pw1_decision.session_data;
+        tampered_sd{SshServerAuthProvider::SessionDataCompletedMethodsKey} = ("password", "publickey");
+        hash<Qore::Ssh::SshAuthContextInfo> tampered_ctx = getAuthContext("password", "alice");
+        tampered_ctx.password = "secret";
+        tampered_ctx.metadata = {"session_data": tampered_sd};
+        hash<Qore::Ssh::SshAuthDecision> tampered_decision = provider.authenticate(tampered_ctx);
+        assertEq(True, tampered_decision.partial,
+            "tampered completed-methods with stale signature must be rejected");
+        assertEq(("publickey",), tampered_decision.allowed_auth_methods);
 
         # Single-method mode: no required_methods → no partial
         SshServerAuthProvider::VirtualSshAuthProvider single_provider(<SshServerAuthProvider::VirtualSshAuthProviderOptions>{
@@ -290,5 +329,37 @@ class SshServerAuthProviderTest inherits QUnit::Test {
         hash<Qore::Ssh::SshAuthDecision> single_decision = single_provider.authenticate(single_ctx);
         assertEq(True, single_decision.accepted);
         assertFalse(single_decision.partial ?? False);
+    }
+
+    testNoneNotAllowedInMfa() {
+        # H-6: "none" carries no credential; permitting it as a required factor would let a
+        # client satisfy a factor for free, so it must be rejected at construction
+        assertThrows("SSH-AUTH-PROVIDER-ERROR",
+            sub() {
+                SshServerAuthProvider::VirtualSshAuthProvider p(
+                    <SshServerAuthProvider::VirtualSshAuthProviderOptions>{
+                        "methods": ("none", "password"),
+                        "required_methods": ("none", "password"),
+                    });
+            });
+    }
+
+    testFailClosedValidator() {
+        # H-5: a validator that throws must yield a deterministic rejection, never a propagated
+        # exception or an undefined auth outcome
+        SshServerAuthProvider::VirtualSshAuthProvider throwing(
+            <SshServerAuthProvider::VirtualSshAuthProviderOptions>{
+                "methods": ("password",),
+                "password": <SshServerAuthProvider::VirtualSshPasswordAuthOptions>{
+                    "validator": hash<Qore::Ssh::SshAuthDecision> sub(hash<Qore::Ssh::SshAuthContextInfo> ctx) {
+                        throw "VALIDATOR-BOOM", "simulated validator failure";
+                    },
+                },
+            });
+        hash<Qore::Ssh::SshAuthContextInfo> ctx = getAuthContext("password", "alice");
+        ctx.password = "whatever";
+        hash<Qore::Ssh::SshAuthDecision> decision = throwing.authenticate(ctx);
+        assertFalse(decision.accepted, "a throwing validator must fail closed (rejected)");
+        assertFalse(decision.partial ?? False);
     }
 }

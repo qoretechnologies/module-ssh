@@ -66,6 +66,10 @@ public namespace SftpServerDataProvider {
         *int snapshot_interval_seconds;
         #! restore state from persistence dir on construction
         *bool restore_on_construct;
+        #! Low/Info: maximum accepted on-disk snapshot size in bytes when restoring
+        /** A tampered or runaway snapshot file is otherwise loaded wholesale into memory.
+            Defaults to 256 MiB when not set. */
+        *int max_snapshot_bytes;
     }
 
     #! virtual filesystem configuration options
@@ -75,6 +79,22 @@ public namespace SftpServerDataProvider {
         *string archive_dir;
         *hash<VirtualSftpPersistenceOptions> persistence;
         *LoggerInterface logger;
+        #! allow-listed real-filesystem roots a submit() @c source_path may be read from
+        /** Reading a server-local file via a submission @c source_path is a server-side helper
+            convenience (e.g. submitLocalFile()); it is not reachable from a remote SFTP client.
+            It is disabled by default (fail-closed): a @c source_path is only read when this list
+            is configured and the canonicalized file resolves inside one of the canonicalized
+            roots, preventing an integration that forwards untrusted input as @c source_path from
+            reading arbitrary server files (M-1). */
+        *softlist<string> allowed_source_path_roots;
+        #! global cap on the total in-memory bytes held by the virtual filesystem (M-8)
+        /** Enforced for every data-ingest path independently of any inbound policy; bounds
+            server memory (and, with write-through persistence, the per-write snapshot cost). */
+        *int max_total_bytes;
+        #! global cap on the number of files held by the virtual filesystem (M-8)
+        *int max_file_count;
+        #! global cap on the size of a single virtual file (M-8)
+        *int max_file_size;
     }
 
     #! SFTP file exchange configuration with inbound/outbound directories and policies

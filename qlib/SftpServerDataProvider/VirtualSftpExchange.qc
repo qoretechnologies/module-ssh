@@ -30,6 +30,9 @@ public namespace SftpServerDataProvider {
             Qore::Thread::Mutex upload_lock();
             hash<auto> active_inbound_uploads = {};
             int next_inbound_upload_id = 1;
+            #! M-7: serializes inbound validate->commit so concurrent submissions cannot each pass
+            #! the quota/duplicate/overwrite checks and then all commit, exceeding the limits
+            Qore::Thread::Mutex inbound_finalize_lock();
         }
 
         constructor(*hash<VirtualSftpExchangeOptions> options) {
@@ -75,6 +78,11 @@ public namespace SftpServerDataProvider {
                 }
                 if (options.default_directory_permissions != NOTHING) {
                     vfs_options.default_directory_permissions = options.default_directory_permissions;
+                }
+                if (options.allowed_source_path_roots) {
+                    # M-1: propagate the source_path allow-list so confinement applies to
+                    # exchange submissions too
+                    vfs_options.allowed_source_path_roots = options.allowed_source_path_roots;
                 }
             }
 
@@ -183,6 +191,10 @@ public namespace SftpServerDataProvider {
         }
 
         nothing addInboundData(string name, binary data, *hash<auto> metadata) {
+            # M-7: serialize inbound validate->commit so concurrent helper submissions cannot
+            # race the quota/duplicate checks
+            inbound_finalize_lock.lock();
+            on_exit inbound_finalize_lock.unlock();
             string path = resolveEntryPath(name, inbound_dir, "addInboundData");
             validateInboundAcceptance(path, data.size(), "addInboundData", EventSourceHelper, metadata, NOTHING, data,
                 NOTHING, NOTHING);
@@ -331,6 +343,10 @@ public namespace SftpServerDataProvider {
         }
 
         hash<Qore::Ssh::SftpOperationResult> closeWrite(hash<Qore::Ssh::SftpCloseRequest> req) {
+            # M-7: serialize inbound validate->commit (see submit()); declared first so it is
+            # released last (after releaseInboundUpload and the vfs commit)
+            inbound_finalize_lock.lock();
+            on_exit inbound_finalize_lock.unlock();
             hash<auto> resolved = copyHash(req);
             *hash<Qore::Ssh::SftpSessionInfo> session_info = getRequestSessionInfo(resolved);
             *string upload_handle = resolved.backend_handle;
@@ -503,13 +519,18 @@ public namespace SftpServerDataProvider {
         }
 
         hash<auto> submit(hash<auto> req) {
+            # M-7: hold the inbound finalize lock across validation and commit so concurrent
+            # submissions cannot each pass the quota/duplicate/overwrite checks then all commit
+            inbound_finalize_lock.lock();
+            on_exit inbound_finalize_lock.unlock();
             hash<auto> resolved = copyHash(req);
             *hash<Qore::Ssh::SftpSessionInfo> session_info = getRequestSessionInfo(resolved);
             resolved.path = resolveRequestPath(req.path, inbound_dir, "submit");
             resolved.path = translateInboundPathForSession(resolved.path, session_info, True, "submit");
             hash<auto> policy_context = getInboundPolicyContext(resolved.path, session_info, "submit");
             if (!resolved.data && resolved.source_path && requiresLoadedSubmissionData(policy_context.policy)) {
-                resolved.data = ReadOnlyFile::readBinaryFile(resolved.source_path);
+                # M-1: confined read against the configured allow-listed roots
+                resolved.data = vfs.readSourceFile(resolved.source_path, "submit");
             }
             validateInboundAcceptance(resolved.path, getSubmissionSize(resolved), "submit", EventSourceHelper,
                 resolved.metadata, session_info, resolved.data, policy_context, resolved.source_path);
@@ -709,6 +730,15 @@ public namespace SftpServerDataProvider {
                 throw "VIRTUAL-SFTP-EXCHANGE-ERROR",
                     sprintf("%s requires an absolute path; got %y", operation, path);
             }
+            # M-3: reject embedded NUL/control characters and bound the path length
+            if (path.size() > 4096) {
+                throw "VIRTUAL-SFTP-EXCHANGE-ERROR",
+                    sprintf("%s path is too long (%d bytes)", operation, path.size());
+            }
+            if (regex(path, "[[:cntrl:]]")) {
+                throw "VIRTUAL-SFTP-EXCHANGE-ERROR",
+                    sprintf("%s path contains illegal control characters", operation);
+            }
 
             list<string> normalized_parts = ();
             foreach string part in (path.split("/")) {
@@ -718,6 +748,10 @@ public namespace SftpServerDataProvider {
                 if (part == "..") {
                     throw "VIRTUAL-SFTP-EXCHANGE-ERROR",
                         sprintf("%s path %y escapes the virtual root", operation, path);
+                }
+                if (part.size() > 255) {
+                    throw "VIRTUAL-SFTP-EXCHANGE-ERROR",
+                        sprintf("%s path component is too long (%d bytes)", operation, part.size());
                 }
                 normalized_parts += (part,);
             }
@@ -811,7 +845,8 @@ public namespace SftpServerDataProvider {
                 return data.size();
             }
             if (*string source_path = req.source_path) {
-                return Qore::hstat(source_path).size;
+                # M-1: confined size lookup against the configured allow-listed roots
+                return vfs.sourceFileSize(source_path, "submit");
             }
             return 0;
         }

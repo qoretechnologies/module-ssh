@@ -186,6 +186,13 @@ public namespace SshServerAuthProvider {
     #! session_data key used to track completed auth methods across partial auth rounds
     public const SessionDataCompletedMethodsKey = "__completed_auth_methods";
 
+    #! session_data key holding the HMAC over the completed-methods list (integrity protection)
+    /** The completed-methods list is round-tripped through client-influenced @c session_data.
+        It is signed with a per-provider-instance secret so a client cannot forge it to skip
+        required factors (H-6); an entry whose signature does not verify is treated as if no
+        methods had been completed (fail-closed). */
+    public const SessionDataCompletedMethodsSigKey = "__completed_auth_methods_sig";
+
     /** Base auth-provider abstraction for object-driven SSH authentication.
 
         User-defined auth providers should implement @c authenticate() and
@@ -218,6 +225,8 @@ public namespace SshServerAuthProvider {
         private {
             hash<VirtualSshAuthProviderOptions> options = <VirtualSshAuthProviderOptions>{};
             *LoggerInterface logger;
+            #! per-instance secret used to HMAC the round-tripped MFA completed-methods state
+            binary mfa_secret = get_random_bytes(32);
         }
 
         constructor(*hash<VirtualSshAuthProviderOptions> opts) {
@@ -225,6 +234,44 @@ public namespace SshServerAuthProvider {
                 options = opts;
                 logger = opts.logger;
             }
+            # "none" requires no credential; allowing it as a multi-factor requirement would let
+            # an unauthenticated client satisfy a factor for free (H-6)
+            if (options.required_methods && inlist("none", options.required_methods)) {
+                throw "SSH-AUTH-PROVIDER-ERROR",
+                    "the \"none\" auth method must not appear in required_methods: it requires no "
+                    "credential and would weaken multi-factor enforcement";
+            }
+        }
+
+        #! Constant-time equality over two secrets/credentials.
+        /** Both sides are reduced to fixed-length keyed digests so the comparison leaks neither
+            length nor content through early-out/timing behaviour (H-7). */
+        private bool constantTimeEquals(auto a, auto b) {
+            string da = SHA256_hmac(exists a ? a : "", mfa_secret);
+            string db = SHA256_hmac(exists b ? b : "", mfa_secret);
+            # digests are equal-length hex strings; OR-accumulate all byte differences
+            int diff = da.size() ^ db.size();
+            int n = da.size() < db.size() ? da.size() : db.size();
+            for (int i = 0; i < n; ++i) {
+                diff = diff | (ord(da[i]) ^ ord(db[i]));
+            }
+            return diff == 0;
+        }
+
+        #! Returns the integrity signature for an ordered completed-methods list.
+        private string signCompleted(list<string> methods) {
+            return SHA256_hmac(methods.join("\n"), mfa_secret);
+        }
+
+        #! Normalizes any validator return value into a fail-closed typed decision.
+        /** A validator that returns a non-hash, a hash without a boolean @c accepted, or that
+            throws (handled by the caller) must never be treated as an acceptance (H-5). */
+        private hash<Qore::Ssh::SshAuthDecision> normalizeValidatorDecision(auto result, *string username) {
+            if (result.typeCode() != NT_HASH || result.accepted.typeCode() != NT_BOOLEAN) {
+                logWarn("auth validator returned a malformed decision; rejecting (fail-closed)");
+                return makeRejectedDecision("validator returned a malformed decision", NOTHING, username);
+            }
+            return cast<hash<Qore::Ssh::SshAuthDecision>>(result);
         }
 
         hash<VirtualSshAuthProviderOptions> getOptions() {
@@ -242,36 +289,46 @@ public namespace SshServerAuthProvider {
         hash<Qore::Ssh::SshAuthDecision> authenticate(hash<Qore::Ssh::SshAuthContextInfo> ctx) {
             logDetail(sprintf("ssh auth attempt method=%s username=%s", ctx.auth_method, ctx.username));
 
+            # H-5: the entire decision must fail closed.  Any exception escaping the method
+            # logic (including from a user-supplied validator) is converted into an explicit
+            # rejection rather than propagating as an undefined auth outcome.
             hash<Qore::Ssh::SshAuthDecision> decision;
-            switch (ctx.auth_method) {
-                case "none":
-                    decision = authenticateStaticMethod(ctx, options.none, "none");
-                    break;
-                case "password":
-                    decision = authenticatePassword(ctx);
-                    break;
-                case "publickey":
-                    decision = authenticatePublicKey(ctx);
-                    break;
-                case "interactive":
-                    decision = authenticateStaticMethod(ctx, options.interactive, "interactive");
-                    break;
-                case "hostbased":
-                    decision = authenticateStaticMethod(ctx, options.hostbased, "hostbased");
-                    break;
-                case "gssapi-mic":
-                    decision = authenticateStaticMethod(ctx, options.gssapi_mic, "gssapi-mic");
-                    break;
-                default:
-                    decision = makeRejectedDecision(
-                        sprintf("unsupported auth method %y", ctx.auth_method), NOTHING, ctx.username);
-                    break;
-            }
+            try {
+                switch (ctx.auth_method) {
+                    case "none":
+                        decision = authenticateStaticMethod(ctx, options.none, "none");
+                        break;
+                    case "password":
+                        decision = authenticatePassword(ctx);
+                        break;
+                    case "publickey":
+                        decision = authenticatePublicKey(ctx);
+                        break;
+                    case "interactive":
+                        decision = authenticateStaticMethod(ctx, options.interactive, "interactive");
+                        break;
+                    case "hostbased":
+                        decision = authenticateStaticMethod(ctx, options.hostbased, "hostbased");
+                        break;
+                    case "gssapi-mic":
+                        decision = authenticateStaticMethod(ctx, options.gssapi_mic, "gssapi-mic");
+                        break;
+                    default:
+                        decision = makeRejectedDecision(
+                            sprintf("unsupported auth method %y", ctx.auth_method), NOTHING, ctx.username);
+                        break;
+                }
 
-            # Multi-factor: if required_methods is set and this single method succeeded,
-            # check whether all required methods are now satisfied
-            if (decision.accepted && options.required_methods) {
-                decision = evaluateMultiFactor(decision, ctx);
+                # Multi-factor: if required_methods is set and this single method succeeded,
+                # check whether all required methods are now satisfied
+                if (decision.accepted && options.required_methods) {
+                    decision = evaluateMultiFactor(decision, ctx);
+                }
+            } catch (hash<ExceptionInfo> ex) {
+                logWarn(sprintf("ssh auth error method=%s username=%s: %s: %s (rejecting, fail-closed)",
+                    ctx.auth_method, ctx.username, ex.err, ex.desc));
+                return makeRejectedDecision(
+                    sprintf("authentication failed: %s", ex.err), NOTHING, ctx.username);
             }
 
             if (decision.accepted) {
@@ -307,7 +364,7 @@ public namespace SshServerAuthProvider {
             }
             if (*code<hash<Qore::Ssh::SshAuthDecision>(hash<Qore::Ssh::SshAuthContextInfo>)> validator
                     = method.validator) {
-                return cast<hash<Qore::Ssh::SshAuthDecision>>(validator(ctx));
+                return normalizeValidatorDecision(validator(ctx), ctx.username);
             }
             if (ctx.password == NOTHING) {
                 return makeRejectedDecision(
@@ -316,7 +373,11 @@ public namespace SshServerAuthProvider {
             }
             if (*list<hash<VirtualSshPasswordUserInfo>> users = method.users) {
                 foreach hash<VirtualSshPasswordUserInfo> user in (users) {
-                    if (user.username == ctx.username && user.password == ctx.password) {
+                    # H-7: compare the password in constant time; evaluate both predicates before
+                    # branching so the secret comparison is not short-circuited away
+                    bool username_match = user.username == ctx.username;
+                    bool password_match = constantTimeEquals(user.password, ctx.password);
+                    if (username_match && password_match) {
                         return makeAcceptedDecision(user.decision ?? method.success_decision, ctx.username);
                     }
                 }
@@ -347,7 +408,7 @@ public namespace SshServerAuthProvider {
             }
             if (*code<hash<Qore::Ssh::SshAuthDecision>(hash<Qore::Ssh::SshAuthContextInfo>)> validator
                     = method.validator) {
-                return cast<hash<Qore::Ssh::SshAuthDecision>>(validator(ctx));
+                return normalizeValidatorDecision(validator(ctx), ctx.username);
             }
             if (ctx.public_key == NOTHING) {
                 return makeRejectedDecision(
@@ -359,7 +420,8 @@ public namespace SshServerAuthProvider {
                     if (key_info.username != ctx.username) {
                         continue;
                     }
-                    if (key_info.public_key != ctx.public_key) {
+                    # H-7: constant-time comparison of the presented public key
+                    if (!constantTimeEquals(key_info.public_key, ctx.public_key)) {
                         continue;
                     }
                     if (key_info.public_key_type != NOTHING && key_info.public_key_type != ctx.public_key_type) {
@@ -395,7 +457,7 @@ public namespace SshServerAuthProvider {
             }
             if (*code<hash<Qore::Ssh::SshAuthDecision>(hash<Qore::Ssh::SshAuthContextInfo>)> validator
                     = method.validator) {
-                return cast<hash<Qore::Ssh::SshAuthDecision>>(validator(ctx));
+                return normalizeValidatorDecision(validator(ctx), ctx.username);
             }
             return makeAcceptedDecision(method.success_decision, ctx.username);
         }
@@ -403,10 +465,21 @@ public namespace SshServerAuthProvider {
         private hash<Qore::Ssh::SshAuthDecision> evaluateMultiFactor(
                 hash<Qore::Ssh::SshAuthDecision> single_decision,
                 hash<Qore::Ssh::SshAuthContextInfo> ctx) {
-            # Get previously completed methods from session_data (passed back from prior partial decisions)
+            # Get previously completed methods from session_data (passed back from prior partial
+            # decisions).  This state is client-influenced, so it is only trusted when its
+            # integrity signature verifies; otherwise it is discarded and treated as empty so a
+            # client cannot forge completion of required factors (H-6, fail-closed).
             list<string> completed = ();
-            if (ctx.metadata.session_data{SessionDataCompletedMethodsKey}) {
-                completed = cast<list<string>>(ctx.metadata.session_data{SessionDataCompletedMethodsKey});
+            auto raw_completed = ctx.metadata.session_data{SessionDataCompletedMethodsKey};
+            if (raw_completed) {
+                list<string> candidate = cast<list<string>>(raw_completed);
+                auto sig = ctx.metadata.session_data{SessionDataCompletedMethodsSigKey};
+                if (sig.typeCode() == NT_STRING && constantTimeEquals(sig, signCompleted(candidate))) {
+                    completed = candidate;
+                } else {
+                    logWarn(sprintf("ignoring unsigned/forged MFA completed-methods state for "
+                        "username=%s (fail-closed)", ctx.username));
+                }
             }
 
             # Add the current method if not already present
@@ -435,6 +508,7 @@ public namespace SshServerAuthProvider {
                 single_decision.session_data = {};
             }
             single_decision.session_data{SessionDataCompletedMethodsKey} = completed;
+            single_decision.session_data{SessionDataCompletedMethodsSigKey} = signCompleted(completed);
             single_decision.message = sprintf("partial auth success, remaining: %y", remaining);
             return single_decision;
         }

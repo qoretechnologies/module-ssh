@@ -23,8 +23,27 @@
 
 #include "ssh-module.h"
 
+#include <qore/QoreSandboxManager.h>
+
+#include <cerrno>
 #include <mutex>
 #include <string>
+#include <string.h>
+#include <sys/stat.h>
+
+// Enforces the active program's filesystem sandbox policy (if any) before a key file is
+// read or written.  Returns 0 when access is permitted (or no sandbox is active) and -1
+// with FILESYSTEM-ACCESS-DENIED raised when the policy denies the path (fail closed).
+static int ssh_key_check_fs_access(const char* path, int mode, ExceptionSink* xsink) {
+    if (!path || !*path) {
+        return 0;
+    }
+    QoreSandboxManagerHelper smh;
+    if (smh && !smh->checkFilesystemAccess(path, mode, xsink)) {
+        return -1;
+    }
+    return 0;
+}
 
 /** @brief Validates that a key type constant is one of the supported generation types.
  */
@@ -227,6 +246,9 @@ public:
                 "cannot export private key: the key contains only public key material");
             return -1;
         }
+        if (ssh_key_check_fs_access(path, QSEC_WRITE | QSEC_CREATE, xsink)) {
+            return -1;
+        }
 #if HAVE_SSH_FILE_FORMAT
         int rc = ssh_pki_export_privkey_file_format(key, passphrase, nullptr, nullptr, path,
             static_cast<enum ssh_file_format_e>(format));
@@ -243,11 +265,22 @@ public:
                 "could not write private key to file '%s'", path);
             return -1;
         }
+        // Low/Info: libssh creates the key file with the process umask (typically 0644 —
+        // world-readable).  Narrow it to 0600 and fail closed if that cannot be guaranteed,
+        // rather than silently leaving a private key readable by other local users.
+        if (chmod(path, S_IRUSR | S_IWUSR) != 0) {
+            xsink->raiseErrnoException("SSHKEY-EXPORT-ERROR", errno,
+                "wrote private key to '%s' but could not restrict its permissions to 0600", path);
+            return -1;
+        }
         return 0;
     }
 
     int writePublicKeyFile(const char* path, ExceptionSink* xsink) const {
         std::lock_guard<std::mutex> lock(m);
+        if (ssh_key_check_fs_access(path, QSEC_WRITE | QSEC_CREATE, xsink)) {
+            return -1;
+        }
         int rc = ssh_pki_export_pubkey_file(key, path);
         if (rc != SSH_OK) {
             xsink->raiseException("SSHKEY-EXPORT-ERROR",
@@ -278,11 +311,17 @@ public:
         int rc = ssh_pki_export_privkey_base64(key, passphrase, nullptr, nullptr, &b64_key);
 #endif
         if (rc != SSH_OK || !b64_key) {
+            if (b64_key) {
+                explicit_bzero(b64_key, strlen(b64_key));
+            }
             SSH_STRING_FREE_CHAR(b64_key);
             xsink->raiseException("SSHKEY-EXPORT-ERROR", "could not export private key as string");
             return nullptr;
         }
         QoreStringNode* result = new QoreStringNode(b64_key);
+        // Low/Info: the exported buffer may hold an unencrypted private key; libssh does not
+        // wipe it, so scrub it before freeing rather than leaving it in freed heap.
+        explicit_bzero(b64_key, strlen(b64_key));
         SSH_STRING_FREE_CHAR(b64_key);
         return result;
     }
@@ -360,6 +399,9 @@ SshKey key("/home/user/.ssh/id_ed25519");
     @endcode
 */
 SshKey::constructor(string path, *string passphrase) {
+    if (ssh_key_check_fs_access(path->c_str(), QSEC_READ, xsink)) {
+        return;
+    }
     ssh_key key = nullptr;
     int rc = ssh_pki_import_privkey_file(path->c_str(),
         passphrase ? passphrase->c_str() : nullptr,
@@ -423,9 +465,10 @@ static SshKey SshKey::generate(int type, int bits = 0) {
     }
     int actual_bits = bits ? (int)bits : ssh_key_default_bits(type);
     // validate bits for specific key types
-    if (type == SSH_KEYTYPE_RSA && actual_bits < 1024) {
+    // Low/Info: 1024-bit RSA is deprecated (NIST SP 800-57); require >= 2048 bits
+    if (type == SSH_KEYTYPE_RSA && actual_bits < 2048) {
         xsink->raiseException("SSHKEY-ARG-ERROR",
-            "RSA key size %d is too small; minimum is 1024 bits", actual_bits);
+            "RSA key size %d is too small; minimum is 2048 bits", actual_bits);
         return QoreValue();
     }
     if (type == SSH_KEYTYPE_ECDSA_P256 && actual_bits != 256) {
@@ -473,6 +516,9 @@ SshKey key = SshKey::readPrivateKeyFile("/home/user/.ssh/id_rsa");
     @endcode
 */
 static SshKey SshKey::readPrivateKeyFile(string path, *string passphrase) {
+    if (ssh_key_check_fs_access(path->c_str(), QSEC_READ, xsink)) {
+        return QoreValue();
+    }
     ssh_key key = nullptr;
     int rc = ssh_pki_import_privkey_file(path->c_str(),
         passphrase ? passphrase->c_str() : nullptr,
@@ -503,6 +549,9 @@ SshKey pub = SshKey::readPublicKeyFile("/home/user/.ssh/id_rsa.pub");
     @endcode
 */
 static SshKey SshKey::readPublicKeyFile(string path) {
+    if (ssh_key_check_fs_access(path->c_str(), QSEC_READ, xsink)) {
+        return QoreValue();
+    }
     ssh_key key = nullptr;
     int rc = ssh_pki_import_pubkey_file(path->c_str(), &key);
     if (rc != SSH_OK || !key) {

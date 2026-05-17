@@ -252,6 +252,15 @@ private:
                 xsink->raiseException("SSHCOMMANDSESSION-ERROR", "could not write command output to the SSH channel");
                 return -1;
             }
+            // M-5: the server session is blocking, so ssh_channel_write returns the byte count
+            // or SSH_ERROR.  Guard rc <= 0 (SSH_AGAIN / no progress) explicitly: without this a
+            // negative rc would underflow the unsigned 'remaining' and rc == 0 would busy-spin
+            // forever against a peer that accepts but never reads.
+            if (rc <= 0) {
+                xsink->raiseException("SSHCOMMANDSESSION-ERROR",
+                    "the SSH channel made no progress writing command output (peer not reading?)");
+                return -1;
+            }
 
             ptr += rc;
             remaining -= static_cast<size_t>(rc);

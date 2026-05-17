@@ -45,6 +45,10 @@ class SftpServerDataProviderTest inherits QUnit::Test {
         addTestCase("virtual filesystem works through SftpSession backend API", \testVirtualFilesystemWithSftpSession());
         addTestCase("virtual filesystem inspection helpers", \testVirtualFilesystemInspectionHelpers());
         addTestCase("virtual filesystem rejects escaping paths", \testVirtualFilesystemRejectsEscapingPaths());
+        addTestCase("submit source_path is fail-closed and confined to allow-listed roots",
+            \testSourcePathConfinement());
+        addTestCase("virtual filesystem enforces global resource caps without an inbound policy",
+            \testGlobalResourceCaps());
         addTestCase("virtual filesystem logger roundtrip", \testVirtualFilesystemLogger());
         addTestCase("virtual filesystem exposes typed snapshot and listing data", \testVirtualFilesystemTypedResults());
         addTestCase("virtual filesystem typed constructor options reject invalid values", \testVirtualFilesystemTypedOptions());
@@ -64,6 +68,8 @@ class SftpServerDataProviderTest inherits QUnit::Test {
             \testVirtualExchangeRejectsDuplicateInboundSizeAndContent());
         addTestCase("virtual exchange enforces inbound file-count and total-byte quotas",
             \testVirtualExchangeInboundQuotas());
+        addTestCase("virtual exchange enforces inbound quota atomically under concurrency",
+            \testVirtualExchangeInboundQuotaConcurrent());
         addTestCase("virtual exchange supports directory policy overrides and accepted checksums",
             \testVirtualExchangeDirectoryPoliciesAndChecksums());
         addTestCase("virtual exchange enforces content-aware inbound policy",
@@ -147,6 +153,7 @@ class SftpServerDataProviderTest inherits QUnit::Test {
 
     testVirtualFilesystemBasic() {
         SftpServerDataProvider::VirtualSftpFilesystem vfs(<SftpServerDataProvider::VirtualSftpFilesystemOptions>{
+            "allowed_source_path_roots": ("/tmp",),
             "archive_dir": "/archive",
         });
         vfs.addDirectory("/inbound");
@@ -344,6 +351,7 @@ class SftpServerDataProviderTest inherits QUnit::Test {
         # Create filesystem with write-through persistence
         {
             SftpServerDataProvider::VirtualSftpFilesystem vfs(<SftpServerDataProvider::VirtualSftpFilesystemOptions>{
+            "allowed_source_path_roots": ("/tmp",),
                 "persistence": <SftpServerDataProvider::VirtualSftpPersistenceOptions>{
                     "persistence_dir": tmp_dir,
                     "persistence_mode": "write-through",
@@ -360,6 +368,7 @@ class SftpServerDataProviderTest inherits QUnit::Test {
         # Create a new filesystem that restores from the persisted snapshot
         {
             SftpServerDataProvider::VirtualSftpFilesystem vfs2(<SftpServerDataProvider::VirtualSftpFilesystemOptions>{
+            "allowed_source_path_roots": ("/tmp",),
                 "persistence": <SftpServerDataProvider::VirtualSftpPersistenceOptions>{
                     "persistence_dir": tmp_dir,
                     "persistence_mode": "snapshot",
@@ -373,6 +382,7 @@ class SftpServerDataProviderTest inherits QUnit::Test {
         # saveSnapshot works
         {
             SftpServerDataProvider::VirtualSftpFilesystem vfs3(<SftpServerDataProvider::VirtualSftpFilesystemOptions>{
+            "allowed_source_path_roots": ("/tmp",),
                 "persistence": <SftpServerDataProvider::VirtualSftpPersistenceOptions>{
                     "persistence_dir": tmp_dir,
                     "persistence_mode": "snapshot",
@@ -383,6 +393,7 @@ class SftpServerDataProviderTest inherits QUnit::Test {
             vfs3.saveSnapshot();
 
             SftpServerDataProvider::VirtualSftpFilesystem vfs4(<SftpServerDataProvider::VirtualSftpFilesystemOptions>{
+            "allowed_source_path_roots": ("/tmp",),
                 "persistence": <SftpServerDataProvider::VirtualSftpPersistenceOptions>{
                     "persistence_dir": tmp_dir,
                     "persistence_mode": "snapshot",
@@ -396,6 +407,7 @@ class SftpServerDataProviderTest inherits QUnit::Test {
 
     testVirtualFilesystemAtomicExchange() {
         SftpServerDataProvider::VirtualSftpFilesystem vfs(<SftpServerDataProvider::VirtualSftpFilesystemOptions>{
+            "allowed_source_path_roots": ("/tmp",),
             "archive_dir": "/archive",
         });
         vfs.submit({
@@ -475,11 +487,97 @@ class SftpServerDataProviderTest inherits QUnit::Test {
         SftpServerDataProvider::VirtualSftpFilesystem vfs();
         assertThrows("VIRTUAL-SFTP-FS-ERROR", sub() { vfs.addTextFile("/../../bad.txt", "bad"); });
         assertThrows("VIRTUAL-SFTP-FS-ERROR", sub() { vfs.stat(<Qore::Ssh::SftpPathRequest>{"path": "relative.txt"}); });
+
+        # M-3: embedded NUL / control characters must be rejected (NUL truncation + log injection)
+        assertThrows("VIRTUAL-SFTP-FS-ERROR", sub() { vfs.addTextFile("/a\nb.txt", "x"); });
+        assertThrows("VIRTUAL-SFTP-FS-ERROR", sub() { vfs.addTextFile("/a" + chr(0) + "b.txt", "x"); });
+        assertThrows("VIRTUAL-SFTP-FS-ERROR", sub() { vfs.addTextFile("/a\tb.txt", "x"); });
+        # M-3: over-long component and over-long total path must be rejected
+        assertThrows("VIRTUAL-SFTP-FS-ERROR", sub() { vfs.addTextFile("/" + strmul("a", 256), "x"); });
+        assertThrows("VIRTUAL-SFTP-FS-ERROR", sub() { vfs.addTextFile("/" + strmul("a/", 3000) + "f", "x"); });
+        # a normal nested path with allowed characters still works
+        vfs.addTextFile("/ok/dir/file-1.txt", "fine\n");
+        assertTrue(vfs.exists("/ok/dir/file-1.txt"));
+    }
+
+    testSourcePathConfinement() {
+        string root = sprintf("/tmp/module-ssh-m1-%d-%d", getpid(), now_us());
+        mkdir(root, 0700);
+        string inside = root + "/payload.dat";
+        on_exit {
+            if (is_file(inside)) { unlink(inside); }
+            if (is_dir(root)) { rmdir(root); }
+        }
+        writeTextFile(inside, "confined payload\n");
+
+        # M-1: fail-closed by default — without allowed_source_path_roots a source_path read is denied
+        SftpServerDataProvider::VirtualSftpFilesystem closed_vfs();
+        assertThrows("VIRTUAL-SFTP-FS-ERROR", "disabled",
+            sub() {
+                closed_vfs.submit({"path": "/in/x.dat", "source_path": inside});
+            });
+
+        # M-1: with the allow-list configured, a source_path inside a resolved root is accepted
+        SftpServerDataProvider::VirtualSftpFilesystem vfs(
+            <SftpServerDataProvider::VirtualSftpFilesystemOptions>{
+                "allowed_source_path_roots": (root,),
+            });
+        hash<auto> ok = vfs.submit({"path": "/in/x.dat", "source_path": inside});
+        assertTrue(ok.completed);
+        assertEq(binary("confined payload\n"), vfs.getFileData("/in/x.dat"));
+
+        # M-1: a path outside every allowed root is rejected
+        assertThrows("VIRTUAL-SFTP-FS-ERROR", "outside",
+            sub() {
+                vfs.submit({"path": "/in/etc.dat", "source_path": "/etc/hostname"});
+            });
+        # M-1: a traversal that realpath-resolves outside the root is rejected
+        assertThrows("VIRTUAL-SFTP-FS-ERROR",
+            sub() {
+                vfs.submit({"path": "/in/trav.dat", "source_path": root + "/../../etc/hostname"});
+            });
+        # M-1: a non-existent source_path is rejected (cannot be resolved)
+        assertThrows("VIRTUAL-SFTP-FS-ERROR",
+            sub() {
+                vfs.submit({"path": "/in/missing.dat", "source_path": root + "/does-not-exist"});
+            });
+    }
+
+    testGlobalResourceCaps() {
+        # M-8: caps are enforced for plain client writes independently of any inbound policy
+        SftpServerDataProvider::VirtualSftpFilesystem fs_size(
+            <SftpServerDataProvider::VirtualSftpFilesystemOptions>{"max_file_size": 8});
+        fs_size.addTextFile("/a.txt", "12345678");          # exactly at the cap: allowed
+        assertThrows("VIRTUAL-SFTP-FS-ERROR", "max_file_size",
+            sub() { fs_size.addTextFile("/b.txt", "123456789"); });
+
+        SftpServerDataProvider::VirtualSftpFilesystem fs_count(
+            <SftpServerDataProvider::VirtualSftpFilesystemOptions>{"max_file_count": 2});
+        fs_count.addTextFile("/1.txt", "a");
+        fs_count.addTextFile("/2.txt", "b");
+        assertThrows("VIRTUAL-SFTP-FS-ERROR", "file-count",
+            sub() { fs_count.addTextFile("/3.txt", "c"); });
+        # replacing an existing file must not be counted as a new file
+        fs_count.addTextFile("/1.txt", "AA");
+        assertEq(2, fs_count.listFilePaths("/").size());
+
+        SftpServerDataProvider::VirtualSftpFilesystem fs_total(
+            <SftpServerDataProvider::VirtualSftpFilesystemOptions>{"max_total_bytes": 10});
+        fs_total.addTextFile("/x.txt", "12345");            # total 5
+        fs_total.addTextFile("/y.txt", "12345");            # total 10 (at cap): allowed
+        assertThrows("VIRTUAL-SFTP-FS-ERROR", "total-size",
+            sub() { fs_total.addTextFile("/z.txt", "1"); });
+        # replacing with smaller content frees space, so a subsequent write fits again
+        fs_total.addTextFile("/x.txt", "1");                # x: 5 -> 1, total 6
+        fs_total.addTextFile("/z.txt", "1234");             # +4 -> total 10: allowed
+        assertThrows("VIRTUAL-SFTP-FS-ERROR", "total-size",
+            sub() { fs_total.addTextFile("/w.txt", "1"); });
     }
 
     testVirtualFilesystemLogger() {
         TestLogger logger();
         SftpServerDataProvider::VirtualSftpFilesystem vfs(<SftpServerDataProvider::VirtualSftpFilesystemOptions>{
+            "allowed_source_path_roots": ("/tmp",),
             "logger": logger,
         });
         assertEq(logger, vfs.getLogger());
@@ -517,6 +615,7 @@ class SftpServerDataProviderTest inherits QUnit::Test {
     testVirtualFilesystemTypedOptions() {
         hash<SftpServerDataProvider::VirtualSftpFilesystemOptions> options
             = <SftpServerDataProvider::VirtualSftpFilesystemOptions>{
+            "allowed_source_path_roots": ("/tmp",),
                 "archive_dir": "/archive",
                 "default_file_permissions": 0100600,
             };
@@ -622,6 +721,7 @@ class SftpServerDataProviderTest inherits QUnit::Test {
 
     testVirtualExchangeConvenienceApi() {
         SftpServerDataProvider::VirtualSftpExchange exchange(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "allowed_source_path_roots": ("/tmp",),
             "archive_dir": "/archive",
             "claim_dir": "/claimed",
         });
@@ -655,6 +755,7 @@ class SftpServerDataProviderTest inherits QUnit::Test {
 
     testVirtualExchangePathModel() {
         SftpServerDataProvider::VirtualSftpExchange exchange(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "allowed_source_path_roots": ("/tmp",),
             "archive_dir": "/archive",
         });
         exchange.addOutboundText("ready.txt", "ready\n", {"kind": "ready"});
@@ -707,6 +808,7 @@ class SftpServerDataProviderTest inherits QUnit::Test {
     testVirtualExchangeInvalidInputs() {
         hash<SftpServerDataProvider::VirtualSftpExchangeOptions> options
             = <SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "allowed_source_path_roots": ("/tmp",),
                 "archive_dir": "/archive",
                 "claim_dir": "/claimed",
             };
@@ -729,6 +831,7 @@ class SftpServerDataProviderTest inherits QUnit::Test {
         assertThrows("VIRTUAL-SFTP-EXCHANGE-ERROR", sub() {
             SftpServerDataProvider::VirtualSftpExchange exchange_with_bad_payload_mode(
                 <SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "allowed_source_path_roots": ("/tmp",),
                 "inbound_event_payload_mode": "bad-mode",
             });
             assertEq(NOTHING, exchange_with_bad_payload_mode);
@@ -737,6 +840,7 @@ class SftpServerDataProviderTest inherits QUnit::Test {
 
     testVirtualExchangeInboundPolicy() {
         SftpServerDataProvider::VirtualSftpExchange exchange(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "allowed_source_path_roots": ("/tmp",),
             "inbound_policy": <SftpServerDataProvider::VirtualSftpInboundPolicy>{
                 "accept_filename_glob": "*.dat",
                 "reject_filename_regex": ".*forbidden.*",
@@ -784,6 +888,7 @@ class SftpServerDataProviderTest inherits QUnit::Test {
 
     testVirtualExchangePrincipalAwareInboundPolicy() {
         SftpServerDataProvider::VirtualSftpExchange exchange(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "allowed_source_path_roots": ("/tmp",),
             "inbound_policy": <SftpServerDataProvider::VirtualSftpInboundPolicy>{
                 "allow_principals": ("principal:allowed",),
                 "deny_principals": ("principal:blocked",),
@@ -848,6 +953,7 @@ class SftpServerDataProviderTest inherits QUnit::Test {
         beta_info.session_info.session_id = "session-beta";
 
         SftpServerDataProvider::VirtualSftpExchange exchange(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "allowed_source_path_roots": ("/tmp",),
             "inbound_policy": <SftpServerDataProvider::VirtualSftpInboundPolicy>{
                 "principal_policies": (
                     <SftpServerDataProvider::VirtualSftpPrincipalPolicy>{
@@ -900,6 +1006,7 @@ class SftpServerDataProviderTest inherits QUnit::Test {
     testVirtualExchangeConcurrentUploadCap() {
         list<hash<auto>> events = ();
         SftpServerDataProvider::VirtualSftpExchange exchange(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "allowed_source_path_roots": ("/tmp",),
             "inbound_policy": <SftpServerDataProvider::VirtualSftpInboundPolicy>{
                 "max_concurrent_uploads": 1,
             },
@@ -952,6 +1059,7 @@ class SftpServerDataProviderTest inherits QUnit::Test {
 
     testVirtualExchangeRetentionCleanup() {
         SftpServerDataProvider::VirtualSftpExchange exchange(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "allowed_source_path_roots": ("/tmp",),
             "archive_dir": "/archive",
             "claim_dir": "/claim",
             "inbound_retention_policy": <SftpServerDataProvider::VirtualSftpRetentionPolicy>{
@@ -1054,6 +1162,7 @@ class SftpServerDataProviderTest inherits QUnit::Test {
 
     testVirtualExchangeRejectsDuplicateInboundBasenames() {
         SftpServerDataProvider::VirtualSftpExchange exchange(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "allowed_source_path_roots": ("/tmp",),
             "inbound_policy": <SftpServerDataProvider::VirtualSftpInboundPolicy>{
                 "reject_duplicate_name": True,
             },
@@ -1072,6 +1181,7 @@ class SftpServerDataProviderTest inherits QUnit::Test {
         hash<Qore::Ssh::SftpSessionInfo> routed_info = getSftpInfo();
         routed_info.principal = "principal:routed";
         SftpServerDataProvider::VirtualSftpExchange routed_exchange(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "allowed_source_path_roots": ("/tmp",),
             "inbound_policy": <SftpServerDataProvider::VirtualSftpInboundPolicy>{
                 "reject_duplicate_name": True,
                 "principal_routes": (
@@ -1096,6 +1206,7 @@ class SftpServerDataProviderTest inherits QUnit::Test {
 
     testVirtualExchangeRejectsDuplicateInboundSizeAndContent() {
         SftpServerDataProvider::VirtualSftpExchange size_exchange(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "allowed_source_path_roots": ("/tmp",),
             "inbound_policy": <SftpServerDataProvider::VirtualSftpInboundPolicy>{
                 "reject_duplicate_size": True,
             },
@@ -1120,6 +1231,7 @@ class SftpServerDataProviderTest inherits QUnit::Test {
         assertEq("/inbound/new-size.dat", size_events[0].path);
 
         SftpServerDataProvider::VirtualSftpExchange hash_exchange(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "allowed_source_path_roots": ("/tmp",),
             "inbound_policy": <SftpServerDataProvider::VirtualSftpInboundPolicy>{
                 "reject_duplicate_hash": True,
             },
@@ -1153,6 +1265,7 @@ class SftpServerDataProviderTest inherits QUnit::Test {
 
     testVirtualExchangeInboundQuotas() {
         SftpServerDataProvider::VirtualSftpExchange count_exchange(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "allowed_source_path_roots": ("/tmp",),
             "inbound_policy": <SftpServerDataProvider::VirtualSftpInboundPolicy>{
                 "max_file_count": 1,
             },
@@ -1177,6 +1290,7 @@ class SftpServerDataProviderTest inherits QUnit::Test {
         assertEq("/inbound/overflow-count.dat", count_events[0].path);
 
         SftpServerDataProvider::VirtualSftpExchange size_exchange(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "allowed_source_path_roots": ("/tmp",),
             "inbound_policy": <SftpServerDataProvider::VirtualSftpInboundPolicy>{
                 "max_total_bytes": 8,
             },
@@ -1201,8 +1315,61 @@ class SftpServerDataProviderTest inherits QUnit::Test {
         assertEq("/inbound/overflow-bytes.dat", size_events[0].path);
     }
 
+    testVirtualExchangeInboundQuotaConcurrent() {
+        # M-7: with validate->commit serialized, exactly max_file_count of N racing concurrent
+        # submissions may commit; without it the separate validate/commit lock windows let
+        # multiple submissions pass validation and all commit, exceeding the quota
+        int cap = 2;
+        int n = 8;
+        SftpServerDataProvider::VirtualSftpExchange ex(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "inbound_policy": <SftpServerDataProvider::VirtualSftpInboundPolicy>{
+                "max_file_count": cap,
+            },
+        });
+
+        Counter ready(n);
+        Counter go(1);
+        Counter done(n);
+        Mutex mtx();
+        int ok = 0;
+        int rejected = 0;
+        for (int i = 0; i < n; ++i) {
+            int idx = i;
+            background sub() {
+                ready.dec();
+                go.waitForZero();
+                try {
+                    ex.submit(<SftpServerDataProvider::VirtualSftpSubmissionRequest>{
+                        "path": sprintf("/inbound/file-%d.dat", idx),
+                        "data": binary(sprintf("payload-%d\n", idx)),
+                    });
+                    mtx.lock();
+                    on_exit mtx.unlock();
+                    ++ok;
+                } catch (hash<ExceptionInfo> ex2) {
+                    if (ex2.err != "VIRTUAL-SFTP-EXCHANGE-ERROR") {
+                        rethrow;
+                    }
+                    mtx.lock();
+                    on_exit mtx.unlock();
+                    ++rejected;
+                }
+                done.dec();
+            }();
+        }
+        ready.waitForZero();   # all worker threads parked on go
+        go.dec();              # release them as simultaneously as possible
+        done.waitForZero(30s);
+
+        assertEq(cap, ok, "exactly max_file_count concurrent submissions may commit");
+        assertEq(n - cap, rejected, "all submissions over the quota must be rejected");
+        assertEq(cap, ex.getFilesystem().listFilePaths("/inbound").size(),
+            "the committed inbound file count must not exceed the quota under concurrency");
+    }
+
     testVirtualExchangeDirectoryPoliciesAndChecksums() {
         SftpServerDataProvider::VirtualSftpExchange exchange(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "allowed_source_path_roots": ("/tmp",),
             "generate_inbound_checksum": True,
             "inbound_policy": <SftpServerDataProvider::VirtualSftpInboundPolicy>{
                 "max_size": 16,
@@ -1273,6 +1440,7 @@ class SftpServerDataProviderTest inherits QUnit::Test {
 
     testVirtualExchangeContentAwareInboundPolicy() {
         SftpServerDataProvider::VirtualSftpExchange exchange(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "allowed_source_path_roots": ("/tmp",),
             "inbound_policy": <SftpServerDataProvider::VirtualSftpInboundPolicy>{
                 "accept_content_prefix": binary("PK"),
                 "reject_content_prefix": binary("MZ"),
@@ -1332,6 +1500,7 @@ class SftpServerDataProviderTest inherits QUnit::Test {
     testVirtualExchangeCustomInboundValidation() {
         list<hash<auto>> requests = ();
         SftpServerDataProvider::VirtualSftpExchange exchange(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "allowed_source_path_roots": ("/tmp",),
             "inbound_policy": <SftpServerDataProvider::VirtualSftpInboundPolicy>{
                 "validation_callback": hash<SftpServerDataProvider::VirtualSftpInboundValidationResult>
                         sub(hash<SftpServerDataProvider::VirtualSftpInboundValidationRequest> req) {
@@ -1398,6 +1567,7 @@ class SftpServerDataProviderTest inherits QUnit::Test {
 
     testVirtualExchangeOutboundCompletionEvents() {
         SftpServerDataProvider::VirtualSftpExchange exchange(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "allowed_source_path_roots": ("/tmp",),
             "archive_dir": "/archive",
             "claim_dir": "/claim",
         });
@@ -1478,6 +1648,7 @@ class SftpServerDataProviderTest inherits QUnit::Test {
     testVirtualExchangeLoggerLevels() {
         TestLogger logger();
         SftpServerDataProvider::VirtualSftpExchange exchange(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "allowed_source_path_roots": ("/tmp",),
             "logger": logger,
             "claim_dir": "/claim",
         });
@@ -1501,6 +1672,7 @@ class SftpServerDataProviderTest inherits QUnit::Test {
 
     testVirtualExchangeInboundPolicyWithSourcePath() {
         SftpServerDataProvider::VirtualSftpExchange exchange(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "allowed_source_path_roots": ("/tmp",),
             "inbound_policy": <SftpServerDataProvider::VirtualSftpInboundPolicy>{
                 "accept_filename_glob": "*.dat",
                 "max_size": 4,
@@ -1568,6 +1740,7 @@ class SftpServerDataProviderTest inherits QUnit::Test {
 
     testVirtualExchangeTypedBackendRequests() {
         SftpServerDataProvider::VirtualSftpExchange exchange(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "allowed_source_path_roots": ("/tmp",),
             "archive_dir": "/archive",
             "claim_dir": "/claimed",
         });
@@ -1646,6 +1819,7 @@ class SftpServerDataProviderTest inherits QUnit::Test {
 
     testVirtualExchangeWithSftpSession() {
         SftpServerDataProvider::VirtualSftpExchange exchange(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "allowed_source_path_roots": ("/tmp",),
             "archive_dir": "/archive",
             "claim_dir": "/claimed",
         });
@@ -1675,6 +1849,7 @@ class SftpServerDataProviderTest inherits QUnit::Test {
 
     testVirtualExchangeRecordStoreApi() {
         SftpServerDataProvider::VirtualSftpExchangeRecordStore store(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "allowed_source_path_roots": ("/tmp",),
             "archive_dir": "/archive",
             "claim_dir": "/claimed",
         });
@@ -1728,6 +1903,7 @@ class SftpServerDataProviderTest inherits QUnit::Test {
 
     testVirtualExchangeRecordStoreTypedRequests() {
         SftpServerDataProvider::VirtualSftpExchangeRecordStore store(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "allowed_source_path_roots": ("/tmp",),
             "archive_dir": "/archive",
             "claim_dir": "/claimed",
         });
@@ -1778,6 +1954,7 @@ class SftpServerDataProviderTest inherits QUnit::Test {
 
     testVirtualExchangeRecordStoreRejectsMismatchedCompletionMode() {
         SftpServerDataProvider::VirtualSftpExchangeRecordStore store(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "allowed_source_path_roots": ("/tmp",),
             "archive_dir": "/archive",
             "claim_dir": "/claimed",
         });
@@ -1807,6 +1984,7 @@ class SftpServerDataProviderTest inherits QUnit::Test {
 
     testVirtualExchangeRecordStoreBackend() {
         SftpServerDataProvider::VirtualSftpExchangeRecordStore store(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
+            "allowed_source_path_roots": ("/tmp",),
             "archive_dir": "/archive",
             "claim_dir": "/claimed",
         });

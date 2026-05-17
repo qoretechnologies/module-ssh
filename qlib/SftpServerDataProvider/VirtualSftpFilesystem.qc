@@ -18,6 +18,12 @@ public namespace SftpServerDataProvider {
             int default_file_permissions = 0100644;
             int default_directory_permissions = 0040755;
             int default_symlink_permissions = 0120777;
+            #! M-1: allow-listed real-filesystem roots for submit() source_path reads (fail-closed)
+            *softlist<string> allowed_source_path_roots;
+            #! M-8: global virtual-filesystem resource caps (independent of any inbound policy)
+            *int max_total_bytes;
+            *int max_file_count;
+            *int max_file_size;
         }
 
         constructor(*hash<VirtualSftpFilesystemOptions> options) {
@@ -40,6 +46,18 @@ public namespace SftpServerDataProvider {
                     archive_dir = normalizePath(archive_path, "archive_dir");
                     ensureParentDirectories(archive_dir);
                     ensureDirectoryExists(archive_dir);
+                }
+                if (options.allowed_source_path_roots) {
+                    allowed_source_path_roots = options.allowed_source_path_roots;
+                }
+                if (exists options.max_total_bytes) {
+                    max_total_bytes = options.max_total_bytes;
+                }
+                if (exists options.max_file_count) {
+                    max_file_count = options.max_file_count;
+                }
+                if (exists options.max_file_size) {
+                    max_file_size = options.max_file_size;
                 }
                 if (*LoggerInterface options_logger = options.logger) {
                     setLogger(options_logger);
@@ -64,6 +82,51 @@ public namespace SftpServerDataProvider {
 
         nothing setLogger(*LoggerInterface new_logger) {
             logger = new_logger;
+        }
+
+        #! M-1: validate a server-local submit() source_path against the allow-listed roots.
+        /** Disabled (fail-closed) unless allowed_source_path_roots is configured; the path is
+            symlink-resolved with realpath() and must resolve inside a resolved allowed root. */
+        private string confineSourcePath(string source_path, string operation) {
+            if (!allowed_source_path_roots) {
+                throw "VIRTUAL-SFTP-FS-ERROR",
+                    sprintf("%s: reading a local source_path is disabled; set "
+                        "allowed_source_path_roots to an allow-listed base directory to enable it",
+                        operation);
+            }
+            string resolved;
+            try {
+                resolved = realpath(source_path);
+            } catch (hash<ExceptionInfo> ex) {
+                throw "VIRTUAL-SFTP-FS-ERROR",
+                    sprintf("%s: source_path %y cannot be resolved: %s", operation, source_path, ex.desc);
+            }
+            foreach string root in (allowed_source_path_roots) {
+                string canon_root;
+                try {
+                    canon_root = realpath(root);
+                } catch (hash<ExceptionInfo> ex) {
+                    continue;
+                }
+                string prefix = (canon_root == "/") ? "/" : (canon_root + "/");
+                if (resolved == canon_root
+                        || (resolved.size() >= prefix.size() && resolved.substr(0, prefix.size()) == prefix)) {
+                    return resolved;
+                }
+            }
+            throw "VIRTUAL-SFTP-FS-ERROR",
+                sprintf("%s: source_path %y resolves outside every allowed source root", operation,
+                    source_path);
+        }
+
+        #! M-1: confined read of a server-local submission source file
+        binary readSourceFile(string source_path, string operation = "submit") {
+            return ReadOnlyFile::readBinaryFile(confineSourcePath(source_path, operation));
+        }
+
+        #! M-1: confined size lookup for a server-local submission source file
+        int sourceFileSize(string source_path, string operation = "submit") {
+            return hstat(confineSourcePath(source_path, operation)).size;
         }
 
         #! Saves the current filesystem state to the configured persistence directory
@@ -109,6 +172,7 @@ public namespace SftpServerDataProvider {
             on_exit state_lock.unlock();
             string normalized = normalizePath(path, "addFile");
             ensureParentDirectories(normalized);
+            enforceCapacity(normalized, data.size());
             files{normalized} = makeFileEntry(data, metadata);
             logDetail("virtual file added: %s (%d bytes)", normalized, data.size());
         }
@@ -119,6 +183,7 @@ public namespace SftpServerDataProvider {
             string normalized = normalizePath(path, "addTextFile");
             ensureParentDirectories(normalized);
             binary b = binary(data);
+            enforceCapacity(normalized, b.size());
             files{normalized} = makeFileEntry(b, metadata);
             logDetail("virtual file added: %s (%d bytes)", normalized, b.size());
         }
@@ -309,6 +374,7 @@ public namespace SftpServerDataProvider {
             ensureParentDirectories(path);
             binary data = req.data ?? binary();
             *hash<auto> metadata = req.metadata;
+            enforceCapacity(path, data.size());
             files{path} = makeFileEntry(data, metadata);
             logDetail("virtual file written: %s (%d bytes)", path, data.size());
             persistIfNeeded();
@@ -578,11 +644,12 @@ public namespace SftpServerDataProvider {
             if (*binary req_data = req.data) {
                 data = req_data;
             } else if (*string source_path = req.source_path) {
-                data = ReadOnlyFile::readBinaryFile(source_path);
+                data = readSourceFile(source_path, "submit");
             } else {
                 throw "VIRTUAL-SFTP-FS-ERROR", "submit requires either data or source_path";
             }
             ensureParentDirectories(path);
+            enforceCapacity(path, data.size());
             files{path} = makeFileEntry(data, req.metadata);
             logDetail("virtual file added: %s (%d bytes)", path, data.size());
             persistIfNeeded();
@@ -936,6 +1003,16 @@ public namespace SftpServerDataProvider {
             if (!path.size() || path[0] != '/') {
                 throw "VIRTUAL-SFTP-FS-ERROR", sprintf("%s requires an absolute virtual path; got %y", operation, path);
             }
+            # M-3: reject embedded NUL/control characters (a NUL truncates the real path and
+            # desyncs audit logs; newlines enable log injection via crafted names) and bound
+            # the overall path length
+            if (path.size() > 4096) {
+                throw "VIRTUAL-SFTP-FS-ERROR", sprintf("%s path is too long (%d bytes)", operation, path.size());
+            }
+            if (regex(path, "[[:cntrl:]]")) {
+                throw "VIRTUAL-SFTP-FS-ERROR",
+                    sprintf("%s path contains illegal control characters", operation);
+            }
 
             list<string> normalized_parts = ();
             foreach string part in (path.split("/")) {
@@ -944,6 +1021,10 @@ public namespace SftpServerDataProvider {
                 }
                 if (part == "..") {
                     throw "VIRTUAL-SFTP-FS-ERROR", sprintf("%s path %y escapes the virtual root", operation, path);
+                }
+                if (part.size() > 255) {
+                    throw "VIRTUAL-SFTP-FS-ERROR",
+                        sprintf("%s path component is too long (%d bytes)", operation, part.size());
                 }
                 normalized_parts += (part,);
             }
@@ -1007,6 +1088,36 @@ public namespace SftpServerDataProvider {
                 "mtime": getUnixTime(),
                 "atime": getUnixTime(),
             };
+        }
+
+        # M-8: enforce global virtual-filesystem caps before a file is added/replaced.  Always
+        # called with state_lock held.  Independent of any inbound policy so plain client writes
+        # to arbitrary virtual paths cannot exhaust server memory.
+        private nothing enforceCapacity(string normalized, int new_size) {
+            if (exists max_file_size && new_size > max_file_size) {
+                throw "VIRTUAL-SFTP-FS-ERROR",
+                    sprintf("file size %d exceeds the configured max_file_size %d", new_size,
+                        max_file_size);
+            }
+            bool replacing = exists files{normalized};
+            if (exists max_file_count && !replacing && (files.size() + 1) > max_file_count) {
+                throw "VIRTUAL-SFTP-FS-ERROR",
+                    sprintf("virtual filesystem file-count limit reached (max_file_count=%d)",
+                        max_file_count);
+            }
+            if (exists max_total_bytes) {
+                int existing = replacing ? files{normalized}.data.size() : 0;
+                int total = 0;
+                foreach auto entry in (files.values()) {
+                    total += entry.data.size();
+                }
+                int projected = total - existing + new_size;
+                if (projected > max_total_bytes) {
+                    throw "VIRTUAL-SFTP-FS-ERROR",
+                        sprintf("virtual filesystem total-size limit exceeded: %d > "
+                            "max_total_bytes %d", projected, max_total_bytes);
+                }
+            }
         }
 
         private hash<auto> makeFileEntry(binary data, *hash<auto> metadata) {

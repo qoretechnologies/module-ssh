@@ -105,13 +105,19 @@ VirtualSshAuthProvider provider(<VirtualSshAuthProviderOptions>{
     handshake automatically -- each partial decision causes it to wait for
     the next client auth request.
 
+    @note The completed-methods progress is round-tripped through
+    client-influenced @c session_data, so it is protected with a per-provider
+    HMAC signature and verified on each round; a forged or tampered
+    completed-methods value is ignored (the affected factor is required again).
+    For this reason the credential-less @c "none" method must @b not appear in
+    @c required_methods -- it would let a client satisfy a factor for free, and
+    @ref SshServerAuthProvider::VirtualSshAuthProvider "VirtualSshAuthProvider"
+    rejects such a configuration at construction.  Use real credential factors:
+
     @code{.py}
 VirtualSshAuthProvider provider(<VirtualSshAuthProviderOptions>{
-    "methods": ("none", "password"),
-    "required_methods": ("none", "password"),
-    "none": <VirtualSshStaticAuthMethodOptions>{
-        "allowed_usernames": ("alice",),
-    },
+    "methods": ("password", "publickey"),
+    "required_methods": ("password", "publickey"),
     "password": <VirtualSshPasswordAuthOptions>{
         "users": (
             <VirtualSshPasswordUserInfo>{
@@ -120,8 +126,21 @@ VirtualSshAuthProvider provider(<VirtualSshAuthProviderOptions>{
             },
         ),
     },
+    "publickey": <VirtualSshPublicKeyAuthOptions>{
+        "authorized_keys": (
+            <VirtualSshAuthorizedKeyInfo>{
+                "username": "alice",
+                "public_key": alice_public_key_bytes,
+            },
+        ),
+    },
 });
     @endcode
+
+    @note Authentication fails closed: any exception thrown while evaluating a
+    method (including from a custom @c validator) results in an explicit
+    rejection rather than an undefined outcome, and password/public-key
+    comparisons are performed in constant time.
 
     @section sshauthbanner Pre-Authentication Banners
 

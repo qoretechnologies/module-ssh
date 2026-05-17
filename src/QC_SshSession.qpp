@@ -23,6 +23,7 @@
 
 #include "ssh-module.h"
 #include <qore/QoreAbstractLoggerInterface.h>
+#include <qore/QoreSandboxManager.h>
 
 #include <chrono>
 #include <condition_variable>
@@ -30,10 +31,14 @@
 #include <ctime>
 #include <libssh/server.h>
 #include <mutex>
+#include <poll.h>
 #include <sstream>
 #include <sys/socket.h>
-#include <sys/select.h>
 #include <vector>
+
+// M-5: per-channel environment-request limits (DoS bound on pre-exec env accumulation)
+static const size_t SSH_MAX_ENV_ENTRIES = 256;
+static const size_t SSH_MAX_ENV_BYTES = 64 * 1024;
 
 static const char* ssh_auth_method_name(int subtype) {
     switch (subtype) {
@@ -514,6 +519,14 @@ public:
         return logger ? logger->objectRefSelf() : nullptr;
     }
 
+    // binds this session to the server's active-session registry for deterministic
+    // unregistration on disconnect (H-4); held weakly so the session can outlive the server
+    void setRegistry(std::weak_ptr<SshActiveSessionRegistry> registry, const std::string& session_id) {
+        std::lock_guard<std::mutex> lock(m);
+        session_registry = registry;
+        session_registry_id = session_id;
+    }
+
     QoreHashNode* getInfo(ExceptionSink* xsink) const {
         return info ? reinterpret_cast<QoreHashNode*>(hashdeclSshSessionInfo->doRuntimeCast(info, xsink))
                     : new QoreHashNode(hashdeclSshSessionInfo, xsink);
@@ -543,6 +556,16 @@ public:
             auth_info->deref(nullptr);
         }
         auth_info = typed_auth_context.release();
+
+        // Low/Info: the cleartext password is not needed once the decision has been applied;
+        // do not retain it in the session-held auth context where it could leak via
+        // getAuthContextInfo() or an operator logging the full context hash.
+        if (auth_info) {
+            auth_info->setKeyValue("password", QoreValue(), xsink);
+            if (*xsink) {
+                return -1;
+            }
+        }
 
         if (!info) {
             return 0;
@@ -578,6 +601,16 @@ public:
             if (!connected || !session) {
                 xsink->raiseException("SSHSESSION-STATE-ERROR",
                     "cannot wait for auth requests on a disconnected session");
+                return nullptr;
+            }
+            // M-2: the libssh session object is not thread-safe; concurrent wait* calls on the
+            // same session would race ssh_message_get()/ssh_options_set().  Enforce a single
+            // in-flight waiter (the documented one-driver-thread-per-session contract).
+            if (io_waiters) {
+                xsink->raiseException("SSHSESSION-STATE-ERROR",
+                    "another thread is already waiting on this SSH session; concurrent waits are "
+                    "not supported (the underlying libssh session is not thread-safe): use one "
+                    "driver thread per session");
                 return nullptr;
             }
             current_session = session;
@@ -646,14 +679,14 @@ public:
             ssh_message msg = ssh_message_get(current_session);
             if (!msg) {
                 int effective_ms = getEffectiveSelectTimeout(remaining_ms);
-                fd_set read_fds;
-                FD_ZERO(&read_fds);
-                FD_SET(fd, &read_fds);
-                timeval tv;
-                tv.tv_sec = effective_ms / 1000;
-                tv.tv_usec = static_cast<suseconds_t>((effective_ms % 1000) * 1000);
-                int select_rc = select(fd + 1, &read_fds, nullptr, nullptr, &tv);
-                if (select_rc < 0) {
+                // poll() is used instead of select(): the session socket fd can exceed FD_SETSIZE
+                // in a busy server, which would make FD_SET()/select() write out of bounds (UB).
+                struct pollfd pfd;
+                pfd.fd = fd;
+                pfd.events = POLLIN;
+                pfd.revents = 0;
+                int poll_rc = poll(&pfd, 1, effective_ms);
+                if (poll_rc < 0) {
                     if (errno == EINTR) {
                         continue;
                     }
@@ -661,10 +694,10 @@ public:
                         return nullptr;
                     }
                     xsink->raiseErrnoException("SSHSESSION-AUTH-ERROR", errno,
-                        "select() failed while waiting for an auth request");
+                        "poll() failed while waiting for an auth request");
                     return nullptr;
                 }
-                if (!select_rc && timeout_ms > 0 && remaining_ms <= 0) {
+                if (!poll_rc && timeout_ms > 0 && remaining_ms <= 0) {
                     return nullptr;
                 }
                 continue;
@@ -769,12 +802,24 @@ public:
                     "cannot wait for command requests on an unauthenticated session");
                 return nullptr;
             }
+            // M-2: enforce a single in-flight waiter; the libssh session is not thread-safe
+            if (io_waiters) {
+                xsink->raiseException("SSHSESSION-STATE-ERROR",
+                    "another thread is already waiting on this SSH session; concurrent waits are "
+                    "not supported (the underlying libssh session is not thread-safe): use one "
+                    "driver thread per session");
+                return nullptr;
+            }
             current_session = session;
             ++io_waiters;
         }
 
         ssh_channel accepted_channel = nullptr;
         ReferenceHolder<QoreHashNode> environment(new QoreHashNode(autoTypeInfo), xsink);
+        // M-5: bound per-channel environment accumulation so a client cannot force unbounded
+        // memory growth by streaming many/large SSH_CHANNEL_REQUEST_ENV requests before exec
+        size_t env_count = 0;
+        size_t env_bytes = 0;
         ON_BLOCK_EXIT([this, &accepted_channel]() {
             std::lock_guard<std::mutex> lock(m);
             --io_waiters;
@@ -838,22 +883,22 @@ public:
             ssh_message msg = ssh_message_get(current_session);
             if (!msg) {
                 int effective_ms = getEffectiveSelectTimeout(remaining_ms);
-                fd_set read_fds;
-                FD_ZERO(&read_fds);
-                FD_SET(fd, &read_fds);
-                timeval tv;
-                tv.tv_sec = effective_ms / 1000;
-                tv.tv_usec = static_cast<suseconds_t>((effective_ms % 1000) * 1000);
-                int select_rc = select(fd + 1, &read_fds, nullptr, nullptr, &tv);
-                if (select_rc < 0) {
+                // poll() is used instead of select(): the session socket fd can exceed FD_SETSIZE
+                // in a busy server, which would make FD_SET()/select() write out of bounds (UB).
+                struct pollfd pfd;
+                pfd.fd = fd;
+                pfd.events = POLLIN;
+                pfd.revents = 0;
+                int poll_rc = poll(&pfd, 1, effective_ms);
+                if (poll_rc < 0) {
                     if (errno == EINTR) {
                         continue;
                     }
                     xsink->raiseErrnoException("SSHSESSION-COMMAND-ERROR", errno,
-                        "select() failed while waiting for a command request");
+                        "poll() failed while waiting for a command request");
                     return nullptr;
                 }
-                if (!select_rc && timeout_ms > 0 && remaining_ms <= 0) {
+                if (!poll_rc && timeout_ms > 0 && remaining_ms <= 0) {
                     return nullptr;
                 }
                 continue;
@@ -897,11 +942,26 @@ public:
                 const char* env_name = ssh_message_channel_request_env_name(msg);
                 if (env_name && *env_name) {
                     const char* env_value = ssh_message_channel_request_env_value(msg);
+                    // M-5: enforce caps on env entry count and aggregate size; on breach reject
+                    // the request (reply_default) and stop storing further env, without killing
+                    // the session (a subsequent exec/subsystem request may still be valid)
+                    size_t entry_bytes = strlen(env_name) + (env_value ? strlen(env_value) : 0);
+                    if (env_count + 1 > SSH_MAX_ENV_ENTRIES
+                            || env_bytes + entry_bytes > SSH_MAX_ENV_BYTES) {
+                        logWarn("rejecting channel env request: per-channel environment limit "
+                            "exceeded (max " + std::to_string(SSH_MAX_ENV_ENTRIES) + " entries / "
+                            + std::to_string(SSH_MAX_ENV_BYTES) + " bytes)");
+                        ssh_message_reply_default(msg);
+                        ssh_message_free(msg);
+                        continue;
+                    }
                     environment->setKeyValue(env_name, env_value ? new QoreStringNode(env_value) : QoreValue(), xsink);
                     if (*xsink) {
                         ssh_message_free(msg);
                         return nullptr;
                     }
+                    ++env_count;
+                    env_bytes += entry_bytes;
                 }
                 if (ssh_message_channel_request_reply_success(msg) != SSH_OK) {
                     ssh_message_free(msg);
@@ -1002,6 +1062,14 @@ public:
                     "cannot wait for SFTP requests on an unauthenticated session");
                 return nullptr;
             }
+            // M-2: enforce a single in-flight waiter; the libssh session is not thread-safe
+            if (io_waiters) {
+                xsink->raiseException("SSHSESSION-STATE-ERROR",
+                    "another thread is already waiting on this SSH session; concurrent waits are "
+                    "not supported (the underlying libssh session is not thread-safe): use one "
+                    "driver thread per session");
+                return nullptr;
+            }
             current_session = session;
             ++io_waiters;
         }
@@ -1070,22 +1138,22 @@ public:
             ssh_message msg = ssh_message_get(current_session);
             if (!msg) {
                 int effective_ms = getEffectiveSelectTimeout(remaining_ms);
-                fd_set read_fds;
-                FD_ZERO(&read_fds);
-                FD_SET(fd, &read_fds);
-                timeval tv;
-                tv.tv_sec = effective_ms / 1000;
-                tv.tv_usec = static_cast<suseconds_t>((effective_ms % 1000) * 1000);
-                int select_rc = select(fd + 1, &read_fds, nullptr, nullptr, &tv);
-                if (select_rc < 0) {
+                // poll() is used instead of select(): the session socket fd can exceed FD_SETSIZE
+                // in a busy server, which would make FD_SET()/select() write out of bounds (UB).
+                struct pollfd pfd;
+                pfd.fd = fd;
+                pfd.events = POLLIN;
+                pfd.revents = 0;
+                int poll_rc = poll(&pfd, 1, effective_ms);
+                if (poll_rc < 0) {
                     if (errno == EINTR) {
                         continue;
                     }
                     xsink->raiseErrnoException("SSHSESSION-SFTP-ERROR", errno,
-                        "select() failed while waiting for an SFTP request");
+                        "poll() failed while waiting for an SFTP request");
                     return nullptr;
                 }
-                if (!select_rc && timeout_ms > 0 && remaining_ms <= 0) {
+                if (!poll_rc && timeout_ms > 0 && remaining_ms <= 0) {
                     return nullptr;
                 }
                 continue;
@@ -1204,6 +1272,8 @@ public:
             shutdown(fd, SHUT_RDWR);
         }
 
+        std::shared_ptr<SshActiveSessionRegistry> reg;
+        std::string reg_id;
         {
             std::unique_lock<std::mutex> lock(m);
             cv.wait(lock, [this]() {
@@ -1218,6 +1288,26 @@ public:
             if (active_session_counter) {
                 active_session_counter->fetch_sub(1);
                 active_session_counter.reset();
+            }
+            reg = session_registry.lock();
+            reg_id = session_registry_id;
+            session_registry.reset();
+        }
+        // H-4: deterministically remove this session from the server's active-session registry.
+        // Done outside the session lock so the info deref never runs under m; if the server (and
+        // thus the registry) is already gone the weak_ptr has expired and this is a safe no-op.
+        if (reg && !reg_id.empty()) {
+            QoreHashNode* old_info = nullptr;
+            {
+                std::lock_guard<std::mutex> rlock(reg->mutex);
+                auto it = reg->sessions.find(reg_id);
+                if (it != reg->sessions.end()) {
+                    old_info = it->second;
+                    reg->sessions.erase(it);
+                }
+            }
+            if (old_info) {
+                old_info->deref(nullptr);
             }
         }
         logInfo("SshSession disconnected");
@@ -1235,6 +1325,8 @@ public:
     QoreObject* logger;
     ssh_session session;
     std::shared_ptr<std::atomic<int64>> active_session_counter;
+    std::weak_ptr<SshActiveSessionRegistry> session_registry;
+    std::string session_registry_id;
     int enabled_auth_methods_mask;
     bool connected;
     mutable int io_waiters;
@@ -1318,6 +1410,12 @@ public:
             if (remaining_idle_ms < effective) {
                 effective = remaining_idle_ms;
             }
+        }
+        // S4/C2: cap each poll() wait so the loop re-checks qore_check_cancel() (and idle/
+        // keepalive timers) at least every ~500ms, regardless of keepalive/idle/timeout
+        // settings — bounds interrupt/cancel latency without affecting wall-clock timers.
+        if (effective > QORE_IO_POLL_INTERVAL_MS) {
+            effective = QORE_IO_POLL_INTERVAL_MS;
         }
         return effective;
     }
@@ -1419,6 +1517,20 @@ DLLLOCAL int ssh_session_set_logger(const QoreObject* session_obj, const QoreObj
     }
     priv->setLogger(logger, xsink);
     return *xsink ? -1 : 0;
+}
+
+DLLLOCAL void ssh_session_set_registry(const QoreObject* session_obj,
+        std::weak_ptr<SshActiveSessionRegistry> registry, const std::string& session_id) {
+    if (!session_obj) {
+        return;
+    }
+    ExceptionSink xsink;
+    PrivateDataRefHolder<SshSessionPriv> priv(session_obj, CID_SSHSESSION, &xsink);
+    if (xsink || !priv) {
+        xsink.clear();
+        return;
+    }
+    priv->setRegistry(registry, session_id);
 }
 
 DLLLOCAL QoreObject* ssh_session_wait_command_session(const QoreObject* session_obj, QoreProgram* pgm, int timeout_ms,
