@@ -28,6 +28,7 @@
 
 #include <atomic>
 #include <arpa/inet.h>
+#include <cassert>
 #include <condition_variable>
 #include <ctime>
 #include <libssh/server.h>
@@ -220,6 +221,31 @@ static void ssh_validate_auth_provider(const QoreObject* auth_provider, const ch
         xsink->raiseException(err,
             "auth provider objects must implement authenticate(hash<SshAuthContextInfo>)");
     }
+}
+
+static void ssh_validate_server_host_key_provider(const QoreObject* provider, const char* err, ExceptionSink* xsink) {
+    if (!provider) {
+        return;
+    }
+
+    const QoreClass* cls = provider->getClass();
+    if (!cls || !cls->findMethod("getServerHostKeyMaterial")) {
+        xsink->raiseException(err,
+            "server host-key provider objects must implement getServerHostKeyMaterial(hash<auto>)");
+    }
+}
+
+static bool ssh_get_hash_string(const QoreHashNode* h, const char* key, std::string& str, ExceptionSink* xsink) {
+    QoreValue v = h->getKeyValue(key);
+    if (v.isNothing()) {
+        return false;
+    }
+    QoreStringValueHelper sv(v, QCS_UTF8, xsink);
+    if (*xsink) {
+        return false;
+    }
+    str = sv->c_str();
+    return true;
 }
 
 static void ssh_log_message(QoreObject* logger, int level, const std::string& msg) {
@@ -472,25 +498,59 @@ static void ssh_validate_listener_config(const QoreHashNode* listener, std::set<
         }
     }
 
-    const QoreListNode* host_keys = listener->getKeyValue("host_keys").get<QoreListNode>();
-    if (!host_keys || !host_keys->size()) {
+    QoreValue host_key_provider_value = listener->getKeyValue("server_host_key_provider");
+    const QoreObject* host_key_provider = nullptr;
+    if (host_key_provider_value.getType() != NT_NOTHING) {
+        if (host_key_provider_value.getType() != NT_OBJECT) {
+            xsink->raiseException("SSHLISTENER-CONFIG-ERROR",
+                "the \"server_host_key_provider\" configuration key must be an object");
+            return;
+        }
+        host_key_provider = host_key_provider_value.get<QoreObject>();
+    }
+    if (host_key_provider_value.getType() != NT_NOTHING && !host_key_provider) {
         xsink->raiseException("SSHLISTENER-CONFIG-ERROR",
-            "the \"host_keys\" configuration key must be a non-empty list");
+            "the \"server_host_key_provider\" configuration key must be an object");
+        return;
+    }
+    ssh_validate_server_host_key_provider(host_key_provider, "SSHLISTENER-CONFIG-ERROR", xsink);
+    if (*xsink) {
         return;
     }
 
-    for (size_t i = 0, e = host_keys->size(); i < e; ++i) {
-        QoreValue host_key = host_keys->retrieveEntry(i);
-        if (host_key.getType() != NT_STRING) {
+    QoreValue host_keys_value = listener->getKeyValue("host_keys");
+    const QoreListNode* host_keys = nullptr;
+    if (host_keys_value.getType() != NT_NOTHING) {
+        if (host_keys_value.getType() != NT_LIST) {
             xsink->raiseException("SSHLISTENER-CONFIG-ERROR",
-                "the \"host_keys\" list entry at index %zu must be a non-empty string", i);
+                "the \"host_keys\" configuration key must be a list when present");
             return;
         }
-        QoreStringValueHelper host_key_str(host_key);
-        if (!host_key_str->strlen()) {
-            xsink->raiseException("SSHLISTENER-CONFIG-ERROR",
-                "the \"host_keys\" list entry at index %zu must be a non-empty string", i);
-            return;
+        host_keys = host_keys_value.get<QoreListNode>();
+    }
+    if ((!host_keys || !host_keys->size()) && !host_key_provider) {
+        xsink->raiseException("SSHLISTENER-CONFIG-ERROR",
+            "listener configuration must provide a non-empty \"host_keys\" list or a server_host_key_provider");
+        return;
+    }
+
+    if (host_keys) {
+        for (size_t i = 0, e = host_keys->size(); i < e; ++i) {
+            if (!(i % 100) && qore_check_cancel(xsink, "validating SSH listener host keys")) {
+                return;
+            }
+            QoreValue host_key = host_keys->retrieveEntry(i);
+            if (host_key.getType() != NT_STRING) {
+                xsink->raiseException("SSHLISTENER-CONFIG-ERROR",
+                    "the \"host_keys\" list entry at index %zu must be a non-empty string", i);
+                return;
+            }
+            QoreStringValueHelper host_key_str(host_key);
+            if (!host_key_str->strlen()) {
+                xsink->raiseException("SSHLISTENER-CONFIG-ERROR",
+                    "the \"host_keys\" list entry at index %zu must be a non-empty string", i);
+                return;
+            }
         }
     }
 
@@ -734,16 +794,18 @@ static std::string ssh_get_optional_string(const QoreHashNode* config, const cha
 
 struct SshListenerState {
     SshListenerState() : port(0), bound_port(0), active_session_counter(new std::atomic<int64>(0)), bind(nullptr),
-            last_error(nullptr), running(false), accept_waiters(0), max_sessions(-1), allow_command_service(true),
-            allow_sftp_service(false), enabled_auth_methods_mask(SSH_AUTH_METHOD_NONE | SSH_AUTH_METHOD_PASSWORD
+            last_error(nullptr), server_host_key_provider(nullptr), running(false), accept_waiters(0),
+            max_sessions(-1), allow_command_service(true), allow_sftp_service(false),
+            enabled_auth_methods_mask(SSH_AUTH_METHOD_NONE | SSH_AUTH_METHOD_PASSWORD
                 | SSH_AUTH_METHOD_PUBLICKEY | SSH_AUTH_METHOD_INTERACTIVE),
             keepalive_interval_seconds(60), idle_timeout_seconds(-1) {
     }
 
     explicit SshListenerState(const QoreHashNode* listener)
             : port(0), bound_port(0), active_session_counter(new std::atomic<int64>(0)), bind(nullptr),
-            last_error(nullptr), running(false), accept_waiters(0), max_sessions(-1), allow_command_service(true),
-            allow_sftp_service(false), enabled_auth_methods_mask(SSH_AUTH_METHOD_NONE | SSH_AUTH_METHOD_PASSWORD
+            last_error(nullptr), server_host_key_provider(nullptr), running(false), accept_waiters(0),
+            max_sessions(-1), allow_command_service(true), allow_sftp_service(false),
+            enabled_auth_methods_mask(SSH_AUTH_METHOD_NONE | SSH_AUTH_METHOD_PASSWORD
                 | SSH_AUTH_METHOD_PUBLICKEY | SSH_AUTH_METHOD_INTERACTIVE),
             keepalive_interval_seconds(60), idle_timeout_seconds(-1) {
         QoreValue q_name = listener->getKeyValue("name");
@@ -791,6 +853,8 @@ struct SshListenerState {
                 }
             }
         }
+        QoreObject* q_provider = listener->getKeyValue("server_host_key_provider").get<QoreObject>();
+        server_host_key_provider = q_provider ? q_provider->objectRefSelf() : nullptr;
 
         allowed_ciphers = ssh_get_optional_string(listener, "allowed_ciphers");
         allowed_kex = ssh_get_optional_string(listener, "allowed_kex");
@@ -817,8 +881,8 @@ struct SshListenerState {
             bind_address(std::move(other.bind_address)), banner(std::move(other.banner)),
             host_keys(std::move(other.host_keys)), port(other.port), bound_port(other.bound_port),
             active_session_counter(std::move(other.active_session_counter)), bind(other.bind),
-            last_error(other.last_error), running(other.running), accept_waiters(other.accept_waiters),
-            max_sessions(other.max_sessions),
+            last_error(other.last_error), server_host_key_provider(other.server_host_key_provider),
+            running(other.running), accept_waiters(other.accept_waiters), max_sessions(other.max_sessions),
             allow_command_service(other.allow_command_service), allow_sftp_service(other.allow_sftp_service),
             enabled_auth_methods_mask(other.enabled_auth_methods_mask),
             allowed_ciphers(std::move(other.allowed_ciphers)), allowed_kex(std::move(other.allowed_kex)),
@@ -831,6 +895,7 @@ struct SshListenerState {
             idle_timeout_seconds(other.idle_timeout_seconds) {
         other.bind = nullptr;
         other.last_error = nullptr;
+        other.server_host_key_provider = nullptr;
         other.bound_port = 0;
         other.running = false;
         other.accept_waiters = 0;
@@ -848,6 +913,7 @@ struct SshListenerState {
             active_session_counter = std::move(other.active_session_counter);
             bind = other.bind;
             last_error = other.last_error;
+            server_host_key_provider = other.server_host_key_provider;
             running = other.running;
             accept_waiters = other.accept_waiters;
             max_sessions = other.max_sessions;
@@ -866,6 +932,7 @@ struct SshListenerState {
 
             other.bind = nullptr;
             other.last_error = nullptr;
+            other.server_host_key_provider = nullptr;
             other.bound_port = 0;
             other.running = false;
             other.accept_waiters = 0;
@@ -880,6 +947,10 @@ struct SshListenerState {
     void clear() {
         resetRuntimeState();
         clearLastError();
+        if (server_host_key_provider) {
+            server_host_key_provider->deref(nullptr);
+            server_host_key_provider = nullptr;
+        }
     }
 
     void resetRuntimeState() {
@@ -915,6 +986,7 @@ struct SshListenerState {
     std::shared_ptr<std::atomic<int64>> active_session_counter;
     ssh_bind bind;
     QoreHashNode* last_error;
+    QoreObject* server_host_key_provider;
     bool running;
     int accept_waiters;
     int64 max_sessions;
@@ -930,6 +1002,61 @@ struct SshListenerState {
     std::string auth_banner;
     int64 keepalive_interval_seconds;
     int64 idle_timeout_seconds;
+};
+
+class SshUniqueLockUnlocker {
+public:
+    explicit SshUniqueLockUnlocker(std::unique_lock<std::mutex>& lock) : lock(lock) {
+        assert(lock.owns_lock());
+        lock.unlock();
+    }
+
+    ~SshUniqueLockUnlocker() {
+        lock.lock();
+    }
+
+private:
+    std::unique_lock<std::mutex>& lock;
+};
+
+class SshKeyHolder {
+public:
+    explicit SshKeyHolder(ssh_key key = nullptr) : key(key) {
+    }
+
+    SshKeyHolder(SshKeyHolder&& other) noexcept : key(other.key) {
+        other.key = nullptr;
+    }
+
+    SshKeyHolder& operator=(SshKeyHolder&& other) noexcept {
+        if (this != &other) {
+            clear();
+            key = other.key;
+            other.key = nullptr;
+        }
+        return *this;
+    }
+
+    ~SshKeyHolder() {
+        clear();
+    }
+
+    ssh_key& ref() {
+        return key;
+    }
+
+    void clear() {
+        if (key) {
+            ssh_key_free(key);
+            key = nullptr;
+        }
+    }
+
+private:
+    ssh_key key;
+
+    SshKeyHolder(const SshKeyHolder&) = delete;
+    SshKeyHolder& operator=(const SshKeyHolder&) = delete;
 };
 
 class SshServerPriv : public AbstractPrivateData {
@@ -1103,31 +1230,274 @@ public:
         }
     }
 
-    int startListener(SshListenerState& listener, ExceptionSink* xsink) {
+    int checkHostKeyPathReadable(SshListenerState& listener, const std::string& host_key_path,
+            ExceptionSink* xsink) const {
+        if (ssh_server_check_fs_access(host_key_path.c_str(), QSEC_READ, xsink)) {
+            listener.setLastError(ssh_make_exception_info("SSHLISTENER-START-ERROR",
+                "host key file access denied by sandbox policy: \"" + host_key_path + "\""));
+            return -1;
+        }
+        if (access(host_key_path.c_str(), R_OK) != 0) {
+            std::string msg = "cannot read host key file \"" + host_key_path + "\"";
+            listener.setLastError(ssh_make_exception_info("SSHLISTENER-START-ERROR", msg));
+            xsink->raiseErrnoException("SSHLISTENER-START-ERROR", errno, "%s", msg.c_str());
+            return -1;
+        }
+        // Low/Info: warn (do not hard-fail, for deployment compatibility) when the private
+        // host key file is accessible by group or other; such a key should be mode 0600.
+        struct stat hk_st;
+        if (stat(host_key_path.c_str(), &hk_st) == 0 && (hk_st.st_mode & (S_IRWXG | S_IRWXO))) {
+            logWarn("host key file \"" + host_key_path + "\" for listener \"" + listener.name
+                + "\" is accessible by group/other (mode "
+                + std::to_string(hk_st.st_mode & 0777) + " octal-ish); private host keys "
+                "should be readable only by the owner (chmod 600)");
+        }
+        return 0;
+    }
+
+    QoreHashNode* makeServerHostKeyProviderContext(const SshListenerState& listener, ExceptionSink* xsink) const {
+        ReferenceHolder<QoreHashNode> ctxt(new QoreHashNode(autoTypeInfo), xsink);
+        ctxt->setKeyValue("purpose", new QoreStringNode("server-host-key"), xsink);
+        ctxt->setKeyValue("listener_name", new QoreStringNode(listener.name.c_str()), xsink);
+        ctxt->setKeyValue("original_host", new QoreStringNode(listener.bind_address.c_str()), xsink);
+        ctxt->setKeyValue("normalized_host", new QoreStringNode(listener.bind_address.c_str()), xsink);
+        ctxt->setKeyValue("port", listener.port, xsink);
+        ctxt->setKeyValue("deadline_ns", (int64)0, xsink);
+        ctxt->setKeyValue("remaining_ns", (int64)0, xsink);
+        if (*xsink) {
+            return nullptr;
+        }
+        return ctxt.release();
+    }
+
+    bool getMaterialString(const QoreHashNode* material, const char* key, const char* kind, size_t index,
+            std::string& value, ExceptionSink* xsink) const {
+        QoreValue v = material->getKeyValue(key);
+        if (v.getType() != NT_STRING) {
+            xsink->raiseException("SSH-HOSTKEY-INVALID-RESPONSE",
+                "server host-key provider %s material at index %zu has no %s string",
+                kind, index, key);
+            return false;
+        }
+        QoreStringValueHelper str(v);
+        if (!str->strlen()) {
+            xsink->raiseException("SSH-HOSTKEY-INVALID-RESPONSE",
+                "server host-key provider %s material at index %zu has an empty %s string",
+                kind, index, key);
+            return false;
+        }
+        value = str->c_str();
+        return true;
+    }
+
+    bool getOptionalMaterialPassphrase(const QoreHashNode* material, size_t index, std::string& passphrase,
+            ExceptionSink* xsink) const {
+        QoreValue v = material->getKeyValue("passphrase");
+        if (v.isNothing()) {
+            return true;
+        }
+        if (v.getType() != NT_STRING) {
+            xsink->raiseException("SSH-HOSTKEY-INVALID-RESPONSE",
+                "server host-key provider material at index %zu has a non-string passphrase", index);
+            return false;
+        }
+        QoreStringValueHelper str(v);
+        passphrase = str->c_str();
+        return true;
+    }
+
+    int importHostKeyFile(SshListenerState& listener, const std::string& host_key_path, const char* passphrase,
+            ssh_key& key, ExceptionSink* xsink) const {
+        if (ssh_pki_import_privkey_file(host_key_path.c_str(), passphrase, nullptr, nullptr, &key) != SSH_OK) {
+            std::string msg = "could not import host key file \"" + host_key_path + "\" for listener \""
+                + listener.name + "\"";
+            listener.setLastError(ssh_make_exception_info("SSHLISTENER-START-ERROR", msg));
+            xsink->raiseException("SSHLISTENER-START-ERROR", "%s", msg.c_str());
+            return -1;
+        }
+        return 0;
+    }
+
+    int importProviderHostKeyMaterial(SshListenerState& listener, const QoreHashNode* material, size_t index,
+            ssh_key& key, ExceptionSink* xsink) const {
+        if (!material) {
+            xsink->raiseException("SSH-HOSTKEY-INVALID-RESPONSE",
+                "server host-key provider material at index %zu is not a hash", index);
+            return -1;
+        }
+
+        std::string kind;
+        if (!ssh_get_hash_string(material, "kind", kind, xsink)) {
+            if (!*xsink) {
+                xsink->raiseException("SSH-HOSTKEY-INVALID-RESPONSE",
+                    "server host-key provider material at index %zu has no kind string", index);
+            }
+            return -1;
+        }
+
+        std::string passphrase;
+        if (!getOptionalMaterialPassphrase(material, index, passphrase, xsink)) {
+            return -1;
+        }
+        const char* passphrase_ptr = passphrase.empty() ? nullptr : passphrase.c_str();
+
+        if (kind == "file") {
+            std::string path;
+            if (!getMaterialString(material, "path", "file", index, path, xsink)) {
+                return -1;
+            }
+            if (checkHostKeyPathReadable(listener, path, xsink)) {
+                return -1;
+            }
+            return importHostKeyFile(listener, path, passphrase_ptr, key, xsink);
+        }
+
+        std::string private_key_text;
+        if (kind == "text") {
+            if (!getMaterialString(material, "private_key_text", "text", index, private_key_text, xsink)) {
+                return -1;
+            }
+        } else if (kind == "data") {
+            QoreValue private_key_value = material->getKeyValue("private_key_data");
+            if (private_key_value.getType() != NT_BINARY) {
+                xsink->raiseException("SSH-HOSTKEY-INVALID-RESPONSE",
+                    "server host-key provider data material at index %zu has no private_key_data binary", index);
+                return -1;
+            }
+            const BinaryNode* private_key = private_key_value.get<const BinaryNode>();
+            if (!private_key->size()) {
+                xsink->raiseException("SSH-HOSTKEY-INVALID-RESPONSE",
+                    "server host-key provider data material at index %zu has no private_key_data binary", index);
+                return -1;
+            }
+            private_key_text.assign(static_cast<const char*>(private_key->getPtr()), private_key->size());
+        } else {
+            xsink->raiseException("SSH-HOSTKEY-INVALID-RESPONSE",
+                "server host-key provider material at index %zu has unsupported kind \"%s\"",
+                index, kind.c_str());
+            return -1;
+        }
+
+        if (ssh_pki_import_privkey_base64(private_key_text.c_str(), passphrase_ptr, nullptr, nullptr, &key)
+                != SSH_OK) {
+            std::string msg = "could not import server host-key provider material at index "
+                + std::to_string(index) + " for listener \"" + listener.name + "\"";
+            listener.setLastError(ssh_make_exception_info("SSHLISTENER-START-ERROR", msg));
+            xsink->raiseException("SSHLISTENER-START-ERROR", "%s", msg.c_str());
+            return -1;
+        }
+
+        return 0;
+    }
+
+    int applyImportedHostKey(SshListenerState& listener, ssh_key& key, const std::string& source_desc,
+            int& host_key_count, ExceptionSink* xsink) const {
+        if (ssh_bind_options_set(listener.bind, SSH_BIND_OPTIONS_IMPORT_KEY, key) != SSH_OK) {
+            std::string msg = "could not apply " + source_desc + " for listener \""
+                + listener.name + "\": " + ssh_get_libssh_error(listener.bind);
+            ssh_key_free(key);
+            key = nullptr;
+            listener.setLastError(ssh_make_exception_info("SSHLISTENER-START-ERROR", msg));
+            xsink->raiseException("SSHLISTENER-START-ERROR", "%s", msg.c_str());
+            return -1;
+        }
+        key = nullptr;
+        ++host_key_count;
+        return 0;
+    }
+
+    int loadProviderHostKeys(SshListenerState& listener, std::unique_lock<std::mutex>& lock,
+            std::vector<SshKeyHolder>& provider_host_keys, ExceptionSink* xsink) const {
+        ReferenceHolder<QoreObject> provider(listener.server_host_key_provider
+            ? listener.server_host_key_provider->objectRefSelf() : nullptr, xsink);
+        if (!provider) {
+            return 0;
+        }
+
+        ReferenceHolder<QoreHashNode> ctxt(makeServerHostKeyProviderContext(listener, xsink), xsink);
+        if (*xsink) {
+            return -1;
+        }
+
+        ExceptionSink bxsink;
+        ReferenceHolder<QoreListNode> args(new QoreListNode(autoTypeInfo), &bxsink);
+        args->push(ctxt->refSelf(), &bxsink);
+        if (bxsink) {
+            bxsink.clear();
+            xsink->raiseException("SSH-HOSTKEY-PROVIDER-ERROR",
+                "could not build arguments for server host-key provider");
+            return -1;
+        }
+
+        ValueHolder rv(&bxsink);
+        {
+            SshUniqueLockUnlocker unlocker(lock);
+            rv = (*provider)->evalMethod("getServerHostKeyMaterial", *args, &bxsink);
+        }
+        if (bxsink) {
+            bxsink.clear();
+            std::string msg = "server host-key provider failed for listener \"" + listener.name + "\"";
+            listener.setLastError(ssh_make_exception_info("SSHLISTENER-START-ERROR", msg));
+            xsink->raiseException("SSH-HOSTKEY-PROVIDER-ERROR", "%s", msg.c_str());
+            return -1;
+        }
+
+        if (rv->getType() != NT_LIST) {
+            std::string msg = "server host-key provider returned invalid material for listener \""
+                + listener.name + "\"";
+            listener.setLastError(ssh_make_exception_info("SSHLISTENER-START-ERROR", msg));
+            xsink->raiseException("SSH-HOSTKEY-INVALID-RESPONSE",
+                "server host-key provider returned %s instead of list", rv->getTypeName());
+            return -1;
+        }
+        const QoreListNode* materials = rv->get<const QoreListNode>();
+        if (!materials->size()) {
+            std::string msg = "server host-key provider returned no host keys for listener \"" + listener.name + "\"";
+            listener.setLastError(ssh_make_exception_info("SSHLISTENER-START-ERROR", msg));
+            xsink->raiseException("SSHLISTENER-START-ERROR", "%s", msg.c_str());
+            return -1;
+        }
+
+        for (size_t i = 0, e = materials->size(); i < e; ++i) {
+            if (!(i % 100) && qore_check_cancel(xsink, "loading SSH server host keys from provider")) {
+                return -1;
+            }
+            QoreValue material_value = materials->retrieveEntry(i);
+            const QoreHashNode* material = nullptr;
+            if (material_value.getType() == NT_HASH) {
+                material = material_value.get<const QoreHashNode>();
+            }
+            SshKeyHolder key;
+            if (importProviderHostKeyMaterial(listener, material, i, key.ref(), xsink)) {
+                if (!listener.last_error) {
+                    std::string msg = "server host-key provider returned invalid material for listener \""
+                        + listener.name + "\"";
+                    listener.setLastError(ssh_make_exception_info("SSHLISTENER-START-ERROR", msg));
+                }
+                return -1;
+            }
+            provider_host_keys.push_back(std::move(key));
+        }
+        return 0;
+    }
+
+    int startListener(SshListenerState& listener, std::unique_lock<std::mutex>& lock, ExceptionSink* xsink) {
         listener.resetRuntimeState();
         listener.clearLastError();
 
-        for (const auto& host_key_path : listener.host_keys) {
-            if (ssh_server_check_fs_access(host_key_path.c_str(), QSEC_READ, xsink)) {
-                listener.setLastError(ssh_make_exception_info("SSHLISTENER-START-ERROR",
-                    "host key file access denied by sandbox policy: \"" + host_key_path + "\""));
+        for (size_t i = 0, e = listener.host_keys.size(); i < e; ++i) {
+            if (!(i % 100) && qore_check_cancel(xsink, "checking SSH listener host key files")) {
                 return -1;
             }
-            if (access(host_key_path.c_str(), R_OK) != 0) {
-                std::string msg = "cannot read host key file \"" + host_key_path + "\"";
-                listener.setLastError(ssh_make_exception_info("SSHLISTENER-START-ERROR", msg));
-                xsink->raiseErrnoException("SSHLISTENER-START-ERROR", errno, "%s", msg.c_str());
+            const std::string& host_key_path = listener.host_keys[i];
+            if (checkHostKeyPathReadable(listener, host_key_path, xsink)) {
                 return -1;
             }
-            // Low/Info: warn (do not hard-fail, for deployment compatibility) when the private
-            // host key file is accessible by group or other; such a key should be mode 0600.
-            struct stat hk_st;
-            if (stat(host_key_path.c_str(), &hk_st) == 0 && (hk_st.st_mode & (S_IRWXG | S_IRWXO))) {
-                logWarn("host key file \"" + host_key_path + "\" for listener \"" + listener.name
-                    + "\" is accessible by group/other (mode "
-                    + std::to_string(hk_st.st_mode & 0777) + " octal-ish); private host keys "
-                    "should be readable only by the owner (chmod 600)");
-            }
+        }
+
+        std::vector<SshKeyHolder> provider_host_keys;
+        if (loadProviderHostKeys(listener, lock, provider_host_keys, xsink)) {
+            return -1;
         }
 
         listener.bind = ssh_bind_new();
@@ -1212,29 +1582,35 @@ public:
             }
         }
 
-        for (const auto& host_key_path : listener.host_keys) {
-            if (ssh_server_check_fs_access(host_key_path.c_str(), QSEC_READ, xsink)) {
-                listener.setLastError(ssh_make_exception_info("SSHLISTENER-START-ERROR",
-                    "host key file access denied by sandbox policy: \"" + host_key_path + "\""));
+        int host_key_count = 0;
+        for (size_t i = 0, e = listener.host_keys.size(); i < e; ++i) {
+            if (!(i % 100) && qore_check_cancel(xsink, "importing SSH listener host key files")) {
                 return -1;
             }
+            const std::string& host_key_path = listener.host_keys[i];
             ssh_key key = nullptr;
-            if (ssh_pki_import_privkey_file(host_key_path.c_str(), nullptr, nullptr, nullptr, &key) != SSH_OK) {
-                std::string msg = "could not import host key file \"" + host_key_path + "\" for listener \""
-                    + listener.name + "\"";
-                listener.setLastError(ssh_make_exception_info("SSHLISTENER-START-ERROR", msg));
-                xsink->raiseException("SSHLISTENER-START-ERROR", "%s", msg.c_str());
+            if (importHostKeyFile(listener, host_key_path, nullptr, key, xsink)) {
                 return -1;
             }
-
-            if (ssh_bind_options_set(listener.bind, SSH_BIND_OPTIONS_IMPORT_KEY, key) != SSH_OK) {
-                std::string msg = "could not apply host key file \"" + host_key_path + "\" for listener \""
-                    + listener.name + "\": " + ssh_get_libssh_error(listener.bind);
-                ssh_key_free(key);
-                listener.setLastError(ssh_make_exception_info("SSHLISTENER-START-ERROR", msg));
-                xsink->raiseException("SSHLISTENER-START-ERROR", "%s", msg.c_str());
+            if (applyImportedHostKey(listener, key, "host key file \"" + host_key_path + "\"",
+                    host_key_count, xsink)) {
                 return -1;
             }
+        }
+        for (size_t i = 0, e = provider_host_keys.size(); i < e; ++i) {
+            if (!(i % 100) && qore_check_cancel(xsink, "applying SSH server host keys from provider")) {
+                return -1;
+            }
+            if (applyImportedHostKey(listener, provider_host_keys[i].ref(),
+                    "server host-key provider material at index " + std::to_string(i), host_key_count, xsink)) {
+                return -1;
+            }
+        }
+        if (!host_key_count) {
+            std::string msg = "listener \"" + listener.name + "\" has no usable host keys";
+            listener.setLastError(ssh_make_exception_info("SSHLISTENER-START-ERROR", msg));
+            xsink->raiseException("SSHLISTENER-START-ERROR", "%s", msg.c_str());
+            return -1;
         }
 
         if (ssh_server_check_bind_access(listener.bind_address, port, xsink)) {
@@ -1259,13 +1635,13 @@ public:
     }
 
     int start(ExceptionSink* xsink) {
-        std::lock_guard<std::mutex> lock(mutex);
+        std::unique_lock<std::mutex> lock(mutex);
         if (running.load()) {
             return 0;
         }
 
         for (auto& listener : listener_states) {
-            if (startListener(listener, xsink)) {
+            if (startListener(listener, lock, xsink)) {
                 for (auto& started_listener : listener_states) {
                     if (&started_listener != &listener) {
                         started_listener.resetRuntimeState();

@@ -439,8 +439,8 @@ SshKey::destructor() {
 }
 
 //! Generates a new SSH key pair
-/** @param type the key type constant (one of @ref SSH_KEYTYPE_RSA, @ref SSH_KEYTYPE_ED25519,
-    @ref SSH_KEYTYPE_ECDSA_P256, @ref SSH_KEYTYPE_ECDSA_P384, @ref SSH_KEYTYPE_ECDSA_P521)
+/** @param type the key type constant (one of @c SSH_KEYTYPE_RSA, @c SSH_KEYTYPE_ED25519,
+    @c SSH_KEYTYPE_ECDSA_P256, @c SSH_KEYTYPE_ECDSA_P384, @c SSH_KEYTYPE_ECDSA_P521)
     @param bits the key size in bits; for RSA defaults to 4096, for ECDSA selects the curve
     (256, 384, 521), for ED25519 this parameter is ignored
 
@@ -699,8 +699,8 @@ bool SshKey::isPublic() [flags=CONSTANT] {
 }
 
 //! Returns the key fingerprint
-/** @param hash_type the hash algorithm to use (default @ref SSH_PUBLICKEY_HASH_SHA256;
-    also @ref SSH_PUBLICKEY_HASH_SHA1 and @ref SSH_PUBLICKEY_HASH_MD5)
+/** @param hash_type the hash algorithm to use (default @c SSH_PUBLICKEY_HASH_SHA256;
+    also @c SSH_PUBLICKEY_HASH_SHA1 and @c SSH_PUBLICKEY_HASH_MD5)
 
     @return the fingerprint as a formatted string
 
@@ -727,8 +727,8 @@ string SshKey::getFingerprint(int hash_type = SSH_PUBLICKEY_HASH_SHA256) [flags=
 //! Writes the private key to a file
 /** @param path the output file path
     @param passphrase an optional passphrase to encrypt the key
-    @param format the output file format (default @ref SSH_FILE_FORMAT_DEFAULT;
-    also @ref SSH_FILE_FORMAT_OPENSSH and @ref SSH_FILE_FORMAT_PEM)
+    @param format the output file format (default @c SSH_FILE_FORMAT_DEFAULT;
+    also @c SSH_FILE_FORMAT_OPENSSH and @c SSH_FILE_FORMAT_PEM)
 
     @throw SSHKEY-ARG-ERROR invalid file format
     @throw SSHKEY-EXPORT-ERROR could not write the key (e.g. public-only key, permission denied)
@@ -767,8 +767,8 @@ nothing SshKey::writePublicKeyFile(string path) {
 
 //! Returns the private key as a PEM/base64-encoded string
 /** @param passphrase an optional passphrase to encrypt the key
-    @param format the output format (default @ref SSH_FILE_FORMAT_DEFAULT;
-    also @ref SSH_FILE_FORMAT_OPENSSH and @ref SSH_FILE_FORMAT_PEM)
+    @param format the output format (default @c SSH_FILE_FORMAT_DEFAULT;
+    also @c SSH_FILE_FORMAT_OPENSSH and @c SSH_FILE_FORMAT_PEM)
 
     @return the private key as a PEM-formatted string
 

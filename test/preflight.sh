@@ -19,6 +19,7 @@ qore --enable-debug test/SftpServerDataProvider.qtest -v
 qore --enable-debug test/SftpServerDataProviderDataProvider.qtest -v
 qore --enable-debug test/VirtualSftpServer.qtest -v
 qore --enable-debug test/VirtualSftpInboundPolicyServer.qtest -v
+qore --enable-debug test/SshServerHostKeyProvider.qtest -v
 qore --enable-debug test/SshServer.qtest -v
 qore --enable-debug test/Sandbox.qtest -v
 

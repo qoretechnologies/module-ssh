@@ -77,8 +77,10 @@ hashdecl Qore::Ssh::SshListenerConfig {
     string bind_address;
     //! TCP port for the listener
     int port;
-    //! host key file paths
-    list<string> host_keys;
+    //! optional host key file paths; either this list or server_host_key_provider must provide at least one key
+    *list<string> host_keys;
+    //! optional object implementing getServerHostKeyMaterial(hash<auto>) for provider-backed host keys
+    *object server_host_key_provider;
     //! optional session cap for the listener
     *int max_sessions;
     //! optional SSH banner string
@@ -810,9 +812,9 @@ hashdecl Qore::Ssh::SshKeyInfo {
     bool is_private;
     //! @c True when the key contains public key material
     bool is_public;
-    //! OpenSSH-style SHA-256 fingerprint string (e.g. @c "SHA256:<base64>"), or @ref nothing if unavailable
+    //! OpenSSH-style SHA-256 fingerprint string (e.g. @c "SHA256:<base64>"), or @c NOTHING if unavailable
     *string fingerprint_sha256;
-    //! base64-encoded public key, or @ref nothing if unavailable
+    //! base64-encoded public key, or @c NOTHING if unavailable
     *string public_key_base64;
 }
 

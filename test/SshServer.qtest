@@ -46,6 +46,52 @@ class EventObserver inherits DataProvider::Observer {
     }
 }
 
+class TestServerHostKeyProvider {
+    public {
+        string mode;
+        string path;
+        int calls;
+        list<hash<auto>> contexts;
+    }
+
+    constructor(string mode, string path = "") {
+        self.mode = mode;
+        self.path = path;
+        calls = 0;
+        contexts = ();
+    }
+
+    list<auto> getServerHostKeyMaterial(hash<auto> ctxt) {
+        ++calls;
+        contexts += (ctxt,);
+        if (mode == "empty") {
+            return ();
+        }
+        if (mode == "not-hash") {
+            return ("bad",);
+        }
+        if (mode == "text") {
+            return ({
+                "kind": "text",
+                "private_key_text": ReadOnlyFile::readTextFile(path),
+            },);
+        }
+        if (mode == "data") {
+            return ({
+                "kind": "data",
+                "private_key_data": binary(ReadOnlyFile::readTextFile(path)),
+            },);
+        }
+        return ({
+            "kind": "file",
+            "path": path,
+        },);
+    }
+}
+
+class InvalidServerHostKeyProvider {
+}
+
 class TestSftpBackend {
     public {
         string name;
@@ -640,6 +686,14 @@ class SshServerTest inherits QUnit::Test {
         addTestCase("evaluateSftpTransferRequest denies traversal paths", \testEvaluateSftpTransferRequestTraversalDenied());
         addTestCase("evaluateSftpTransferRequest plans atomic publish defaults",
             \testEvaluateSftpTransferRequestAtomicPublishDefaults());
+        addTestCase("server host-key provider starts listener from file material",
+            \testServerHostKeyProviderFileMaterial());
+        addTestCase("server host-key provider starts listener from text material",
+            \testServerHostKeyProviderTextMaterial());
+        addTestCase("server host-key provider starts listener from data material",
+            \testServerHostKeyProviderDataMaterial());
+        addTestCase("server host-key provider rejects malformed responses",
+            \testServerHostKeyProviderMalformedResponses());
         addTestCase("start and stop lifecycle", \testStartStop());
         addTestCase("start rejects invalid host key", \testInvalidStart());
         addTestCase("running reflects lifecycle state", \testRunning());
@@ -664,6 +718,18 @@ class SshServerTest inherits QUnit::Test {
                 "bind_address": "127.0.0.1",
                 "port": 0,
                 "host_keys": (getHostKeyPath(),),
+            },),
+        };
+    }
+
+    private hash<SshServerConfig> getProviderHostKeyConfig(object provider) {
+        return <SshServerConfig>{
+            "name": "test-server",
+            "listeners": (<SshListenerConfig>{
+                "name": "provider-listener",
+                "bind_address": "127.0.0.1",
+                "port": 0,
+                "server_host_key_provider": provider,
             },),
         };
     }
@@ -5169,6 +5235,57 @@ class SshServerTest inherits QUnit::Test {
         assertTrue(transfer_info.atomic_publish);
         assertFalse(transfer_info.completed);
         assertNeq(0, ssh_rc);
+    }
+
+    private nothing assertProviderHostKeyServerStarts(TestServerHostKeyProvider provider) {
+        Qore::Ssh::SshServer server(getProviderHostKeyConfig(provider));
+        server.start();
+        hash<SshServerStatus> status = server.getStatus();
+        assertTrue(status.running);
+        assertTrue(status.listeners[0].running);
+        assertGt(0, status.listeners[0].bound_port);
+        server.stop();
+
+        assertEq(1, provider.calls);
+        assertEq(1, provider.contexts.size());
+        hash<auto> ctxt = provider.contexts[0];
+        assertEq("server-host-key", ctxt.purpose);
+        assertEq("provider-listener", ctxt.listener_name);
+        assertEq("127.0.0.1", ctxt.original_host);
+        assertEq("127.0.0.1", ctxt.normalized_host);
+        assertEq(0, ctxt.port);
+        assertEq(0, ctxt.deadline_ns);
+        assertEq(0, ctxt.remaining_ns);
+    }
+
+    testServerHostKeyProviderFileMaterial() {
+        assertProviderHostKeyServerStarts(new TestServerHostKeyProvider("file", getHostKeyPath()));
+    }
+
+    testServerHostKeyProviderTextMaterial() {
+        assertProviderHostKeyServerStarts(new TestServerHostKeyProvider("text", getHostKeyPath()));
+    }
+
+    testServerHostKeyProviderDataMaterial() {
+        assertProviderHostKeyServerStarts(new TestServerHostKeyProvider("data", getHostKeyPath()));
+    }
+
+    testServerHostKeyProviderMalformedResponses() {
+        assertThrows("SSHLISTENER-CONFIG-ERROR", sub() {
+            Qore::Ssh::SshServer server(getProviderHostKeyConfig(new InvalidServerHostKeyProvider()));
+        });
+
+        TestServerHostKeyProvider empty_provider("empty", getHostKeyPath());
+        Qore::Ssh::SshServer empty_server(getProviderHostKeyConfig(empty_provider));
+        assertThrows("SSHLISTENER-START-ERROR", sub() { empty_server.start(); });
+        assertFalse(empty_server.running());
+        assertEq(1, empty_provider.calls);
+
+        TestServerHostKeyProvider not_hash_provider("not-hash", getHostKeyPath());
+        Qore::Ssh::SshServer not_hash_server(getProviderHostKeyConfig(not_hash_provider));
+        assertThrows("SSH-HOSTKEY-INVALID-RESPONSE", sub() { not_hash_server.start(); });
+        assertFalse(not_hash_server.running());
+        assertEq(1, not_hash_provider.calls);
     }
 
     testStartStop() {

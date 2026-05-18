@@ -10,11 +10,48 @@
     comparison.
 
     Supported key types:
-    - @ref Qore::Ssh::SSH_KEYTYPE_RSA "SSH_KEYTYPE_RSA" -- RSA (configurable bit size, default 4096, minimum 2048)
-    - @ref Qore::Ssh::SSH_KEYTYPE_ED25519 "SSH_KEYTYPE_ED25519" -- Ed25519 (recommended for new keys)
-    - @ref Qore::Ssh::SSH_KEYTYPE_ECDSA_P256 "SSH_KEYTYPE_ECDSA_P256" -- ECDSA with NIST P-256 curve
-    - @ref Qore::Ssh::SSH_KEYTYPE_ECDSA_P384 "SSH_KEYTYPE_ECDSA_P384" -- ECDSA with NIST P-384 curve
-    - @ref Qore::Ssh::SSH_KEYTYPE_ECDSA_P521 "SSH_KEYTYPE_ECDSA_P521" -- ECDSA with NIST P-521 curve
+    - @c SSH_KEYTYPE_RSA -- RSA (configurable bit size, default 4096, minimum 2048)
+    - @c SSH_KEYTYPE_ED25519 -- Ed25519 (recommended for new keys)
+    - @c SSH_KEYTYPE_ECDSA_P256 -- ECDSA with NIST P-256 curve
+    - @c SSH_KEYTYPE_ECDSA_P384 -- ECDSA with NIST P-384 curve
+    - @c SSH_KEYTYPE_ECDSA_P521 -- ECDSA with NIST P-521 curve
+
+    @section sshserverhostkeyproviders Server Host-Key Providers
+
+    @ref Qore::Ssh::SshListenerConfig "SshListenerConfig" can load server host
+    identity keys from the traditional @c host_keys file-path list or from an
+    object assigned to @c server_host_key_provider.  A provider object must
+    implement @c getServerHostKeyMaterial(hash<auto>) and return an ordered list
+    of material hashes with @c kind set to @c "file", @c "text", or @c "data".
+    Provider keys are resolved when a listener starts, so private material does
+    not need to be stored in the long-lived server configuration.
+
+    @code{.py}
+class StaticHostKeyProvider {
+    private string pem;
+
+    constructor(string pem) {
+        self.pem = pem;
+    }
+
+    list<hash<auto>> getServerHostKeyMaterial(hash<auto> ctxt) {
+        return ({
+            "kind": "text",
+            "private_key_text": pem,
+        },);
+    }
+}
+
+hash<Qore::Ssh::SshServerConfig> config = <Qore::Ssh::SshServerConfig>{
+    "name": "provider-backed-server",
+    "listeners": (<Qore::Ssh::SshListenerConfig>{
+        "name": "main",
+        "bind_address": "127.0.0.1",
+        "port": 0,
+        "server_host_key_provider": new StaticHostKeyProvider(private_key_pem),
+    },),
+};
+    @endcode
 
     @section sshkeygeneration Key Generation
 
@@ -109,9 +146,9 @@ hash<SshKeyInfo> info = key.getInfo();
     @endcode
 
     Available fingerprint hash types:
-    - @ref Qore::Ssh::SSH_PUBLICKEY_HASH_SHA256 "SSH_PUBLICKEY_HASH_SHA256" (default, recommended)
-    - @ref Qore::Ssh::SSH_PUBLICKEY_HASH_SHA1 "SSH_PUBLICKEY_HASH_SHA1"
-    - @ref Qore::Ssh::SSH_PUBLICKEY_HASH_MD5 "SSH_PUBLICKEY_HASH_MD5"
+    - @c SSH_PUBLICKEY_HASH_SHA256 (default, recommended)
+    - @c SSH_PUBLICKEY_HASH_SHA1
+    - @c SSH_PUBLICKEY_HASH_MD5
 
     @section sshkeycomparison Key Comparison
 

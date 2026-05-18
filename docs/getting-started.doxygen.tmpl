@@ -71,8 +71,8 @@
 
     @note Cooperative cancellation: all blocking operations (accept, key exchange,
     auth/command/SFTP waits, SFTP protocol reads) are *cooperatively* cancellable
-    via the sandbox interrupt (@ref Qore::SandboxManager "SandboxManager") or
-    @ref Qore::cancel_thread() "cancel_thread()".  Cancellation is not necessarily
+    via the sandbox interrupt (@c SandboxManager) or
+    @c cancel_thread().  Cancellation is not necessarily
     immediate: blocking waits poll on a bounded interval, so a cancelled or
     interrupted thread typically unblocks within ~500ms and raises
     @c PROGRAM-INTERRUPTED or @c THREAD-CANCELLED.  An indefinite-timeout SFTP
