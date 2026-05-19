@@ -37,6 +37,17 @@ else()
     message(STATUS "libssh file-format export API: absent "
         "(libssh < 0.11.0; non-default key formats will raise a runtime error)")
 endif()
+
+# explicit_bzero() is a glibc/BSD secure-erase primitive; it is not available
+# on all platforms (notably macOS), so probe for it and fall back to a portable
+# volatile-write erase in ssh-module.h when absent
+check_symbol_exists(explicit_bzero "string.h;strings.h" HAVE_EXPLICIT_BZERO)
+if (HAVE_EXPLICIT_BZERO)
+    message(STATUS "secure memory erase: explicit_bzero() (HAVE_EXPLICIT_BZERO)")
+else()
+    message(STATUS "secure memory erase: portable volatile-write fallback")
+endif()
+
 configure_file(${CMAKE_SOURCE_DIR}/cmake/config.h.cmake
     ${CMAKE_BINARY_DIR}/config.h)
 

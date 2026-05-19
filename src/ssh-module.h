@@ -10,6 +10,7 @@
 #define _QORE_MODULE_SSH_H
 
 #include <atomic>
+#include <cstring>
 #include <libssh/libssh.h>
 #include <libssh/libssh_version.h>
 #include <map>
@@ -95,7 +96,14 @@ DLLLOCAL extern qore_classid_t CID_SSHCOMMANDSESSION;
 DLLLOCAL extern QoreClass* QC_SSHCOMMANDSESSION;
 DLLLOCAL extern qore_classid_t CID_SFTPSESSION;
 DLLLOCAL extern QoreClass* QC_SFTPSESSION;
+// module-internal cache of the sshutil abstract server host-key provider
+// class; populated in ssh_module_init() by calling the public sshutil
+// accessor function declared in <qore/sshutil.h> (the sshutil class-pointer
+// data symbols must NOT be referenced directly: Qore dlopen()s this module
+// before loading its sshutil dependency, so an undefined data symbol would
+// fail to bind)
 DLLLOCAL extern QoreClass* QC_ABSTRACTSSHSERVERHOSTKEYPROVIDER;
+#include <qore/sshutil.h>
 
 DLLLOCAL QoreObject* ssh_new_session_object(QoreProgram* pgm, QoreHashNode* info, QoreHashNode* auth_info,
     const QoreObject* logger, ssh_session session, std::shared_ptr<std::atomic<int64>> active_session_counter,
@@ -138,5 +146,21 @@ DLLLOCAL int ssh_session_send_banner(const QoreObject* session_obj, const std::s
 //! unregisters itself on disconnect (see SshActiveSessionRegistry).
 DLLLOCAL void ssh_session_set_registry(const QoreObject* session_obj,
     std::weak_ptr<SshActiveSessionRegistry> registry, const std::string& session_id);
+
+//! securely erases a buffer that may contain sensitive key material
+/** Uses explicit_bzero() when the C library provides it (glibc/BSD); otherwise
+    falls back to a portable volatile-pointer write loop, which the compiler is
+    not permitted to optimize away. Use this instead of explicit_bzero()
+    directly so the code builds on platforms without it (e.g. macOS). */
+static inline void ssh_secure_bzero(void* p, size_t n) {
+#ifdef HAVE_EXPLICIT_BZERO
+    explicit_bzero(p, n);
+#else
+    volatile unsigned char* vp = static_cast<volatile unsigned char*>(p);
+    while (n--) {
+        *vp++ = 0;
+    }
+#endif
+}
 
 #endif

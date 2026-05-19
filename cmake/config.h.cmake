@@ -13,4 +13,9 @@
    check_symbol_exists() against ssh_pki_export_privkey_file_format. */
 #cmakedefine HAVE_SSH_FILE_FORMAT
 
+/* Defined when the C library provides explicit_bzero() (glibc/BSD). When not
+   defined, ssh-module.h's ssh_secure_bzero() uses a portable volatile-write
+   erase instead. Probed with check_symbol_exists(explicit_bzero). */
+#cmakedefine HAVE_EXPLICIT_BZERO
+
 #endif

@@ -312,7 +312,7 @@ public:
 #endif
         if (rc != SSH_OK || !b64_key) {
             if (b64_key) {
-                explicit_bzero(b64_key, strlen(b64_key));
+                ssh_secure_bzero(b64_key, strlen(b64_key));
             }
             SSH_STRING_FREE_CHAR(b64_key);
             xsink->raiseException("SSHKEY-EXPORT-ERROR", "could not export private key as string");
@@ -321,7 +321,7 @@ public:
         QoreStringNode* result = new QoreStringNode(b64_key);
         // Low/Info: the exported buffer may hold an unencrypted private key; libssh does not
         // wipe it, so scrub it before freeing rather than leaving it in freed heap.
-        explicit_bzero(b64_key, strlen(b64_key));
+        ssh_secure_bzero(b64_key, strlen(b64_key));
         SSH_STRING_FREE_CHAR(b64_key);
         return result;
     }
