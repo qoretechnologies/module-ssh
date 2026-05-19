@@ -23,6 +23,8 @@
 
 #include "ssh-module.h"
 
+#include <dlfcn.h>
+
 static QoreNamespace SshNS("Qore::Ssh");
 
 DLLLOCAL const TypedHashDecl* hashdeclSshListenerConfig;
@@ -58,9 +60,32 @@ DLLLOCAL const TypedHashDecl* hashdeclSftpSetstatRequest;
 DLLLOCAL const TypedHashDecl* hashdeclSftpStatvfsResult;
 DLLLOCAL const TypedHashDecl* hashdeclSshKeyInfo;
 // module-internal cache of the sshutil abstract server host-key provider
-// class; populated from the public sshutil accessor function in
-// ssh_module_init()
-QoreClass* QC_ABSTRACTSSHSERVERHOSTKEYPROVIDER = nullptr;
+// class; populated in ssh_module_init() by dlsym() on sshutil's public
+// accessor function after the declared sshutil dependency has been loaded
+static QoreClass* QC_ABSTRACTSSHSERVERHOSTKEYPROVIDER = nullptr;
+
+using sshutil_get_class_t = QoreClass* (*)();
+
+static int ssh_resolve_sshutil_class(QoreClass*& target, const char* accessor, const char* class_name,
+        ExceptionSink& xsink) {
+    dlerror();
+    void* ptr = dlsym(RTLD_DEFAULT, accessor);
+    const char* err = dlerror();
+    if (err) {
+        xsink.raiseException("MODULE-INIT-ERROR", "could not resolve required sshutil accessor '%s': %s",
+            accessor, err);
+        return -1;
+    }
+
+    sshutil_get_class_t get_class = reinterpret_cast<sshutil_get_class_t>(ptr);
+    target = get_class();
+    if (!target) {
+        xsink.raiseException("MODULE-INIT-ERROR",
+            "required sshutil accessor '%s' returned no %s class pointer", accessor, class_name);
+        return -1;
+    }
+    return 0;
+}
 
 DLLLOCAL QoreClass* initSshKeyClass(QoreNamespace& ns);
 DLLLOCAL QoreClass* initSshServerClass(QoreNamespace& ns);
@@ -823,13 +848,9 @@ hashdecl Qore::Ssh::SshKeyInfo {
 }
 
 static void ssh_module_init(QoreModuleInitContext& ctx, ExceptionSink& xsink) {
-    // resolve the sshutil abstract server host-key provider class via the
-    // public accessor function; sshutil is a declared dependency, so it has
-    // already been loaded and initialized by the time this module's init runs
-    QC_ABSTRACTSSHSERVERHOSTKEYPROVIDER = sshutil_get_abstract_ssh_server_host_key_provider_class();
-    if (!QC_ABSTRACTSSHSERVERHOSTKEYPROVIDER) {
-        xsink.raiseException("MODULE-INIT-ERROR", "the required sshutil module did not provide the abstract "
-            "SSH server host-key provider class (sshutil not initialized?)");
+    if (ssh_resolve_sshutil_class(QC_ABSTRACTSSHSERVERHOSTKEYPROVIDER,
+            "sshutil_get_abstract_ssh_server_host_key_provider_class", "AbstractSshServerHostKeyProvider",
+            xsink)) {
         return;
     }
 

@@ -96,15 +96,6 @@ DLLLOCAL extern qore_classid_t CID_SSHCOMMANDSESSION;
 DLLLOCAL extern QoreClass* QC_SSHCOMMANDSESSION;
 DLLLOCAL extern qore_classid_t CID_SFTPSESSION;
 DLLLOCAL extern QoreClass* QC_SFTPSESSION;
-// module-internal cache of the sshutil abstract server host-key provider
-// class; populated in ssh_module_init() by calling the public sshutil
-// accessor function declared in <qore/sshutil.h> (the sshutil class-pointer
-// data symbols must NOT be referenced directly: Qore dlopen()s this module
-// before loading its sshutil dependency, so an undefined data symbol would
-// fail to bind)
-DLLLOCAL extern QoreClass* QC_ABSTRACTSSHSERVERHOSTKEYPROVIDER;
-#include <qore/sshutil.h>
-
 DLLLOCAL QoreObject* ssh_new_session_object(QoreProgram* pgm, QoreHashNode* info, QoreHashNode* auth_info,
     const QoreObject* logger, ssh_session session, std::shared_ptr<std::atomic<int64>> active_session_counter,
     int enabled_auth_methods_mask, int64 keepalive_interval_seconds, int64 idle_timeout_seconds,
