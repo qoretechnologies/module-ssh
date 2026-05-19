@@ -23,7 +23,9 @@
 */
 
 %modern
+%requires qore >= 2.3
 %requires ssh
+%requires sshutil
 %requires QUnit
 %requires DataProvider
 %requires ../qlib/SftpServerDataProvider
@@ -46,7 +48,7 @@ class EventObserver inherits DataProvider::Observer {
     }
 }
 
-class TestServerHostKeyProvider {
+class TestServerHostKeyProvider inherits SshUtil::AbstractSshServerHostKeyProvider {
     public {
         string mode;
         string path;
@@ -61,29 +63,31 @@ class TestServerHostKeyProvider {
         contexts = ();
     }
 
-    list<auto> getServerHostKeyMaterial(hash<auto> ctxt) {
+    list<hash<SshUtil::SshPrivateKeyMaterial>> getServerHostKeyMaterial(hash<auto> ctxt) {
         ++calls;
         contexts += (ctxt,);
         if (mode == "empty") {
             return ();
         }
-        if (mode == "not-hash") {
-            return ("bad",);
+        if (mode == "missing-path") {
+            return (<SshUtil::SshPrivateKeyMaterial>{
+                "kind": SshUtil::SshPrivateKeyMaterialKind::File,
+            },);
         }
         if (mode == "text") {
-            return ({
-                "kind": "text",
+            return (<SshUtil::SshPrivateKeyMaterial>{
+                "kind": SshUtil::SshPrivateKeyMaterialKind::Text,
                 "private_key_text": ReadOnlyFile::readTextFile(path),
             },);
         }
         if (mode == "data") {
-            return ({
-                "kind": "data",
+            return (<SshUtil::SshPrivateKeyMaterial>{
+                "kind": SshUtil::SshPrivateKeyMaterialKind::Data,
                 "private_key_data": binary(ReadOnlyFile::readTextFile(path)),
             },);
         }
-        return ({
-            "kind": "file",
+        return (<SshUtil::SshPrivateKeyMaterial>{
+            "kind": SshUtil::SshPrivateKeyMaterialKind::File,
             "path": path,
         },);
     }
@@ -610,6 +614,11 @@ class MissingOpenReadDataBackend inherits TestSftpBackend {
 
 class SshServerTest inherits QUnit::Test {
     constructor() : Test("SshServerTest", "0.1", \ARGV) {
+        @debug {
+            set_signal_handler(SIGUSR1, sub (int sig) {
+                printf("=== SIGUSR1 Thread Stacks ===\n%Y\n", get_all_thread_call_stacks());
+            });
+        }
         addTestCase("constructor with valid config", \testConstructor());
         addTestCase("constructor rejects invalid config", \testInvalidConfig());
         addTestCase("server logger roundtrip", \testServerLogger());
@@ -722,7 +731,8 @@ class SshServerTest inherits QUnit::Test {
         };
     }
 
-    private hash<SshServerConfig> getProviderHostKeyConfig(object provider) {
+    private hash<SshServerConfig> getProviderHostKeyConfig(
+            *SshUtil::AbstractSshServerHostKeyProvider provider) {
         return <SshServerConfig>{
             "name": "test-server",
             "listeners": (<SshListenerConfig>{
@@ -730,6 +740,19 @@ class SshServerTest inherits QUnit::Test {
                 "bind_address": "127.0.0.1",
                 "port": 0,
                 "server_host_key_provider": provider,
+            },),
+        };
+    }
+
+    private hash<SshServerConfig> getInvalidProviderHostKeyConfig() {
+        object invalid_provider = new InvalidServerHostKeyProvider();
+        return <SshServerConfig>{
+            "name": "test-server",
+            "listeners": (<SshListenerConfig>{
+                "name": "provider-listener",
+                "bind_address": "127.0.0.1",
+                "port": 0,
+                "server_host_key_provider": invalid_provider,
             },),
         };
     }
@@ -1117,6 +1140,14 @@ class SshServerTest inherits QUnit::Test {
         if (is_readable(path)) {
             unlink(path);
         }
+    }
+
+    private nothing finishSftpClient(Counter service_done, Qore::Ssh::SftpSession sftp, Counter client_done) {
+        assertEq(0, service_done.waitForZero(10s), "SFTP service thread completed");
+        if (sftp.connected()) {
+            sftp.close();
+        }
+        assertEq(0, client_done.waitForZero(10s), "SFTP client process completed");
     }
 
     private nothing writeTextFile(string path, string data) {
@@ -2212,9 +2243,7 @@ class SshServerTest inherits QUnit::Test {
             service_done.dec();
         }();
 
-        done.waitForZero(10s);
-        sftp.close();
-        service_done.waitForZero(5s);
+        finishSftpClient(service_done, sftp, done);
         string stdout_data = is_file(stdout_path) ? ReadOnlyFile::readTextFile(stdout_path) : "";
         string stderr_data = is_file(stderr_path) ? ReadOnlyFile::readTextFile(stderr_path) : "";
         session.disconnect();
@@ -2289,9 +2318,7 @@ class SshServerTest inherits QUnit::Test {
             service_done.dec();
         }();
 
-        done.waitForZero(10s);
-        sftp.close();
-        service_done.waitForZero(5s);
+        finishSftpClient(service_done, sftp, done);
         string target_data = is_file(target_path) ? ReadOnlyFile::readTextFile(target_path) : "";
         session.disconnect();
         server.stop();
@@ -2357,11 +2384,7 @@ class SshServerTest inherits QUnit::Test {
             service_done.dec();
         }();
 
-        done.waitForZero(10s);
-        service_done.waitForZero(5s);
-        if (sftp.connected()) {
-            sftp.close();
-        }
+        finishSftpClient(service_done, sftp, done);
         string stdout_data = is_file(stdout_path) ? ReadOnlyFile::readTextFile(stdout_path) : "";
         string stderr_data = is_file(stderr_path) ? ReadOnlyFile::readTextFile(stderr_path) : "";
         session.disconnect();
@@ -2459,11 +2482,7 @@ class SshServerTest inherits QUnit::Test {
             service_done.dec();
         }();
 
-        done.waitForZero(10s);
-        service_done.waitForZero(5s);
-        if (sftp.connected()) {
-            sftp.close();
-        }
+        finishSftpClient(service_done, sftp, done);
         string stderr_data = is_file(stderr_path) ? ReadOnlyFile::readTextFile(stderr_path) : "";
         string target_data = is_file(target_path) ? ReadOnlyFile::readTextFile(target_path) : "";
         session.disconnect();
@@ -2563,11 +2582,7 @@ class SshServerTest inherits QUnit::Test {
             service_done.dec();
         }();
 
-        done.waitForZero(10s);
-        service_done.waitForZero(5s);
-        if (sftp.connected()) {
-            sftp.close();
-        }
+        finishSftpClient(service_done, sftp, done);
         string stderr_data = is_file(stderr_path) ? ReadOnlyFile::readTextFile(stderr_path) : "";
         string target_data = is_file(target_path) ? ReadOnlyFile::readTextFile(target_path) : "";
         session.disconnect();
@@ -2636,18 +2651,22 @@ class SshServerTest inherits QUnit::Test {
         TestSftpBackend backend = sftp.getBackend();
         Counter service_done(1);
         background sub() {
-            while (True) {
-                auto msg = sftp.processNextRequest(15000);
-                if (msg == NOTHING) {
-                    break;
+            try {
+                while (True) {
+                    auto msg = sftp.processNextRequest(15000);
+                    if (msg == NOTHING) {
+                        break;
+                    }
+                }
+            } catch (hash<ExceptionInfo> ex) {
+                if (ex.err != "SFTPSESSION-STATE-ERROR") {
+                    throw ex;
                 }
             }
             service_done.dec();
         }();
 
-        done.waitForZero(10s);
-        sftp.close();
-        service_done.waitForZero(5s);
+        finishSftpClient(service_done, sftp, done);
         string target_data = is_file(target_path) ? ReadOnlyFile::readTextFile(target_path) : "";
         string stderr_data = is_file(stderr_path) ? ReadOnlyFile::readTextFile(stderr_path) : "";
         session.disconnect();
@@ -2717,11 +2736,7 @@ class SshServerTest inherits QUnit::Test {
             service_done.dec();
         }();
 
-        done.waitForZero(10s);
-        if (sftp.connected()) {
-            sftp.close();
-        }
-        service_done.waitForZero(5s);
+        finishSftpClient(service_done, sftp, done);
         string stdout_data = is_file(stdout_path) ? ReadOnlyFile::readTextFile(stdout_path) : "";
         session.disconnect();
         server.stop();
@@ -2788,20 +2803,25 @@ class SshServerTest inherits QUnit::Test {
         Qore::Ssh::SftpSession sftp = server.dispatchSftpSession(session, 15000);
         Counter service_done(1);
         background sub() {
-            while (True) {
-                auto msg = sftp.processNextRequest(15000);
-                if (msg == NOTHING) {
-                    break;
+            try {
+                while (True) {
+                    auto msg = sftp.processNextRequest(15000);
+                    if (msg == NOTHING) {
+                        break;
+                    }
+                    if (msg.name == "open" || msg.name == "read") {
+                        break;
+                    }
+                }
+            } catch (hash<ExceptionInfo> ex) {
+                if (ex.err != "SFTPSESSION-STATE-ERROR") {
+                    throw ex;
                 }
             }
             service_done.dec();
         }();
 
-        done.waitForZero(10s);
-        if (sftp.connected()) {
-            sftp.close();
-        }
-        service_done.waitForZero(5s);
+        finishSftpClient(service_done, sftp, done);
         string stderr_data = is_file(stderr_path) ? ReadOnlyFile::readTextFile(stderr_path) : "";
         session.disconnect();
         server.stop();
@@ -2815,7 +2835,7 @@ class SshServerTest inherits QUnit::Test {
             }
         }
 
-        assertEq(0, sftp_rc);
+        assertNeq(0, sftp_rc);
         assertFalse(is_file(target_path));
         assertTrue(!stderr_data.empty());
         assertTrue(saw_backend_open_read);
@@ -2876,11 +2896,7 @@ class SshServerTest inherits QUnit::Test {
             service_done.dec();
         }();
 
-        done.waitForZero(10s);
-        service_done.waitForZero(5s);
-        if (sftp.connected()) {
-            sftp.close();
-        }
+        finishSftpClient(service_done, sftp, done);
         string stderr_data = is_file(stderr_path) ? ReadOnlyFile::readTextFile(stderr_path) : "";
         session.disconnect();
         server.stop();
@@ -2977,11 +2993,7 @@ class SshServerTest inherits QUnit::Test {
             service_done.dec();
         }();
 
-        done.waitForZero(10s);
-        service_done.waitForZero(5s);
-        if (sftp.connected()) {
-            sftp.close();
-        }
+        finishSftpClient(service_done, sftp, done);
         string stderr_data = is_file(stderr_path) ? ReadOnlyFile::readTextFile(stderr_path) : "";
         string target_data = is_file(target_path) ? ReadOnlyFile::readTextFile(target_path) : "";
         session.disconnect();
@@ -3424,9 +3436,7 @@ class SshServerTest inherits QUnit::Test {
             service_done.dec();
         }();
 
-        done.waitForZero(10s);
-        sftp.close();
-        service_done.waitForZero(5s);
+        finishSftpClient(service_done, sftp, done);
         session.disconnect();
         server.stop();
 
@@ -3499,6 +3509,9 @@ class SshServerTest inherits QUnit::Test {
                     if (msg == NOTHING) {
                         break;
                     }
+                    if (msg.name == "close") {
+                        break;
+                    }
                 }
             } catch (hash<ExceptionInfo> ex) {
                 if (ex.err != "SFTPSESSION-STATE-ERROR") {
@@ -3508,9 +3521,7 @@ class SshServerTest inherits QUnit::Test {
             service_done.dec();
         }();
 
-        done.waitForZero(10s);
-        sftp.close();
-        service_done.waitForZero(5s);
+        finishSftpClient(service_done, sftp, done);
         session.disconnect();
         server.stop();
 
@@ -3598,9 +3609,7 @@ class SshServerTest inherits QUnit::Test {
             service_done.dec();
         }();
 
-        done.waitForZero(10s);
-        sftp.close();
-        service_done.waitForZero(5s);
+        finishSftpClient(service_done, sftp, done);
         session.disconnect();
         server.stop();
 
@@ -3738,9 +3747,7 @@ class SshServerTest inherits QUnit::Test {
                 service_done.dec();
             }();
 
-            done.waitForZero(10s);
-            sftp.close();
-            service_done.waitForZero(5s);
+            finishSftpClient(service_done, sftp, done);
             session.disconnect();
             assertTrue(auth_decision.accepted);
             assertEq(0, ok_sftp_rc);
@@ -3769,6 +3776,9 @@ class SshServerTest inherits QUnit::Test {
                         if (msg == NOTHING) {
                             break;
                         }
+                        if (msg.name == "close") {
+                            break;
+                        }
                     }
                 } catch (hash<ExceptionInfo> ex) {
                     if (ex.err != "SFTPSESSION-STATE-ERROR") {
@@ -3778,12 +3788,10 @@ class SshServerTest inherits QUnit::Test {
                 service_done.dec();
             }();
 
-            done.waitForZero(10s);
-            sftp.close();
-            service_done.waitForZero(5s);
+            finishSftpClient(service_done, sftp, done);
             session.disconnect();
             assertTrue(auth_decision.accepted);
-            assertEq(0, reject_sftp_rc);
+            assertNeq(0, reject_sftp_rc);
         }
         server.stop();
 
@@ -3854,9 +3862,7 @@ class SshServerTest inherits QUnit::Test {
             service_done.dec();
         }();
 
-        done.waitForZero(10s);
-        sftp.close();
-        service_done.waitForZero(5s);
+        finishSftpClient(service_done, sftp, done);
         session.disconnect();
         server.stop();
 
@@ -3935,6 +3941,9 @@ class SshServerTest inherits QUnit::Test {
                     if (msg == NOTHING) {
                         break;
                     }
+                    if (msg.name == "close") {
+                        break;
+                    }
                 }
             } catch (hash<ExceptionInfo> ex) {
                 if (ex.err != "SFTPSESSION-STATE-ERROR") {
@@ -3944,14 +3953,12 @@ class SshServerTest inherits QUnit::Test {
             service_done.dec();
         }();
 
-        done.waitForZero(10s);
-        sftp.close();
-        service_done.waitForZero(5s);
+        finishSftpClient(service_done, sftp, done);
         session.disconnect();
         server.stop();
 
         assertTrue(auth_decision.accepted);
-        assertEq(0, sftp_rc);
+        assertNeq(0, sftp_rc);
         assertEq(1, observer.events.size());
         assertEq(SftpServerDataProvider::EventInboundFileRejected, observer.events[0].event_id);
         assertEq(SftpServerDataProvider::InboundRejectDuplicateName, observer.events[0].reason_code);
@@ -4033,6 +4040,9 @@ class SshServerTest inherits QUnit::Test {
                         if (msg == NOTHING) {
                             break;
                         }
+                        if (msg.name == "close") {
+                            break;
+                        }
                     }
                 } catch (hash<ExceptionInfo> ex) {
                     if (ex.err != "SFTPSESSION-STATE-ERROR") {
@@ -4042,12 +4052,10 @@ class SshServerTest inherits QUnit::Test {
                 service_done.dec();
             }();
 
-            done.waitForZero(10s);
-            sftp.close();
-            service_done.waitForZero(5s);
+            finishSftpClient(service_done, sftp, done);
             session.disconnect();
             assertTrue(auth_decision.accepted);
-            assertEq(0, size_sftp_rc);
+            assertNeq(0, size_sftp_rc);
         }
 
         {
@@ -4073,6 +4081,9 @@ class SshServerTest inherits QUnit::Test {
                         if (msg == NOTHING) {
                             break;
                         }
+                        if (msg.name == "close") {
+                            break;
+                        }
                     }
                 } catch (hash<ExceptionInfo> ex) {
                     if (ex.err != "SFTPSESSION-STATE-ERROR") {
@@ -4082,12 +4093,10 @@ class SshServerTest inherits QUnit::Test {
                 service_done.dec();
             }();
 
-            done.waitForZero(10s);
-            sftp.close();
-            service_done.waitForZero(5s);
+            finishSftpClient(service_done, sftp, done);
             session.disconnect();
             assertTrue(auth_decision.accepted);
-            assertEq(0, hash_sftp_rc);
+            assertNeq(0, hash_sftp_rc);
         }
         server.stop();
 
@@ -4175,6 +4184,9 @@ class SshServerTest inherits QUnit::Test {
                         if (msg == NOTHING) {
                             break;
                         }
+                        if (msg.name == "close") {
+                            break;
+                        }
                     }
                 } catch (hash<ExceptionInfo> ex) {
                     if (ex.err != "SFTPSESSION-STATE-ERROR") {
@@ -4184,12 +4196,10 @@ class SshServerTest inherits QUnit::Test {
                 service_done.dec();
             }();
 
-            done.waitForZero(10s);
-            sftp.close();
-            service_done.waitForZero(5s);
+            finishSftpClient(service_done, sftp, done);
             session.disconnect();
             assertTrue(auth_decision.accepted);
-            assertEq(0, count_sftp_rc);
+            assertNeq(0, count_sftp_rc);
         }
 
         {
@@ -4215,6 +4225,9 @@ class SshServerTest inherits QUnit::Test {
                         if (msg == NOTHING) {
                             break;
                         }
+                        if (msg.name == "close") {
+                            break;
+                        }
                     }
                 } catch (hash<ExceptionInfo> ex) {
                     if (ex.err != "SFTPSESSION-STATE-ERROR") {
@@ -4224,12 +4237,10 @@ class SshServerTest inherits QUnit::Test {
                 service_done.dec();
             }();
 
-            done.waitForZero(10s);
-            sftp.close();
-            service_done.waitForZero(5s);
+            finishSftpClient(service_done, sftp, done);
             session.disconnect();
             assertTrue(auth_decision.accepted);
-            assertEq(0, bytes_sftp_rc);
+            assertNeq(0, bytes_sftp_rc);
         }
         server.stop();
 
@@ -4333,9 +4344,7 @@ class SshServerTest inherits QUnit::Test {
                 service_done.dec();
             }();
 
-            done.waitForZero(10s);
-            sftp.close();
-            service_done.waitForZero(5s);
+            finishSftpClient(service_done, sftp, done);
             session.disconnect();
             assertTrue(auth_decision.accepted);
             assertEq(0, ok_sftp_rc);
@@ -4364,6 +4373,9 @@ class SshServerTest inherits QUnit::Test {
                         if (msg == NOTHING) {
                             break;
                         }
+                        if (msg.name == "close") {
+                            break;
+                        }
                     }
                 } catch (hash<ExceptionInfo> ex) {
                     if (ex.err != "SFTPSESSION-STATE-ERROR") {
@@ -4373,12 +4385,10 @@ class SshServerTest inherits QUnit::Test {
                 service_done.dec();
             }();
 
-            done.waitForZero(10s);
-            sftp.close();
-            service_done.waitForZero(5s);
+            finishSftpClient(service_done, sftp, done);
             session.disconnect();
             assertTrue(auth_decision.accepted);
-            assertEq(0, reject_sftp_rc);
+            assertNeq(0, reject_sftp_rc);
         }
         server.stop();
 
@@ -4476,9 +4486,7 @@ class SshServerTest inherits QUnit::Test {
                 service_done.dec();
             }();
 
-            done.waitForZero(10s);
-            sftp.close();
-            service_done.waitForZero(5s);
+            finishSftpClient(service_done, sftp, done);
             session.disconnect();
             assertTrue(auth_decision.accepted);
             assertEq(0, ok_sftp_rc);
@@ -4507,6 +4515,9 @@ class SshServerTest inherits QUnit::Test {
                         if (msg == NOTHING) {
                             break;
                         }
+                        if (msg.name == "close") {
+                            break;
+                        }
                     }
                 } catch (hash<ExceptionInfo> ex) {
                     if (ex.err != "SFTPSESSION-STATE-ERROR") {
@@ -4516,12 +4527,10 @@ class SshServerTest inherits QUnit::Test {
                 service_done.dec();
             }();
 
-            done.waitForZero(10s);
-            sftp.close();
-            service_done.waitForZero(5s);
+            finishSftpClient(service_done, sftp, done);
             session.disconnect();
             assertTrue(auth_decision.accepted);
-            assertEq(0, reject_sftp_rc);
+            assertNeq(0, reject_sftp_rc);
         }
         server.stop();
 
@@ -4625,9 +4634,7 @@ class SshServerTest inherits QUnit::Test {
                 service_done.dec();
             }();
 
-            done.waitForZero(10s);
-            sftp.close();
-            service_done.waitForZero(5s);
+            finishSftpClient(service_done, sftp, done);
             session.disconnect();
             assertTrue(auth_decision.accepted);
             assertEq(0, ok_sftp_rc);
@@ -4656,6 +4663,9 @@ class SshServerTest inherits QUnit::Test {
                         if (msg == NOTHING) {
                             break;
                         }
+                        if (msg.name == "close") {
+                            break;
+                        }
                     }
                 } catch (hash<ExceptionInfo> ex) {
                     if (ex.err != "SFTPSESSION-STATE-ERROR") {
@@ -4665,12 +4675,10 @@ class SshServerTest inherits QUnit::Test {
                 service_done.dec();
             }();
 
-            done.waitForZero(10s);
-            sftp.close();
-            service_done.waitForZero(5s);
+            finishSftpClient(service_done, sftp, done);
             session.disconnect();
             assertTrue(auth_decision.accepted);
-            assertEq(0, reject_sftp_rc);
+            assertNeq(0, reject_sftp_rc);
         }
         server.stop();
 
@@ -4776,9 +4784,7 @@ class SshServerTest inherits QUnit::Test {
         hash<Qore::Ssh::SftpOperationResult> claim_result = sftp.completeRetrieveClaim("claim.txt");
         hash<Qore::Ssh::SftpOperationResult> delete_result = sftp.completeRetrieveDelete("delete.txt");
 
-        done.waitForZero(10s);
-        sftp.close();
-        service_done.waitForZero(5s);
+        finishSftpClient(service_done, sftp, done);
         session.disconnect();
         server.stop();
 
@@ -5271,9 +5277,7 @@ class SshServerTest inherits QUnit::Test {
     }
 
     testServerHostKeyProviderMalformedResponses() {
-        assertThrows("SSHLISTENER-CONFIG-ERROR", sub() {
-            Qore::Ssh::SshServer server(getProviderHostKeyConfig(new InvalidServerHostKeyProvider()));
-        });
+        assertThrows("RUNTIME-TYPE-ERROR", \getInvalidProviderHostKeyConfig());
 
         TestServerHostKeyProvider empty_provider("empty", getHostKeyPath());
         Qore::Ssh::SshServer empty_server(getProviderHostKeyConfig(empty_provider));
@@ -5281,11 +5285,11 @@ class SshServerTest inherits QUnit::Test {
         assertFalse(empty_server.running());
         assertEq(1, empty_provider.calls);
 
-        TestServerHostKeyProvider not_hash_provider("not-hash", getHostKeyPath());
-        Qore::Ssh::SshServer not_hash_server(getProviderHostKeyConfig(not_hash_provider));
-        assertThrows("SSH-HOSTKEY-INVALID-RESPONSE", sub() { not_hash_server.start(); });
-        assertFalse(not_hash_server.running());
-        assertEq(1, not_hash_provider.calls);
+        TestServerHostKeyProvider missing_path_provider("missing-path", getHostKeyPath());
+        Qore::Ssh::SshServer missing_path_server(getProviderHostKeyConfig(missing_path_provider));
+        assertThrows("SSH-HOSTKEY-INVALID-RESPONSE", sub() { missing_path_server.start(); });
+        assertFalse(missing_path_server.running());
+        assertEq(1, missing_path_provider.calls);
     }
 
     testStartStop() {
@@ -5430,6 +5434,43 @@ class SshServerTest inherits QUnit::Test {
             assertEq(0, server.listActiveSessions().size(),
                 "session must unregister from the active-session registry on disconnect");
             done.waitForZero(10s);
+        }
+
+        # The registry holds a snapshot, not a shared reference to the mutable session-info
+        # hash, and it is refreshed after authentication state changes.
+        {
+            Qore::Ssh::SshServer auth_server(getAuthCallbackConfig());
+            auth_server.start();
+            on_exit auth_server.stop();
+            int auth_port = auth_server.getStatus().listeners[0].bound_port;
+
+            int ssh_rc = 0;
+            Counter done(1);
+            string cmd = makeSshClientCommand(auth_port);
+            background sub() {
+                try {
+                    ssh_rc = system(cmd);
+                } catch (hash<ExceptionInfo> ex) {
+                    ssh_rc = -1;
+                }
+                done.dec();
+            }();
+
+            Qore::Ssh::SshSession session = auth_server.acceptSession(5000);
+            string sid = session.getInfo().session_id;
+            hash<SshAuthDecision> auth_decision = auth_server.authenticateSession(session, 15000);
+            list<hash<SshActiveSessionInfo>> active = auth_server.listActiveSessions();
+            assertTrue(auth_decision.accepted);
+            assertEq(1, active.size());
+            assertEq(sid, active[0].session_id);
+            assertEq("nobody", active[0].username);
+            assertEq("principal:nobody", active[0].principal);
+            assertEq("none", active[0].auth_method);
+
+            session.disconnect();
+            done.waitForZero(10s);
+            auth_server.stop();
+            assertNeq(0, ssh_rc);
         }
 
         # H-4: the transient acceptSessionInfo() path frees the transport immediately and never

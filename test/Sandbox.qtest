@@ -24,7 +24,9 @@
 
 %modern
 %no-child-restrictions
+%requires qore >= 2.3
 %requires ssh
+%requires sshutil
 %requires QUnit
 
 %exec-class SshSandboxTest
@@ -41,6 +43,15 @@ class SshSandboxTest inherits QUnit::Test {
         addTestCase("SSH key file I/O is denied under a filesystem-deny sandbox", \testKeyFsDenied());
         addTestCase("SSH key file I/O is allowed for an allow-listed sandbox path", \testKeyFsAllowed());
         addTestCase("host key load is denied under a filesystem-deny sandbox", \testHostKeyDenied());
+        addTestCase("host key load is denied under PO_NO_FILESYSTEM", \testHostKeyNoFilesystemDenied());
+        addTestCase("provider file host key is denied under a filesystem-deny sandbox",
+            \testProviderHostKeyFileDenied());
+        addTestCase("provider text host key works under a filesystem-deny sandbox",
+            \testProviderHostKeyTextAllowed());
+        addTestCase("provider file host key is denied under PO_NO_FILESYSTEM",
+            \testProviderHostKeyFileNoFilesystemDenied());
+        addTestCase("provider text host key works under PO_NO_FILESYSTEM",
+            \testProviderHostKeyTextNoFilesystemAllowed());
         addTestCase("listener bind is denied under a network-deny sandbox (S6)", \testBindNetworkDenied());
         addTestCase("listener bind is allowed for an allow-listed sandbox host (S6)",
             \testBindNetworkAllowed());
@@ -58,6 +69,17 @@ class SshSandboxTest inherits QUnit::Test {
     private Program makeChildProgram(string code) {
         Program p(PO_NO_CHILD_PO_RESTRICTIONS);
         p.parse(code, "sandbox-child");
+        return p;
+    }
+
+    private Program makeNoFilesystemChildProgram(string code, bool load_sshutil = False) {
+        Program p(PO_NO_CHILD_PO_RESTRICTIONS | PO_NO_FILESYSTEM | PO_NEW_STYLE | PO_STRICT_ARGS
+            | PO_REQUIRE_TYPES);
+        p.loadModule("ssh");
+        if (load_sshutil) {
+            p.loadModule("sshutil");
+        }
+        p.parse(code, "sandbox-nofs-child");
         return p;
     }
 
@@ -134,6 +156,240 @@ string sub startServer(string hk) {
         p.setSandboxManager(sm);
         # loading the host key file during start() must be blocked by the sandbox (S3)
         assertThrows("FILESYSTEM-ACCESS-DENIED", sub() { p.callFunction("startServer", host_key); });
+    }
+
+    testHostKeyNoFilesystemDenied() {
+        Program p = makeNoFilesystemChildProgram("
+string sub startServer(string hk) {
+    hash<Qore::Ssh::SshServerConfig> config = <Qore::Ssh::SshServerConfig>{
+        \"name\": \"sandbox-nofs-test\",
+        \"listeners\": (
+            <Qore::Ssh::SshListenerConfig>{
+                \"name\": \"main\",
+                \"bind_address\": \"127.0.0.1\",
+                \"port\": 0,
+                \"host_keys\": (hk,),
+                \"enabled_auth_methods\": (\"none\",),
+            },
+        ),
+    };
+    Qore::Ssh::SshServer server(config);
+    server.start();
+    server.stop();
+    return \"ok\";
+}");
+        assertThrows("ILLEGAL-FILESYSTEM-ACCESS", "PO_NO_FILESYSTEM",
+            sub() { p.callFunction("startServer", host_key); });
+    }
+
+    testProviderHostKeyFileDenied() {
+        Program p = makeChildProgram("%modern
+%requires ssh
+%requires sshutil
+class Provider inherits SshUtil::AbstractSshServerHostKeyProvider {
+    private {
+        string mode;
+        string value;
+    }
+
+    constructor(string mode, string value) {
+        self.mode = mode;
+        self.value = value;
+    }
+
+    list<hash<SshUtil::SshPrivateKeyMaterial>> getServerHostKeyMaterial(hash<auto> ctxt) {
+        if (mode == \"file\") {
+            return (<SshUtil::SshPrivateKeyMaterial>{
+                \"kind\": SshUtil::SshPrivateKeyMaterialKind::File,
+                \"path\": value,
+            },);
+        }
+        return (<SshUtil::SshPrivateKeyMaterial>{
+            \"kind\": SshUtil::SshPrivateKeyMaterialKind::Text,
+            \"private_key_text\": value,
+        },);
+    }
+}
+
+string sub startProviderServer(string mode, string value) {
+    Provider provider(mode, value);
+    hash<Qore::Ssh::SshServerConfig> config = <Qore::Ssh::SshServerConfig>{
+        \"name\": \"sandbox-provider-test\",
+        \"listeners\": (
+            <Qore::Ssh::SshListenerConfig>{
+                \"name\": \"main\",
+                \"bind_address\": \"127.0.0.1\",
+                \"port\": 0,
+                \"server_host_key_provider\": provider,
+                \"enabled_auth_methods\": (\"none\",),
+            },
+        ),
+    };
+    Qore::Ssh::SshServer server(config);
+    server.start();
+    server.stop();
+    return \"ok\";
+}");
+        SandboxManager sm();
+        sm.setFilesystemDefaultPolicy(False);
+        p.setSandboxManager(sm);
+        assertThrows("FILESYSTEM-ACCESS-DENIED",
+            sub() { p.callFunction("startProviderServer", "file", host_key); });
+    }
+
+    testProviderHostKeyTextAllowed() {
+        string key_text = ReadOnlyFile::readTextFile(host_key);
+        Program p = makeChildProgram("%modern
+%requires ssh
+%requires sshutil
+class Provider inherits SshUtil::AbstractSshServerHostKeyProvider {
+    private {
+        string mode;
+        string value;
+    }
+
+    constructor(string mode, string value) {
+        self.mode = mode;
+        self.value = value;
+    }
+
+    list<hash<SshUtil::SshPrivateKeyMaterial>> getServerHostKeyMaterial(hash<auto> ctxt) {
+        if (mode == \"file\") {
+            return (<SshUtil::SshPrivateKeyMaterial>{
+                \"kind\": SshUtil::SshPrivateKeyMaterialKind::File,
+                \"path\": value,
+            },);
+        }
+        return (<SshUtil::SshPrivateKeyMaterial>{
+            \"kind\": SshUtil::SshPrivateKeyMaterialKind::Text,
+            \"private_key_text\": value,
+        },);
+    }
+}
+
+string sub startProviderServer(string mode, string value) {
+    Provider provider(mode, value);
+    hash<Qore::Ssh::SshServerConfig> config = <Qore::Ssh::SshServerConfig>{
+        \"name\": \"sandbox-provider-test\",
+        \"listeners\": (
+            <Qore::Ssh::SshListenerConfig>{
+                \"name\": \"main\",
+                \"bind_address\": \"127.0.0.1\",
+                \"port\": 0,
+                \"server_host_key_provider\": provider,
+                \"enabled_auth_methods\": (\"none\",),
+            },
+        ),
+    };
+    Qore::Ssh::SshServer server(config);
+    server.start();
+    server.stop();
+    return \"ok\";
+}");
+        SandboxManager sm();
+        sm.setFilesystemDefaultPolicy(False);
+        p.setSandboxManager(sm);
+        assertEq("ok", p.callFunction("startProviderServer", "text", key_text));
+    }
+
+    testProviderHostKeyFileNoFilesystemDenied() {
+        Program p = makeNoFilesystemChildProgram("
+class Provider inherits SshUtil::AbstractSshServerHostKeyProvider {
+    private {
+        string mode;
+        string value;
+    }
+
+    constructor(string mode, string value) {
+        self.mode = mode;
+        self.value = value;
+    }
+
+    list<hash<SshUtil::SshPrivateKeyMaterial>> getServerHostKeyMaterial(hash<auto> ctxt) {
+        if (mode == \"file\") {
+            return (<SshUtil::SshPrivateKeyMaterial>{
+                \"kind\": SshUtil::SshPrivateKeyMaterialKind::File,
+                \"path\": value,
+            },);
+        }
+        return (<SshUtil::SshPrivateKeyMaterial>{
+            \"kind\": SshUtil::SshPrivateKeyMaterialKind::Text,
+            \"private_key_text\": value,
+        },);
+    }
+}
+
+string sub startProviderServer(string mode, string value) {
+    Provider provider(mode, value);
+    hash<Qore::Ssh::SshServerConfig> config = <Qore::Ssh::SshServerConfig>{
+        \"name\": \"sandbox-provider-nofs-test\",
+        \"listeners\": (
+            <Qore::Ssh::SshListenerConfig>{
+                \"name\": \"main\",
+                \"bind_address\": \"127.0.0.1\",
+                \"port\": 0,
+                \"server_host_key_provider\": provider,
+                \"enabled_auth_methods\": (\"none\",),
+            },
+        ),
+    };
+    Qore::Ssh::SshServer server(config);
+    server.start();
+    server.stop();
+    return \"ok\";
+}", True);
+        assertThrows("ILLEGAL-FILESYSTEM-ACCESS", "PO_NO_FILESYSTEM",
+            sub() { p.callFunction("startProviderServer", "file", host_key); });
+    }
+
+    testProviderHostKeyTextNoFilesystemAllowed() {
+        string key_text = ReadOnlyFile::readTextFile(host_key);
+        Program p = makeNoFilesystemChildProgram("
+class Provider inherits SshUtil::AbstractSshServerHostKeyProvider {
+    private {
+        string mode;
+        string value;
+    }
+
+    constructor(string mode, string value) {
+        self.mode = mode;
+        self.value = value;
+    }
+
+    list<hash<SshUtil::SshPrivateKeyMaterial>> getServerHostKeyMaterial(hash<auto> ctxt) {
+        if (mode == \"file\") {
+            return (<SshUtil::SshPrivateKeyMaterial>{
+                \"kind\": SshUtil::SshPrivateKeyMaterialKind::File,
+                \"path\": value,
+            },);
+        }
+        return (<SshUtil::SshPrivateKeyMaterial>{
+            \"kind\": SshUtil::SshPrivateKeyMaterialKind::Text,
+            \"private_key_text\": value,
+        },);
+    }
+}
+
+string sub startProviderServer(string mode, string value) {
+    Provider provider(mode, value);
+    hash<Qore::Ssh::SshServerConfig> config = <Qore::Ssh::SshServerConfig>{
+        \"name\": \"sandbox-provider-nofs-test\",
+        \"listeners\": (
+            <Qore::Ssh::SshListenerConfig>{
+                \"name\": \"main\",
+                \"bind_address\": \"127.0.0.1\",
+                \"port\": 0,
+                \"server_host_key_provider\": provider,
+                \"enabled_auth_methods\": (\"none\",),
+            },
+        ),
+    };
+    Qore::Ssh::SshServer server(config);
+    server.start();
+    server.stop();
+    return \"ok\";
+}", True);
+        assertEq("ok", p.callFunction("startProviderServer", "text", key_text));
     }
 
     # S6: with the filesystem permitted (so the host key loads and execution reaches the

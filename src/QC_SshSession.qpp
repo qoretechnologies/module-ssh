@@ -551,35 +551,42 @@ public:
             return -1;
         }
 
-        std::lock_guard<std::mutex> lock(m);
-        if (auth_info) {
-            auth_info->deref(nullptr);
-        }
-        auth_info = typed_auth_context.release();
+        bool refresh_registry = false;
+        {
+            std::lock_guard<std::mutex> lock(m);
+            if (auth_info) {
+                auth_info->deref(nullptr);
+            }
+            auth_info = typed_auth_context.release();
 
-        // Low/Info: the cleartext password is not needed once the decision has been applied;
-        // do not retain it in the session-held auth context where it could leak via
-        // getAuthContextInfo() or an operator logging the full context hash.
-        if (auth_info) {
-            auth_info->setKeyValue("password", QoreValue(), xsink);
+            // Low/Info: the cleartext password is not needed once the decision has been applied;
+            // do not retain it in the session-held auth context where it could leak via
+            // getAuthContextInfo() or an operator logging the full context hash.
+            if (auth_info) {
+                auth_info->setKeyValue("password", QoreValue(), xsink);
+                if (*xsink) {
+                    return -1;
+                }
+            }
+
+            if (!info) {
+                return 0;
+            }
+
+            info->setKeyValue("username", auth_info->getKeyValue("username").refSelf(), xsink);
+            info->setKeyValue("auth_method", auth_info->getKeyValue("auth_method").refSelf(), xsink);
+            info->setKeyValue("authenticated", accepted, xsink);
+            info->setKeyValue("principal", typed_decision->getKeyValue("principal").refSelf(), xsink);
+            info->setKeyValue("session_data", typed_decision->getKeyValue("session_data").refSelf(), xsink);
+            info->setKeyValue("command_policy", typed_decision->getKeyValue("command_policy").refSelf(), xsink);
+            info->setKeyValue("sftp_policy", typed_decision->getKeyValue("sftp_policy").refSelf(), xsink);
+            info->setKeyValue("last_activity", new DateTimeNode(static_cast<int64>(time(nullptr))), xsink);
             if (*xsink) {
                 return -1;
             }
+            refresh_registry = true;
         }
-
-        if (!info) {
-            return 0;
-        }
-
-        info->setKeyValue("username", auth_info->getKeyValue("username").refSelf(), xsink);
-        info->setKeyValue("auth_method", auth_info->getKeyValue("auth_method").refSelf(), xsink);
-        info->setKeyValue("authenticated", accepted, xsink);
-        info->setKeyValue("principal", typed_decision->getKeyValue("principal").refSelf(), xsink);
-        info->setKeyValue("session_data", typed_decision->getKeyValue("session_data").refSelf(), xsink);
-        info->setKeyValue("command_policy", typed_decision->getKeyValue("command_policy").refSelf(), xsink);
-        info->setKeyValue("sftp_policy", typed_decision->getKeyValue("sftp_policy").refSelf(), xsink);
-        info->setKeyValue("last_activity", new DateTimeNode(static_cast<int64>(time(nullptr))), xsink);
-        return *xsink ? -1 : 0;
+        return refresh_registry ? refreshRegistrySnapshot(xsink) : 0;
     }
 
     QoreObject* waitAuthContext(QoreProgram* pgm, int timeout_ms, ExceptionSink* xsink) const {
@@ -1006,15 +1013,9 @@ public:
                 return nullptr;
             }
 
-            {
-                std::lock_guard<std::mutex> lock(m);
-                if (info) {
-                    info->setKeyValue("last_activity", new DateTimeNode(static_cast<int64>(time(nullptr))), xsink);
-                    if (*xsink) {
-                        ssh_message_free(msg);
-                        return nullptr;
-                    }
-                }
+            if (setInfoLastActivity(xsink)) {
+                ssh_message_free(msg);
+                return nullptr;
             }
 
             ReferenceHolder<QoreObject> logger_holder(getLogger(), xsink);
@@ -1229,14 +1230,8 @@ public:
                 return nullptr;
             }
 
-            {
-                std::lock_guard<std::mutex> lock(m);
-                if (info) {
-                    info->setKeyValue("last_activity", new DateTimeNode(static_cast<int64>(time(nullptr))), xsink);
-                    if (*xsink) {
-                        return nullptr;
-                    }
-                }
+            if (setInfoLastActivity(xsink)) {
+                return nullptr;
             }
 
             ReferenceHolder<QoreObject> logger_holder(getLogger(), xsink);
@@ -1366,6 +1361,54 @@ public:
 
     void updateLastActivity() const {
         last_activity = std::chrono::steady_clock::now();
+    }
+
+    int setInfoLastActivity(ExceptionSink* xsink) const {
+        bool refresh_registry = false;
+        {
+            std::lock_guard<std::mutex> lock(m);
+            if (info) {
+                info->setKeyValue("last_activity", new DateTimeNode(static_cast<int64>(time(nullptr))), xsink);
+                if (*xsink) {
+                    return -1;
+                }
+                refresh_registry = true;
+            }
+        }
+        return refresh_registry ? refreshRegistrySnapshot(xsink) : 0;
+    }
+
+    int refreshRegistrySnapshot(ExceptionSink* xsink) const {
+        std::shared_ptr<SshActiveSessionRegistry> reg;
+        std::string reg_id;
+        ReferenceHolder<QoreHashNode> snapshot(xsink);
+        {
+            std::lock_guard<std::mutex> lock(m);
+            if (!info || session_registry_id.empty()) {
+                return 0;
+            }
+            reg = session_registry.lock();
+            if (!reg) {
+                return 0;
+            }
+            reg_id = session_registry_id;
+            snapshot = info->copy();
+        }
+
+        QoreHashNode* old_info = nullptr;
+        {
+            std::lock_guard<std::mutex> lock(reg->mutex);
+            auto it = reg->sessions.find(reg_id);
+            if (it == reg->sessions.end()) {
+                return 0;
+            }
+            old_info = it->second;
+            it->second = snapshot.release();
+        }
+        if (old_info) {
+            old_info->deref(nullptr);
+        }
+        return *xsink ? -1 : 0;
     }
 
     int sendBanner(const std::string& banner_text, ExceptionSink* xsink) const {

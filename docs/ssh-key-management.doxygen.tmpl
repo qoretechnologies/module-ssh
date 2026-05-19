@@ -20,23 +20,30 @@
 
     @ref Qore::Ssh::SshListenerConfig "SshListenerConfig" can load server host
     identity keys from the traditional @c host_keys file-path list or from an
-    object assigned to @c server_host_key_provider.  A provider object must
-    implement @c getServerHostKeyMaterial(hash<auto>) and return an ordered list
-    of material hashes with @c kind set to @c "file", @c "text", or @c "data".
+    @c Qore::SshUtil::AbstractSshServerHostKeyProvider object assigned to
+    @c server_host_key_provider.  Provider implementations
+    return an ordered list of
+    @c Qore::SshUtil::SshPrivateKeyMaterial hashes with @c kind set to
+    @c SshPrivateKeyMaterialKind::File,
+    @c SshPrivateKeyMaterialKind::Text, or
+    @c SshPrivateKeyMaterialKind::Data.
     Provider keys are resolved when a listener starts, so private material does
     not need to be stored in the long-lived server configuration.
 
     @code{.py}
-class StaticHostKeyProvider {
+%requires ssh
+%requires sshutil
+
+class StaticHostKeyProvider inherits SshUtil::AbstractSshServerHostKeyProvider {
     private string pem;
 
     constructor(string pem) {
         self.pem = pem;
     }
 
-    list<hash<auto>> getServerHostKeyMaterial(hash<auto> ctxt) {
-        return ({
-            "kind": "text",
+    list<hash<SshUtil::SshPrivateKeyMaterial>> getServerHostKeyMaterial(hash<auto> ctxt) {
+        return (<SshUtil::SshPrivateKeyMaterial>{
+            "kind": SshUtil::SshPrivateKeyMaterialKind::Text,
             "private_key_text": pem,
         },);
     }

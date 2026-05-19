@@ -41,7 +41,7 @@
     when the owning session disconnects, so the map cannot grow without bound. */
 struct SshActiveSessionRegistry {
     std::mutex mutex;
-    //! session_id -> referenced SshSessionInfo hash
+    //! session_id -> private SshSessionInfo snapshot
     std::map<std::string, QoreHashNode*> sessions;
 
     DLLLOCAL ~SshActiveSessionRegistry() {
@@ -95,6 +95,7 @@ DLLLOCAL extern qore_classid_t CID_SSHCOMMANDSESSION;
 DLLLOCAL extern QoreClass* QC_SSHCOMMANDSESSION;
 DLLLOCAL extern qore_classid_t CID_SFTPSESSION;
 DLLLOCAL extern QoreClass* QC_SFTPSESSION;
+DLLLOCAL extern QoreClass* QC_ABSTRACTSSHSERVERHOSTKEYPROVIDER;
 
 DLLLOCAL QoreObject* ssh_new_session_object(QoreProgram* pgm, QoreHashNode* info, QoreHashNode* auth_info,
     const QoreObject* logger, ssh_session session, std::shared_ptr<std::atomic<int64>> active_session_counter,

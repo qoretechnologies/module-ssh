@@ -8,6 +8,10 @@ Unlike the existing ssh2 module, this module is intended primarily for
 server-side SSH and SFTP use cases with controlled command processing,
 auditable file transfer workflows, and generic integration scenarios.
 
+This module requires Qore 2.3 or newer and the `sshutil` binary module. The
+`sshutil` module provides shared abstract SSH provider interfaces used by the
+server host-key provider API.
+
 STATUS
 ------
 This repository now includes working SSH/SFTP server foundations plus generic

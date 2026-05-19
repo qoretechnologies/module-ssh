@@ -23,6 +23,8 @@
 
 #include "ssh-module.h"
 
+#include <dlfcn.h>
+
 static QoreNamespace SshNS("Qore::Ssh");
 
 DLLLOCAL const TypedHashDecl* hashdeclSshListenerConfig;
@@ -57,6 +59,24 @@ DLLLOCAL const TypedHashDecl* hashdeclSftpSymlinkRequest;
 DLLLOCAL const TypedHashDecl* hashdeclSftpSetstatRequest;
 DLLLOCAL const TypedHashDecl* hashdeclSftpStatvfsResult;
 DLLLOCAL const TypedHashDecl* hashdeclSshKeyInfo;
+DLLLOCAL QoreClass* QC_ABSTRACTSSHSERVERHOSTKEYPROVIDER = nullptr;
+
+static int ssh_resolve_sshutil_class(QoreClass*& target, const char* symbol, ExceptionSink& xsink) {
+    void* ptr = dlsym(RTLD_DEFAULT, symbol);
+    if (!ptr) {
+        xsink.raiseException("MODULE-INIT-ERROR",
+            "could not resolve required sshutil class symbol '%s': %s", symbol, dlerror());
+        return -1;
+    }
+
+    target = *reinterpret_cast<QoreClass**>(ptr);
+    if (!target) {
+        xsink.raiseException("MODULE-INIT-ERROR",
+            "required sshutil class symbol '%s' resolved to a null class pointer", symbol);
+        return -1;
+    }
+    return 0;
+}
 
 DLLLOCAL QoreClass* initSshKeyClass(QoreNamespace& ns);
 DLLLOCAL QoreClass* initSshServerClass(QoreNamespace& ns);
@@ -79,8 +99,8 @@ hashdecl Qore::Ssh::SshListenerConfig {
     int port;
     //! optional host key file paths; either this list or server_host_key_provider must provide at least one key
     *list<string> host_keys;
-    //! optional object implementing getServerHostKeyMaterial(hash<auto>) for provider-backed host keys
-    *object server_host_key_provider;
+    //! optional server host-key provider
+    *AbstractSshServerHostKeyProvider server_host_key_provider;
     //! optional session cap for the listener
     *int max_sessions;
     //! optional SSH banner string
@@ -819,6 +839,11 @@ hashdecl Qore::Ssh::SshKeyInfo {
 }
 
 static void ssh_module_init(QoreModuleInitContext& ctx, ExceptionSink& xsink) {
+    if (ssh_resolve_sshutil_class(QC_ABSTRACTSSHSERVERHOSTKEYPROVIDER,
+            "QC_ABSTRACTSSHSERVERHOSTKEYPROVIDER", xsink)) {
+        return;
+    }
+
     hashdeclSshListenerConfig = init_hashdecl_SshListenerConfig(SshNS);
     hashdeclSshServerConfig = init_hashdecl_SshServerConfig(SshNS);
     hashdeclSshListenerStatus = init_hashdecl_SshListenerStatus(SshNS);
@@ -910,4 +935,5 @@ extern "C" DLLEXPORT void ssh_qore_module_desc(QoreModuleInfo& mod_info) {
     mod_info.del = ssh_module_delete;
     mod_info.license = QL_LGPL;
     mod_info.license_str = "LGPL 2.1";
+    mod_info.dependencies.push_back("sshutil");
 }

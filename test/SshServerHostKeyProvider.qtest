@@ -23,12 +23,14 @@
 */
 
 %modern
+%requires qore >= 2.3
 %requires ssh
+%requires sshutil
 %requires QUnit
 
 %exec-class SshServerHostKeyProviderTest
 
-class TestServerHostKeyProvider {
+class TestServerHostKeyProvider inherits SshUtil::AbstractSshServerHostKeyProvider {
     public {
         string mode;
         string path;
@@ -43,29 +45,31 @@ class TestServerHostKeyProvider {
         contexts = ();
     }
 
-    list<auto> getServerHostKeyMaterial(hash<auto> ctxt) {
+    list<hash<SshUtil::SshPrivateKeyMaterial>> getServerHostKeyMaterial(hash<auto> ctxt) {
         ++calls;
         contexts += (ctxt,);
         if (mode == "empty") {
             return ();
         }
-        if (mode == "not-hash") {
-            return ("bad",);
+        if (mode == "missing-path") {
+            return (<SshUtil::SshPrivateKeyMaterial>{
+                "kind": SshUtil::SshPrivateKeyMaterialKind::File,
+            },);
         }
         if (mode == "text") {
-            return ({
-                "kind": "text",
+            return (<SshUtil::SshPrivateKeyMaterial>{
+                "kind": SshUtil::SshPrivateKeyMaterialKind::Text,
                 "private_key_text": ReadOnlyFile::readTextFile(path),
             },);
         }
         if (mode == "data") {
-            return ({
-                "kind": "data",
+            return (<SshUtil::SshPrivateKeyMaterial>{
+                "kind": SshUtil::SshPrivateKeyMaterialKind::Data,
                 "private_key_data": binary(ReadOnlyFile::readTextFile(path)),
             },);
         }
-        return ({
-            "kind": "file",
+        return (<SshUtil::SshPrivateKeyMaterial>{
+            "kind": SshUtil::SshPrivateKeyMaterialKind::File,
             "path": path,
         },);
     }
@@ -87,7 +91,8 @@ class SshServerHostKeyProviderTest inherits QUnit::Test {
         return get_script_dir() + "data/ssh_host_ed25519_key";
     }
 
-    private hash<SshServerConfig> getProviderHostKeyConfig(object provider) {
+    private hash<SshServerConfig> getProviderHostKeyConfig(
+            *SshUtil::AbstractSshServerHostKeyProvider provider) {
         return <SshServerConfig>{
             "name": "test-server",
             "listeners": (<SshListenerConfig>{
@@ -95,6 +100,19 @@ class SshServerHostKeyProviderTest inherits QUnit::Test {
                 "bind_address": "127.0.0.1",
                 "port": 0,
                 "server_host_key_provider": provider,
+            },),
+        };
+    }
+
+    private hash<SshServerConfig> getInvalidProviderHostKeyConfig() {
+        object invalid_provider = new InvalidServerHostKeyProvider();
+        return <SshServerConfig>{
+            "name": "test-server",
+            "listeners": (<SshListenerConfig>{
+                "name": "provider-listener",
+                "bind_address": "127.0.0.1",
+                "port": 0,
+                "server_host_key_provider": invalid_provider,
             },),
         };
     }
@@ -133,9 +151,7 @@ class SshServerHostKeyProviderTest inherits QUnit::Test {
     }
 
     testMalformedResponses() {
-        assertThrows("SSHLISTENER-CONFIG-ERROR", sub() {
-            Qore::Ssh::SshServer server(getProviderHostKeyConfig(new InvalidServerHostKeyProvider()));
-        });
+        assertThrows("RUNTIME-TYPE-ERROR", \getInvalidProviderHostKeyConfig());
 
         TestServerHostKeyProvider empty_provider("empty", getHostKeyPath());
         Qore::Ssh::SshServer empty_server(getProviderHostKeyConfig(empty_provider));
@@ -143,10 +159,10 @@ class SshServerHostKeyProviderTest inherits QUnit::Test {
         assertFalse(empty_server.running());
         assertEq(1, empty_provider.calls);
 
-        TestServerHostKeyProvider not_hash_provider("not-hash", getHostKeyPath());
-        Qore::Ssh::SshServer not_hash_server(getProviderHostKeyConfig(not_hash_provider));
-        assertThrows("SSH-HOSTKEY-INVALID-RESPONSE", sub() { not_hash_server.start(); });
-        assertFalse(not_hash_server.running());
-        assertEq(1, not_hash_provider.calls);
+        TestServerHostKeyProvider missing_path_provider("missing-path", getHostKeyPath());
+        Qore::Ssh::SshServer missing_path_server(getProviderHostKeyConfig(missing_path_provider));
+        assertThrows("SSH-HOSTKEY-INVALID-RESPONSE", sub() { missing_path_server.start(); });
+        assertFalse(missing_path_server.running());
+        assertEq(1, missing_path_provider.calls);
     }
 }

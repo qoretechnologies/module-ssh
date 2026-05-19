@@ -66,6 +66,11 @@ static int ssh_server_check_fs_access(const char* path, int mode, ExceptionSink*
     if (!path || !*path) {
         return 0;
     }
+    if (getProgram() && (getProgram()->getParseOptions() & PO_NO_FILESYSTEM)) {
+        xsink->raiseException("ILLEGAL-FILESYSTEM-ACCESS",
+            "reading SSH server host key file '%s' is not allowed when PO_NO_FILESYSTEM is set", path);
+        return -1;
+    }
     QoreSandboxManagerHelper smh;
     if (smh && !smh->checkFilesystemAccess(path, mode, xsink)) {
         return -1;
@@ -220,18 +225,6 @@ static void ssh_validate_auth_provider(const QoreObject* auth_provider, const ch
     if (!cls || !cls->findMethod("authenticate")) {
         xsink->raiseException(err,
             "auth provider objects must implement authenticate(hash<SshAuthContextInfo>)");
-    }
-}
-
-static void ssh_validate_server_host_key_provider(const QoreObject* provider, const char* err, ExceptionSink* xsink) {
-    if (!provider) {
-        return;
-    }
-
-    const QoreClass* cls = provider->getClass();
-    if (!cls || !cls->findMethod("getServerHostKeyMaterial")) {
-        xsink->raiseException(err,
-            "server host-key provider objects must implement getServerHostKeyMaterial(hash<auto>)");
     }
 }
 
@@ -513,11 +506,6 @@ static void ssh_validate_listener_config(const QoreHashNode* listener, std::set<
             "the \"server_host_key_provider\" configuration key must be an object");
         return;
     }
-    ssh_validate_server_host_key_provider(host_key_provider, "SSHLISTENER-CONFIG-ERROR", xsink);
-    if (*xsink) {
-        return;
-    }
-
     QoreValue host_keys_value = listener->getKeyValue("host_keys");
     const QoreListNode* host_keys = nullptr;
     if (host_keys_value.getType() != NT_NOTHING) {
@@ -2496,11 +2484,12 @@ public:
     }
 
     void registerActiveSession(const std::string& session_id, QoreHashNode* session_info, ExceptionSink* xsink) {
+        ReferenceHolder<QoreHashNode> snapshot(session_info ? session_info->copy() : nullptr, xsink);
         std::lock_guard<std::mutex> lock(active_session_registry->mutex);
         if (active_session_registry->sessions.find(session_id) != active_session_registry->sessions.end()) {
             return;
         }
-        active_session_registry->sessions[session_id] = session_info ? session_info->hashRefSelf() : nullptr;
+        active_session_registry->sessions[session_id] = snapshot.release();
     }
 
     void unregisterActiveSession(const std::string& session_id) {
@@ -2568,7 +2557,7 @@ public:
 
     @since ssh 0.1
 */
-qclass SshServer [arg=SshServerPriv* priv; ns=Qore::Ssh; dom=NETWORK,FILESYSTEM; flags=final];
+qclass SshServer [arg=SshServerPriv* priv; ns=Qore::Ssh; dom=NETWORK; flags=final];
 
 //! Creates the SshServer object from a configuration hash
 /** @param config the server configuration hash
