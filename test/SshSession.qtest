@@ -42,6 +42,7 @@ class SshSessionTest inherits QUnit::Test {
         addTestCase("session auth context roundtrip", \testSessionAuthContext());
         addTestCase("session logger roundtrip", \testSessionLogger());
         addTestCase("session disconnect lifecycle", \testSessionDisconnect());
+        addTestCase("named arguments", \testNamedArguments());
         addTestCase("copy is denied", \testCopyDenied());
         set_return_value(main());
     }
@@ -167,6 +168,23 @@ class SshSessionTest inherits QUnit::Test {
         assertTrue(s.connected());
         s.disconnect();
         assertFalse(s.connected());
+    }
+
+    testNamedArguments() {
+        TestLogger logger();
+        Qore::Ssh::SshAuthContext cx(auth_info: getAuthInfo());
+        cx.setLogger(logger: logger);
+        assertEq(logger, cx.getLogger());
+        assertThrows("SSHAUTHCONTEXT-STATE-ERROR", sub() { cx.accept(partial: False); });
+        assertThrows("SSHAUTHCONTEXT-STATE-ERROR", sub() {
+            cx.reject(allowed_methods: ("password", "publickey"));
+        });
+
+        Qore::Ssh::SshSession s(session_info: getSessionInfo(), auth_info: getAuthInfo());
+        s.setLogger(logger: logger);
+        s.applyAuthDecision(auth_context_info: getAuthInfo(), decision: getAuthDecision());
+        assertEq(logger, s.getLogger());
+        assertTrue(s.getInfo().authenticated);
     }
 
     testCopyDenied() {
