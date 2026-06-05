@@ -1674,7 +1674,7 @@ DLLLOCAL int ssh_auth_context_apply_decision(const QoreObject* auth_obj, const Q
 qclass SshAuthContext [arg=SshAuthContextPriv* priv; ns=Qore::Ssh; dom=NETWORK; flags=final];
 
 //! Creates an authentication context from typed metadata
-/** @param info the typed authentication context metadata hash
+/** @param auth_info the typed authentication context metadata hash
 
     @par Example:
     @code{.py}
@@ -1682,8 +1682,8 @@ SshAuthContext cx(auth_info);
 hash<SshAuthContextInfo> info = cx.getInfo();
     @endcode
  */
-SshAuthContext::constructor(hash<SshAuthContextInfo> info) {
-    self->setPrivate(CID_SSHAUTHCONTEXT, new SshAuthContextPriv(info));
+SshAuthContext::constructor(hash<SshAuthContextInfo> auth_info) [flags=NAMED_ARGS] {
+    self->setPrivate(CID_SSHAUTHCONTEXT, new SshAuthContextPriv(auth_info));
 }
 
 //! Throws an exception; SshAuthContext objects cannot be copied
@@ -1719,7 +1719,7 @@ hash<SshAuthContextInfo> SshAuthContext::getInfo() [flags=RET_VALUE_ONLY] {
 ctx.accept();
     @endcode
  */
-nothing SshAuthContext::accept(bool partial = False) {
+nothing SshAuthContext::accept(bool partial = False) [flags=NAMED_ARGS] {
     priv->accept(partial, xsink);
 }
 
@@ -1734,7 +1734,7 @@ nothing SshAuthContext::accept(bool partial = False) {
 ctx.reject(("password", "publickey"));
     @endcode
  */
-nothing SshAuthContext::reject(*list<string> allowed_methods) {
+nothing SshAuthContext::reject(*list<string> allowed_methods) [flags=NAMED_ARGS] {
     priv->reject(allowed_methods, xsink);
 }
 
@@ -1744,14 +1744,14 @@ nothing SshAuthContext::reject(*list<string> allowed_methods) {
 
     @param decision the typed authentication decision to apply
  */
-nothing SshAuthContext::applyDecision(hash<SshAuthDecision> decision) {
+nothing SshAuthContext::applyDecision(hash<SshAuthDecision> decision) [flags=NAMED_ARGS] {
     priv->applyDecision(decision, xsink);
 }
 
 //! Sets the logger object used by the authentication context
 /** @param logger an optional logger object
  */
-nothing SshAuthContext::setLogger(*LoggerInterfaceBase logger) {
+nothing SshAuthContext::setLogger(*LoggerInterfaceBase logger) [flags=NAMED_ARGS] {
     priv->setLogger(logger, xsink);
 }
 
@@ -1771,7 +1771,7 @@ nothing SshAuthContext::setLogger(*LoggerInterfaceBase logger) {
 qclass SshSession [arg=SshSessionPriv* priv; ns=Qore::Ssh; dom=NETWORK; flags=final];
 
 //! Creates a session from typed metadata
-/** @param info the typed session metadata hash
+/** @param session_info the typed session metadata hash
     @param auth_info optional authentication context metadata
 
     @par Example:
@@ -1779,8 +1779,8 @@ qclass SshSession [arg=SshSessionPriv* priv; ns=Qore::Ssh; dom=NETWORK; flags=fi
 SshSession session(session_info, auth_info);
     @endcode
  */
-SshSession::constructor(hash<SshSessionInfo> info, *hash<SshAuthContextInfo> auth_info) {
-    self->setPrivate(CID_SSHSESSION, new SshSessionPriv(info, auth_info));
+SshSession::constructor(hash<SshSessionInfo> session_info, *hash<SshAuthContextInfo> auth_info) [flags=NAMED_ARGS] {
+    self->setPrivate(CID_SSHSESSION, new SshSessionPriv(session_info, auth_info));
 }
 
 //! Throws an exception; SshSession objects cannot be copied
@@ -1818,7 +1818,7 @@ hash<SshSessionInfo> SshSession::getInfo() [flags=RET_VALUE_ONLY] {
     @param auth_context_info the authentication request metadata
     @param decision the typed authentication decision
  */
-nothing SshSession::applyAuthDecision(hash<SshAuthContextInfo> auth_context_info, hash<SshAuthDecision> decision) {
+nothing SshSession::applyAuthDecision(hash<SshAuthContextInfo> auth_context_info, hash<SshAuthDecision> decision) [flags=NAMED_ARGS] {
     priv->applyAuthDecision(auth_context_info, decision, xsink);
 }
 
@@ -1841,7 +1841,7 @@ if (ctx) {
 }
     @endcode
  */
-*SshAuthContext SshSession::waitAuthContext(int timeout_ms = 0) {
+*SshAuthContext SshSession::waitAuthContext(int timeout_ms = 0) [flags=NAMED_ARGS] {
     QoreObject* auth = priv->waitAuthContext(getProgram(), timeout_ms, xsink);
     if (!*xsink && auth) {
         ReferenceHolder<QoreObject> logger(priv->getLogger(), xsink);
@@ -1860,7 +1860,7 @@ if (ctx) {
     0 means no timeout
     @return a live `SshCommandSession` object or `NOTHING`
  */
-*SshCommandSession SshSession::waitCommandSession(int timeout_ms = 0) {
+*SshCommandSession SshSession::waitCommandSession(int timeout_ms = 0) [flags=NAMED_ARGS] {
     return priv->waitCommandSession(getProgram(), timeout_ms, xsink);
 }
 
@@ -1872,14 +1872,14 @@ if (ctx) {
     0 means no timeout
     @return a live `SftpSession` object or `NOTHING`
  */
-*SftpSession SshSession::waitSftpSession(int timeout_ms = 0) {
+*SftpSession SshSession::waitSftpSession(int timeout_ms = 0) [flags=NAMED_ARGS] {
     return priv->waitSftpSession(getProgram(), timeout_ms, xsink);
 }
 
 //! Sets the logger object used by the session
 /** @param logger an optional logger object
  */
-nothing SshSession::setLogger(*LoggerInterfaceBase logger) {
+nothing SshSession::setLogger(*LoggerInterfaceBase logger) [flags=NAMED_ARGS] {
     priv->setLogger(logger, xsink);
 }
 

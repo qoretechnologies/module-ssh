@@ -2576,7 +2576,7 @@ hash<SshServerConfig> config = <SshServerConfig>{
 SshServer server(config);
     @endcode
  */
-SshServer::constructor(hash<SshServerConfig> config) {
+SshServer::constructor(hash<SshServerConfig> config) [flags=NAMED_ARGS] {
     ssh_validate_server_config(config, xsink);
     if (*xsink) {
         return;
@@ -2645,7 +2645,7 @@ hash<SshSessionInfo> info = server.acceptSessionInfo(5000);
 printf("accepted %y:%d on %y\n", info.remote_address, info.remote_port, info.listener_name);
     @endcode
  */
-*hash<SshSessionInfo> SshServer::acceptSessionInfo(int timeout_ms = 0) {
+*hash<SshSessionInfo> SshServer::acceptSessionInfo(int timeout_ms = 0) [flags=NAMED_ARGS] {
     return priv->acceptSessionInfo(timeout_ms, xsink);
 }
 
@@ -2657,7 +2657,7 @@ printf("accepted %y:%d on %y\n", info.remote_address, info.remote_port, info.lis
 
     @return a live `SshSession` object or `NOTHING` on timeout
  */
-*SshSession SshServer::acceptSession(int timeout_ms = 0) {
+*SshSession SshServer::acceptSession(int timeout_ms = 0) [flags=NAMED_ARGS] {
     ssh_session session = nullptr;
     QoreHashNode* info = nullptr;
     std::shared_ptr<std::atomic<int64>> active_session_counter;
@@ -2724,7 +2724,7 @@ printf("accepted %y:%d on %y\n", info.remote_address, info.remote_port, info.lis
     @return the typed authentication decision applied to the session or
     `NOTHING` on timeout
  */
-*hash<SshAuthDecision> SshServer::authenticateSession(SshSession session, int timeout_ms = 0) {
+*hash<SshAuthDecision> SshServer::authenticateSession(SshSession session, int timeout_ms = 0) [flags=NAMED_ARGS] {
     // Send auth banner if configured for the session's listener
     {
         ReferenceHolder<QoreHashNode> session_info(ssh_session_get_info(session, xsink), xsink);
@@ -2835,7 +2835,7 @@ printf("accepted %y:%d on %y\n", info.remote_address, info.remote_port, info.lis
     @return the typed command result applied to the live request or
     `NOTHING` on timeout
  */
-*hash<SshCommandResult> SshServer::dispatchCommandSession(SshSession session, int timeout_ms = 0) {
+*hash<SshCommandResult> SshServer::dispatchCommandSession(SshSession session, int timeout_ms = 0) [flags=NAMED_ARGS] {
     QoreObject* command = ssh_session_wait_command_session(session, getProgram(), timeout_ms, xsink);
     ReferenceHolder<QoreObject> command_holder(command, xsink);
     if (*xsink || !command) {
@@ -2883,7 +2883,7 @@ printf("accepted %y:%d on %y\n", info.remote_address, info.remote_port, info.lis
     @return the live `SftpSession` object or `NOTHING` on
     timeout
  */
-*SftpSession SshServer::dispatchSftpSession(SshSession session, int timeout_ms = 0) {
+*SftpSession SshServer::dispatchSftpSession(SshSession session, int timeout_ms = 0) [flags=NAMED_ARGS] {
     QoreObject* sftp = ssh_session_wait_sftp_session(session, getProgram(), timeout_ms, xsink);
     ReferenceHolder<QoreObject> sftp_holder(sftp, xsink);
     if (*xsink || !sftp) {
@@ -2930,7 +2930,7 @@ printf("accepted %y:%d on %y\n", info.remote_address, info.remote_port, info.lis
     @return the final typed `SftpTransferDecision`
  */
 hash<SftpTransferDecision> SshServer::evaluateSftpTransferRequest(SftpSession sftp,
-        hash<SftpTransferRequest> request) {
+        hash<SftpTransferRequest> request) [flags=NAMED_ARGS] {
     ReferenceHolder<QoreHashNode> default_decision(priv->makeDefaultSftpTransferDecision(request, xsink), xsink);
     if (*xsink) {
         return QoreValue();
@@ -2980,7 +2980,7 @@ hash<SftpTransferDecision> SshServer::evaluateSftpTransferRequest(SftpSession sf
 //! Sets the logger used by the server
 /** @param logger an optional logger object
  */
-nothing SshServer::setLogger(*LoggerInterfaceBase logger) {
+nothing SshServer::setLogger(*LoggerInterfaceBase logger) [flags=NAMED_ARGS] {
     priv->setLogger(logger, xsink);
 }
 

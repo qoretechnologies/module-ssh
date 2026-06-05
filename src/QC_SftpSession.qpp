@@ -3862,10 +3862,10 @@ private:
 qclass SftpSession [arg=SftpSessionPriv* priv; ns=Qore::Ssh; dom=NETWORK,FILESYSTEM; flags=final];
 
 //! Creates an SFTP session from typed metadata
-/** @param info the typed `SftpSessionInfo` hash for the session
+/** @param session_info the typed `SftpSessionInfo` hash for the session
  */
-SftpSession::constructor(hash<SftpSessionInfo> info) {
-    self->setPrivate(CID_SFTPSESSION, new SftpSessionPriv(info));
+SftpSession::constructor(hash<SftpSessionInfo> session_info) [flags=NAMED_ARGS] {
+    self->setPrivate(CID_SFTPSESSION, new SftpSessionPriv(session_info));
 }
 
 //! Throws an exception; SftpSession objects cannot be copied
@@ -3905,14 +3905,14 @@ hash<SftpSessionInfo> SftpSession::getInfo() [flags=RET_VALUE_ONLY] {
     0 means wait indefinitely
     @return the decoded `SftpProtocolMessage` or `NOTHING` on EOF
  */
-*hash<SftpProtocolMessage> SftpSession::waitProtocolMessage(int timeout_ms = 0) {
+*hash<SftpProtocolMessage> SftpSession::waitProtocolMessage(int timeout_ms = 0) [flags=NAMED_ARGS] {
     return priv->waitProtocolMessage(timeout_ms, xsink);
 }
 
 //! Sets the logger object used by the SFTP session
 /** @param logger an optional logger object
  */
-nothing SftpSession::setLogger(*LoggerInterfaceBase logger) {
+nothing SftpSession::setLogger(*LoggerInterfaceBase logger) [flags=NAMED_ARGS] {
     priv->setLogger(logger, xsink);
 }
 
@@ -3929,14 +3929,14 @@ nothing SftpSession::setLogger(*LoggerInterfaceBase logger) {
     @param backend an optional backend object implementing at least
     `stat()` and `list()`
  */
-nothing SftpSession::setBackend(*object backend) {
+nothing SftpSession::setBackend(*object backend) [flags=NAMED_ARGS] {
     priv->setBackend(backend, xsink);
 }
 
 //! Applies typed transfer metadata to the live SFTP session
 /** @param transfer_info the current transfer metadata
  */
-nothing SftpSession::applyTransferInfo(hash<SftpTransferInfo> transfer_info) {
+nothing SftpSession::applyTransferInfo(hash<SftpTransferInfo> transfer_info) [flags=NAMED_ARGS] {
     priv->applyTransferInfo(transfer_info, xsink);
 }
 
@@ -3952,7 +3952,7 @@ nothing SftpSession::clearTransferInfo() {
 
     @param version the server-side SFTP protocol version to advertise
  */
-nothing SftpSession::sendVersion(int version = 3) {
+nothing SftpSession::sendVersion(int version = 3) [flags=NAMED_ARGS] {
     priv->sendVersion(version, xsink);
 }
 
@@ -3962,7 +3962,7 @@ nothing SftpSession::sendVersion(int version = 3) {
     @param message an optional human-readable status message
     @param language an optional RFC 3066 language tag
  */
-nothing SftpSession::sendStatus(int request_id, int status_code, string message = "", string language = "") {
+nothing SftpSession::sendStatus(int request_id, int status_code, string message = "", string language = "") [flags=NAMED_ARGS] {
     priv->sendStatus(request_id, status_code, message->c_str(), language->c_str(), xsink);
 }
 
@@ -3981,7 +3981,7 @@ nothing SftpSession::sendStatus(int request_id, int status_code, string message 
     @return the decoded `SftpProtocolMessage` that was handled or
     `NOTHING` on EOF
  */
-*hash<SftpProtocolMessage> SftpSession::processNextRequest(int timeout_ms = 0) {
+*hash<SftpProtocolMessage> SftpSession::processNextRequest(int timeout_ms = 0) [flags=NAMED_ARGS] {
     return priv->processNextRequest(timeout_ms, xsink);
 }
 
@@ -3997,7 +3997,7 @@ nothing SftpSession::sendStatus(int request_id, int status_code, string message 
     batch; 0 means no limit (process all available)
     @return the number of requests processed
  */
-int SftpSession::processRequests(int timeout_ms = 0, int max_batch = 0) {
+int SftpSession::processRequests(int timeout_ms = 0, int max_batch = 0) [flags=NAMED_ARGS] {
     return priv->processRequests(timeout_ms, max_batch, xsink);
 }
 
@@ -4007,22 +4007,22 @@ int SftpSession::processRequests(int timeout_ms = 0, int max_batch = 0) {
     is provided, the helper reads the file and includes the payload in the
     backend request.
 
-    @param req the typed `SftpSubmissionRequest` describing the submission
+    @param request the typed `SftpSubmissionRequest` describing the submission
     @return the typed `SftpOperationResult` returned by the backend
  */
-hash<SftpOperationResult> SftpSession::submit(hash<SftpSubmissionRequest> req) {
-    return priv->submit(req, xsink);
+hash<SftpOperationResult> SftpSession::submit(hash<SftpSubmissionRequest> request) [flags=NAMED_ARGS] {
+    return priv->submit(request, xsink);
 }
 
 //! Submits in-memory content through the backend atomic-exchange helper
 /** Convenience overload for typed callers that already have a complete
     `SftpSubmissionRequest` prepared.
 
-    @param req the typed `SftpSubmissionRequest`; `data` must be present
+    @param request the typed `SftpSubmissionRequest`; `data` must be present
     @return the typed `SftpOperationResult` returned by the backend
  */
-hash<SftpOperationResult> SftpSession::submitData(hash<SftpSubmissionRequest> req) {
-    return priv->submit(req, xsink);
+hash<SftpOperationResult> SftpSession::submitData(hash<SftpSubmissionRequest> request) [flags=NAMED_ARGS] {
+    return priv->submit(request, xsink);
 }
 
 //! Submits in-memory content through the backend atomic-exchange helper
@@ -4041,7 +4041,7 @@ hash<SftpOperationResult> SftpSession::submitData(hash<SftpSubmissionRequest> re
     @endcode
  */
 hash<SftpOperationResult> SftpSession::submitData(string path, binary data, *hash<auto> metadata,
-        *string checksum) {
+        *string checksum) [flags=NAMED_ARGS] {
     ReferenceHolder<QoreHashNode> req(new QoreHashNode(autoTypeInfo), xsink);
     req->setKeyValue("path", path->refSelf(), xsink);
     req->setKeyValue("data", data->refSelf(), xsink);
@@ -4058,11 +4058,11 @@ hash<SftpOperationResult> SftpSession::submitData(string path, binary data, *has
 /** Convenience overload for typed callers that already have a complete
     `SftpSubmissionRequest` prepared.
 
-    @param req the typed `SftpSubmissionRequest`; `source_path` must be present
+    @param request the typed `SftpSubmissionRequest`; `source_path` must be present
     @return the typed `SftpOperationResult` returned by the backend
  */
-hash<SftpOperationResult> SftpSession::submitLocalFile(hash<SftpSubmissionRequest> req) {
-    return priv->submit(req, xsink);
+hash<SftpOperationResult> SftpSession::submitLocalFile(hash<SftpSubmissionRequest> request) [flags=NAMED_ARGS] {
+    return priv->submit(request, xsink);
 }
 
 //! Submits a local file through the backend atomic-exchange helper
@@ -4080,7 +4080,7 @@ hash<SftpOperationResult> SftpSession::submitLocalFile(hash<SftpSubmissionReques
     @return the typed `SftpOperationResult` returned by the backend
  */
 hash<SftpOperationResult> SftpSession::submitLocalFile(string path, string source_path, bool move = False,
-        bool create_parents = True, *hash<auto> metadata, *string checksum) {
+        bool create_parents = True, *hash<auto> metadata, *string checksum) [flags=NAMED_ARGS] {
     ReferenceHolder<QoreHashNode> req(new QoreHashNode(autoTypeInfo), xsink);
     req->setKeyValue("path", path->refSelf(), xsink);
     req->setKeyValue("source_path", source_path->refSelf(), xsink);
@@ -4098,36 +4098,36 @@ hash<SftpOperationResult> SftpSession::submitLocalFile(string path, string sourc
 //! Lists backend-managed retrievable objects for atomic exchange
 /** Calls backend `listAvailable()` with a typed request.
 
-    @param req the typed `SftpPathRequest` describing the listing scope
+    @param request the typed `SftpPathRequest` describing the listing scope
     @return the typed `SftpListResult` returned by the backend
  */
-hash<SftpListResult> SftpSession::listAvailable(hash<SftpPathRequest> req) {
-    return priv->listAvailable(req, xsink);
+hash<SftpListResult> SftpSession::listAvailable(hash<SftpPathRequest> request) [flags=NAMED_ARGS] {
+    return priv->listAvailable(request, xsink);
 }
 
 //! Retrieves backend-managed content for atomic exchange
 /** Calls backend `retrieve()` with a typed request.
 
-    @param req the typed `SftpOpenRequest` describing the retrieval request
+    @param request the typed `SftpOpenRequest` describing the retrieval request
     @return the typed `SftpOpenResult` returned by the backend
  */
-hash<SftpOpenResult> SftpSession::retrieve(hash<SftpOpenRequest> req) {
-    return priv->retrieve(req, xsink);
+hash<SftpOpenResult> SftpSession::retrieve(hash<SftpOpenRequest> request) [flags=NAMED_ARGS] {
+    return priv->retrieve(request, xsink);
 }
 
 //! Retrieves backend-managed content as binary data
 /** Convenience overload for typed callers that already have a complete
     `SftpOpenRequest` prepared.
 
-    @param req the typed `SftpOpenRequest`
+    @param request the typed `SftpOpenRequest`
     @return the retrieved binary payload
  */
-binary SftpSession::retrieveData(hash<SftpOpenRequest> req) {
-    ReferenceHolder<QoreHashNode> result(priv->retrieve(req, xsink), xsink);
+binary SftpSession::retrieveData(hash<SftpOpenRequest> request) [flags=NAMED_ARGS] {
+    ReferenceHolder<QoreHashNode> result(priv->retrieve(request, xsink), xsink);
     const BinaryNode* data_bin = result ? result->getKeyValue("data").get<BinaryNode>() : nullptr;
     if (!data_bin) {
         std::string path;
-        ssh_sftp_get_hash_string(req, "path", path);
+        ssh_sftp_get_hash_string(request, "path", path);
         xsink->raiseException("SFTPSESSION-BACKEND-ERROR",
             "retrieveData() requires backend retrieve() to return immediate binary data for path '%s'",
             path.empty() ? "<unknown>" : path.c_str());
@@ -4147,7 +4147,7 @@ binary SftpSession::retrieveData(hash<SftpOpenRequest> req) {
     @param length optional maximum length; a negative value means backend default
     @return the retrieved binary payload
  */
-binary SftpSession::retrieveData(string path, *hash<auto> metadata, int offset = 0, int length = -1) {
+binary SftpSession::retrieveData(string path, *hash<auto> metadata, int offset = 0, int length = -1) [flags=NAMED_ARGS] {
     ReferenceHolder<QoreHashNode> req(new QoreHashNode(autoTypeInfo), xsink);
     req->setKeyValue("path", path->refSelf(), xsink);
     req->setKeyValue("offset", static_cast<int64>(offset), xsink);
@@ -4172,28 +4172,29 @@ binary SftpSession::retrieveData(string path, *hash<auto> metadata, int offset =
 /** Calls backend `completeRetrieve()` with a typed request so the backend can
     claim, archive, or delete the retrieved object.
 
-    @param req the typed `SftpOperationRequest` describing the completion action
+    @param request the typed `SftpOperationRequest` describing the completion action
     @return the typed `SftpOperationResult` returned by the backend
  */
-hash<SftpOperationResult> SftpSession::completeRetrieve(hash<SftpOperationRequest> req) {
-    return priv->completeRetrieve(req, xsink);
+hash<SftpOperationResult> SftpSession::completeRetrieve(hash<SftpOperationRequest> request) [flags=NAMED_ARGS] {
+    return priv->completeRetrieve(request, xsink);
 }
 
 //! Finalizes a retrieval with an explicit completion mode
 /** Convenience overload for typed callers that already have a
     `SftpOperationRequest` prepared.
 
-    @param req the typed `SftpOperationRequest`
+    @param request the typed `SftpOperationRequest`
     @param completion_mode the backend completion mode
     @return the typed `SftpOperationResult` returned by the backend
  */
-hash<SftpOperationResult> SftpSession::completeRetrieveMode(hash<SftpOperationRequest> req, string completion_mode) {
+hash<SftpOperationResult> SftpSession::completeRetrieveMode(hash<SftpOperationRequest> request,
+        string completion_mode) [flags=NAMED_ARGS] {
     ReferenceHolder<QoreHashNode> complete_metadata(
-        req->existsKey("metadata") && req->getKeyValue("metadata").getType() != NT_NOTHING
-            ? req->getKeyValue("metadata").get<QoreHashNode>()->copy()
+        request->existsKey("metadata") && request->getKeyValue("metadata").getType() != NT_NOTHING
+            ? request->getKeyValue("metadata").get<QoreHashNode>()->copy()
             : new QoreHashNode(autoTypeInfo), xsink);
 
-    ReferenceHolder<QoreHashNode> complete_req(req->copy(), xsink);
+    ReferenceHolder<QoreHashNode> complete_req(request->copy(), xsink);
     if (!complete_req->existsKey("operation") || complete_req->getKeyValue("operation").getType() == NT_NOTHING) {
         complete_req->setKeyValue("operation", new QoreStringNode("complete-retrieve"), xsink);
     }
@@ -4214,7 +4215,7 @@ hash<SftpOperationResult> SftpSession::completeRetrieveMode(hash<SftpOperationRe
     @return the typed `SftpOperationResult` returned by the backend
  */
 hash<SftpOperationResult> SftpSession::completeRetrieveMode(string path, string completion_mode,
-        *string target_path, *hash<auto> metadata) {
+        *string target_path, *hash<auto> metadata) [flags=NAMED_ARGS] {
     ReferenceHolder<QoreHashNode> complete_metadata(metadata ? metadata->copy() : new QoreHashNode(autoTypeInfo),
         xsink);
 
@@ -4232,14 +4233,14 @@ hash<SftpOperationResult> SftpSession::completeRetrieveMode(string path, string 
 //! Finalizes a retrieval with delete-on-success semantics
 /** Convenience wrapper for `completeRetrieveMode(path, "delete", ...)`.
  */
-hash<SftpOperationResult> SftpSession::completeRetrieveDelete(hash<SftpOperationRequest> req) {
+hash<SftpOperationResult> SftpSession::completeRetrieveDelete(hash<SftpOperationRequest> request) [flags=NAMED_ARGS] {
     ReferenceHolder<QoreStringNode> completion_mode(new QoreStringNode("delete"), xsink);
     ReferenceHolder<QoreHashNode> complete_metadata(
-        req->existsKey("metadata") && req->getKeyValue("metadata").getType() != NT_NOTHING
-            ? req->getKeyValue("metadata").get<QoreHashNode>()->copy()
+        request->existsKey("metadata") && request->getKeyValue("metadata").getType() != NT_NOTHING
+            ? request->getKeyValue("metadata").get<QoreHashNode>()->copy()
             : new QoreHashNode(autoTypeInfo), xsink);
 
-    ReferenceHolder<QoreHashNode> complete_req(req->copy(), xsink);
+    ReferenceHolder<QoreHashNode> complete_req(request->copy(), xsink);
     if (!complete_req->existsKey("operation") || complete_req->getKeyValue("operation").getType() == NT_NOTHING) {
         complete_req->setKeyValue("operation", new QoreStringNode("complete-retrieve"), xsink);
     }
@@ -4252,7 +4253,7 @@ hash<SftpOperationResult> SftpSession::completeRetrieveDelete(hash<SftpOperation
 /** Convenience wrapper for `completeRetrieveMode(path, "delete", ...)`.
  */
 hash<SftpOperationResult> SftpSession::completeRetrieveDelete(string path, *string target_path,
-        *hash<auto> metadata) {
+        *hash<auto> metadata) [flags=NAMED_ARGS] {
     ReferenceHolder<QoreStringNode> completion_mode(new QoreStringNode("delete"), xsink);
     ReferenceHolder<QoreHashNode> complete_metadata(metadata ? metadata->copy() : new QoreHashNode(autoTypeInfo),
         xsink);
@@ -4271,14 +4272,14 @@ hash<SftpOperationResult> SftpSession::completeRetrieveDelete(string path, *stri
 //! Finalizes a retrieval with claim semantics
 /** Convenience wrapper for `completeRetrieveMode(path, "claim", ...)`.
  */
-hash<SftpOperationResult> SftpSession::completeRetrieveClaim(hash<SftpOperationRequest> req) {
+hash<SftpOperationResult> SftpSession::completeRetrieveClaim(hash<SftpOperationRequest> request) [flags=NAMED_ARGS] {
     ReferenceHolder<QoreStringNode> completion_mode(new QoreStringNode("claim"), xsink);
     ReferenceHolder<QoreHashNode> complete_metadata(
-        req->existsKey("metadata") && req->getKeyValue("metadata").getType() != NT_NOTHING
-            ? req->getKeyValue("metadata").get<QoreHashNode>()->copy()
+        request->existsKey("metadata") && request->getKeyValue("metadata").getType() != NT_NOTHING
+            ? request->getKeyValue("metadata").get<QoreHashNode>()->copy()
             : new QoreHashNode(autoTypeInfo), xsink);
 
-    ReferenceHolder<QoreHashNode> complete_req(req->copy(), xsink);
+    ReferenceHolder<QoreHashNode> complete_req(request->copy(), xsink);
     if (!complete_req->existsKey("operation") || complete_req->getKeyValue("operation").getType() == NT_NOTHING) {
         complete_req->setKeyValue("operation", new QoreStringNode("complete-retrieve"), xsink);
     }
@@ -4291,7 +4292,7 @@ hash<SftpOperationResult> SftpSession::completeRetrieveClaim(hash<SftpOperationR
 /** Convenience wrapper for `completeRetrieveMode(path, "claim", ...)`.
  */
 hash<SftpOperationResult> SftpSession::completeRetrieveClaim(string path, *string target_path,
-        *hash<auto> metadata) {
+        *hash<auto> metadata) [flags=NAMED_ARGS] {
     ReferenceHolder<QoreStringNode> completion_mode(new QoreStringNode("claim"), xsink);
     ReferenceHolder<QoreHashNode> complete_metadata(metadata ? metadata->copy() : new QoreHashNode(autoTypeInfo),
         xsink);
@@ -4310,14 +4311,14 @@ hash<SftpOperationResult> SftpSession::completeRetrieveClaim(string path, *strin
 //! Finalizes a retrieval with archive semantics
 /** Convenience wrapper for `completeRetrieveMode(path, "archive", ...)`.
  */
-hash<SftpOperationResult> SftpSession::completeRetrieveArchive(hash<SftpOperationRequest> req) {
+hash<SftpOperationResult> SftpSession::completeRetrieveArchive(hash<SftpOperationRequest> request) [flags=NAMED_ARGS] {
     ReferenceHolder<QoreStringNode> completion_mode(new QoreStringNode("archive"), xsink);
     ReferenceHolder<QoreHashNode> complete_metadata(
-        req->existsKey("metadata") && req->getKeyValue("metadata").getType() != NT_NOTHING
-            ? req->getKeyValue("metadata").get<QoreHashNode>()->copy()
+        request->existsKey("metadata") && request->getKeyValue("metadata").getType() != NT_NOTHING
+            ? request->getKeyValue("metadata").get<QoreHashNode>()->copy()
             : new QoreHashNode(autoTypeInfo), xsink);
 
-    ReferenceHolder<QoreHashNode> complete_req(req->copy(), xsink);
+    ReferenceHolder<QoreHashNode> complete_req(request->copy(), xsink);
     if (!complete_req->existsKey("operation") || complete_req->getKeyValue("operation").getType() == NT_NOTHING) {
         complete_req->setKeyValue("operation", new QoreStringNode("complete-retrieve"), xsink);
     }
@@ -4330,7 +4331,7 @@ hash<SftpOperationResult> SftpSession::completeRetrieveArchive(hash<SftpOperatio
 /** Convenience wrapper for `completeRetrieveMode(path, "archive", ...)`.
  */
 hash<SftpOperationResult> SftpSession::completeRetrieveArchive(string path, *string target_path,
-        *hash<auto> metadata) {
+        *hash<auto> metadata) [flags=NAMED_ARGS] {
     ReferenceHolder<QoreStringNode> completion_mode(new QoreStringNode("archive"), xsink);
     ReferenceHolder<QoreHashNode> complete_metadata(metadata ? metadata->copy() : new QoreHashNode(autoTypeInfo),
         xsink);
@@ -4360,7 +4361,7 @@ hash<SftpOperationResult> SftpSession::completeRetrieveArchive(string path, *str
     @return the typed `SftpOperationResult` describing the final retrieval state
  */
 hash<SftpOperationResult> SftpSession::retrieveToLocalFile(string path, string target_path,
-        *string completion_mode, *hash<auto> metadata, bool create_parents = True) {
+        *string completion_mode, *hash<auto> metadata, bool create_parents = True) [flags=NAMED_ARGS] {
     ReferenceHolder<QoreHashNode> req(new QoreHashNode(autoTypeInfo), xsink);
     req->setKeyValue("path", path->refSelf(), xsink);
     if (metadata) {
@@ -4409,18 +4410,18 @@ hash<SftpOperationResult> SftpSession::retrieveToLocalFile(string path, string t
 /** Convenience overload for typed callers that already have a complete
     `SftpOpenRequest` prepared.
 
-    @param req the typed `SftpOpenRequest`
+    @param request the typed `SftpOpenRequest`
     @param target_path the local destination file
     @param completion_mode optional backend completion mode
     @param create_parents if set to `True`, creates target parent directories
     @return the typed `SftpOperationResult` describing the final retrieval state
  */
-hash<SftpOperationResult> SftpSession::retrieveToLocalFile(hash<SftpOpenRequest> req, string target_path,
-        *string completion_mode, bool create_parents = True) {
-    ReferenceHolder<QoreHashNode> result(priv->retrieve(req, xsink), xsink);
+hash<SftpOperationResult> SftpSession::retrieveToLocalFile(hash<SftpOpenRequest> request, string target_path,
+        *string completion_mode, bool create_parents = True) [flags=NAMED_ARGS] {
+    ReferenceHolder<QoreHashNode> result(priv->retrieve(request, xsink), xsink);
     const BinaryNode* data_bin = result ? result->getKeyValue("data").get<BinaryNode>() : nullptr;
     std::string path;
-    ssh_sftp_get_hash_string(req, "path", path);
+    ssh_sftp_get_hash_string(request, "path", path);
     if (!data_bin) {
         xsink->raiseException("SFTPSESSION-BACKEND-ERROR",
             "retrieveToLocalFile() requires backend retrieve() to return immediate binary data for path '%s'",
@@ -4446,8 +4447,8 @@ hash<SftpOperationResult> SftpSession::retrieveToLocalFile(hash<SftpOpenRequest>
     }
 
     ReferenceHolder<QoreHashNode> complete_metadata(
-        req->existsKey("metadata") && req->getKeyValue("metadata").getType() != NT_NOTHING
-            ? req->getKeyValue("metadata").get<QoreHashNode>()->copy()
+        request->existsKey("metadata") && request->getKeyValue("metadata").getType() != NT_NOTHING
+            ? request->getKeyValue("metadata").get<QoreHashNode>()->copy()
             : new QoreHashNode(autoTypeInfo), xsink);
 
     ReferenceHolder<QoreHashNode> complete_req(new QoreHashNode(autoTypeInfo), xsink);
@@ -4476,7 +4477,7 @@ hash<SftpOperationResult> SftpSession::retrieveToLocalFile(hash<SftpOpenRequest>
     @endcode
  */
 hash<SftpTransferInfo> SftpSession::publishLocalFile(string source_path, bool move = False,
-        bool create_parents = True) {
+        bool create_parents = True) [flags=NAMED_ARGS] {
     return priv->publishLocalFile(source_path->c_str(), move, create_parents, xsink);
 }
 
@@ -4496,7 +4497,7 @@ hash<SftpTransferInfo> SftpSession::publishLocalFile(string source_path, bool mo
     @endcode
  */
 hash<SftpTransferInfo> SftpSession::retrieveLocalFile(string target_path, bool move = False,
-        bool create_parents = True) {
+        bool create_parents = True) [flags=NAMED_ARGS] {
     return priv->retrieveLocalFile(target_path->c_str(), move, create_parents, xsink);
 }
 

@@ -348,7 +348,7 @@ SshCommandSession cmd(request);
 printf("command: %y\n", cmd.getCommand());
     @endcode
  */
-SshCommandSession::constructor(hash<SshCommandRequest> request) {
+SshCommandSession::constructor(hash<SshCommandRequest> request) [flags=NAMED_ARGS] {
     self->setPrivate(CID_SSHCOMMANDSESSION, new SshCommandSessionPriv(request));
 }
 
@@ -395,7 +395,7 @@ string SshCommandSession::getCommand() [flags=RET_VALUE_ONLY] {
 cmd.setExitStatus(0);
     @endcode
  */
-nothing SshCommandSession::setExitStatus(int status) {
+nothing SshCommandSession::setExitStatus(int status) [flags=NAMED_ARGS] {
     priv->setExitStatus(status);
 }
 
@@ -412,14 +412,14 @@ nothing SshCommandSession::setExitStatus(int status) {
 
     @param result the typed command result to apply
  */
-nothing SshCommandSession::applyResult(hash<SshCommandResult> result) {
+nothing SshCommandSession::applyResult(hash<SshCommandResult> result) [flags=NAMED_ARGS] {
     priv->applyResult(result, xsink);
 }
 
 //! Sets the logger object used by the command session
 /** @param logger an optional logger object
  */
-nothing SshCommandSession::setLogger(*LoggerInterfaceBase logger) {
+nothing SshCommandSession::setLogger(*LoggerInterfaceBase logger) [flags=NAMED_ARGS] {
     priv->setLogger(logger, xsink);
 }
 

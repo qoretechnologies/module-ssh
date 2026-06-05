@@ -398,7 +398,7 @@ qclass SshKey [arg=SshKeyPriv* priv; ns=Qore::Ssh; dom=FILESYSTEM; flags=final];
 SshKey key("/home/user/.ssh/id_ed25519");
     @endcode
 */
-SshKey::constructor(string path, *string passphrase) {
+SshKey::constructor(string path, *string passphrase) [flags=NAMED_ARGS] {
     if (ssh_key_check_fs_access(path->c_str(), QSEC_READ, xsink)) {
         return;
     }
@@ -439,7 +439,7 @@ SshKey::destructor() {
 }
 
 //! Generates a new SSH key pair
-/** @param type the key type constant (one of @c SSH_KEYTYPE_RSA, @c SSH_KEYTYPE_ED25519,
+/** @param key_type the key type constant (one of @c SSH_KEYTYPE_RSA, @c SSH_KEYTYPE_ED25519,
     @c SSH_KEYTYPE_ECDSA_P256, @c SSH_KEYTYPE_ECDSA_P384, @c SSH_KEYTYPE_ECDSA_P521)
     @param bits the key size in bits; for RSA defaults to 4096, for ECDSA selects the curve
     (256, 384, 521), for ED25519 this parameter is ignored
@@ -455,46 +455,46 @@ SshKey key = SshKey::generate(SSH_KEYTYPE_ED25519);
 SshKey rsa_key = SshKey::generate(SSH_KEYTYPE_RSA, 4096);
     @endcode
 */
-static SshKey SshKey::generate(int type, int bits = 0) {
-    if (!ssh_key_type_valid_for_generate(type)) {
+static SshKey SshKey::generate(int key_type, int bits = 0) [flags=NAMED_ARGS] {
+    if (!ssh_key_type_valid_for_generate(key_type)) {
         xsink->raiseException("SSHKEY-ARG-ERROR",
             "unsupported key type %d for generation; use SSH_KEYTYPE_RSA, SSH_KEYTYPE_ED25519, "
             "SSH_KEYTYPE_ECDSA_P256, SSH_KEYTYPE_ECDSA_P384, or SSH_KEYTYPE_ECDSA_P521",
-            (int)type);
+            (int)key_type);
         return QoreValue();
     }
-    int actual_bits = bits ? (int)bits : ssh_key_default_bits(type);
+    int actual_bits = bits ? (int)bits : ssh_key_default_bits(key_type);
     // validate bits for specific key types
     // Low/Info: 1024-bit RSA is deprecated (NIST SP 800-57); require >= 2048 bits
-    if (type == SSH_KEYTYPE_RSA && actual_bits < 2048) {
+    if (key_type == SSH_KEYTYPE_RSA && actual_bits < 2048) {
         xsink->raiseException("SSHKEY-ARG-ERROR",
             "RSA key size %d is too small; minimum is 2048 bits", actual_bits);
         return QoreValue();
     }
-    if (type == SSH_KEYTYPE_ECDSA_P256 && actual_bits != 256) {
+    if (key_type == SSH_KEYTYPE_ECDSA_P256 && actual_bits != 256) {
         xsink->raiseException("SSHKEY-ARG-ERROR",
             "ECDSA P-256 key requires 256 bits, got %d", actual_bits);
         return QoreValue();
     }
-    if (type == SSH_KEYTYPE_ECDSA_P384 && actual_bits != 384) {
+    if (key_type == SSH_KEYTYPE_ECDSA_P384 && actual_bits != 384) {
         xsink->raiseException("SSHKEY-ARG-ERROR",
             "ECDSA P-384 key requires 384 bits, got %d", actual_bits);
         return QoreValue();
     }
-    if (type == SSH_KEYTYPE_ECDSA_P521 && actual_bits != 521) {
+    if (key_type == SSH_KEYTYPE_ECDSA_P521 && actual_bits != 521) {
         xsink->raiseException("SSHKEY-ARG-ERROR",
             "ECDSA P-521 key requires 521 bits, got %d", actual_bits);
         return QoreValue();
     }
     ssh_key key = nullptr;
-    int rc = ssh_pki_generate(static_cast<enum ssh_keytypes_e>(type), actual_bits, &key);
+    int rc = ssh_pki_generate(static_cast<enum ssh_keytypes_e>(key_type), actual_bits, &key);
     if (rc != SSH_OK || !key) {
         if (key) {
             ssh_key_free(key);
         }
         xsink->raiseException("SSHKEY-GENERATE-ERROR",
             "could not generate SSH key of type %d with %d bits",
-            (int)type, actual_bits);
+            (int)key_type, actual_bits);
         return QoreValue();
     }
     ReferenceHolder<QoreObject> obj(new QoreObject(QC_SSHKEY, getProgram()), xsink);
@@ -515,7 +515,7 @@ static SshKey SshKey::generate(int type, int bits = 0) {
 SshKey key = SshKey::readPrivateKeyFile("/home/user/.ssh/id_rsa");
     @endcode
 */
-static SshKey SshKey::readPrivateKeyFile(string path, *string passphrase) {
+static SshKey SshKey::readPrivateKeyFile(string path, *string passphrase) [flags=NAMED_ARGS] {
     if (ssh_key_check_fs_access(path->c_str(), QSEC_READ, xsink)) {
         return QoreValue();
     }
@@ -548,7 +548,7 @@ static SshKey SshKey::readPrivateKeyFile(string path, *string passphrase) {
 SshKey pub = SshKey::readPublicKeyFile("/home/user/.ssh/id_rsa.pub");
     @endcode
 */
-static SshKey SshKey::readPublicKeyFile(string path) {
+static SshKey SshKey::readPublicKeyFile(string path) [flags=NAMED_ARGS] {
     if (ssh_key_check_fs_access(path->c_str(), QSEC_READ, xsink)) {
         return QoreValue();
     }
@@ -580,7 +580,7 @@ static SshKey SshKey::readPublicKeyFile(string path) {
 SshKey key = SshKey::readPrivateKeyString(pem_string);
     @endcode
 */
-static SshKey SshKey::readPrivateKeyString(string pem, *string passphrase) {
+static SshKey SshKey::readPrivateKeyString(string pem, *string passphrase) [flags=NAMED_ARGS] {
     ssh_key key = nullptr;
     int rc = ssh_pki_import_privkey_base64(pem->c_str(),
         passphrase ? passphrase->c_str() : nullptr,
@@ -600,7 +600,7 @@ static SshKey SshKey::readPrivateKeyString(string pem, *string passphrase) {
 
 //! Imports a public key from a base64-encoded string
 /** @param base64 the base64-encoded public key string
-    @param type the key type constant identifying the key algorithm
+    @param key_type the key type constant identifying the key algorithm
 
     @return a new SshKey containing the imported public key
 
@@ -611,10 +611,10 @@ static SshKey SshKey::readPrivateKeyString(string pem, *string passphrase) {
 SshKey pub = SshKey::readPublicKeyString(b64_key, SSH_KEYTYPE_ED25519);
     @endcode
 */
-static SshKey SshKey::readPublicKeyString(string base64, int type) {
+static SshKey SshKey::readPublicKeyString(string base64, int key_type) [flags=NAMED_ARGS] {
     ssh_key key = nullptr;
     int rc = ssh_pki_import_pubkey_base64(base64->c_str(),
-        static_cast<enum ssh_keytypes_e>(type), &key);
+        static_cast<enum ssh_keytypes_e>(key_type), &key);
     if (rc != SSH_OK || !key) {
         if (key) {
             ssh_key_free(key);
@@ -713,7 +713,7 @@ string fp = key.getFingerprint();
 printf("SHA256: %s\n", fp);
     @endcode
 */
-string SshKey::getFingerprint(int hash_type = SSH_PUBLICKEY_HASH_SHA256) [flags=RET_VALUE_ONLY] {
+string SshKey::getFingerprint(int hash_type = SSH_PUBLICKEY_HASH_SHA256) [flags=RET_VALUE_ONLY,NAMED_ARGS] {
     if (!ssh_hash_type_valid(hash_type)) {
         xsink->raiseException("SSHKEY-ARG-ERROR",
             "invalid hash type %d; use SSH_PUBLICKEY_HASH_SHA1 (0), "
@@ -739,7 +739,7 @@ key.writePrivateKeyFile("/tmp/id_ed25519", NOTHING, SSH_FILE_FORMAT_OPENSSH);
 key.writePrivateKeyFile("/tmp/id_rsa_encrypted", "my-passphrase");
     @endcode
 */
-nothing SshKey::writePrivateKeyFile(string path, *string passphrase, int format = 0) {
+nothing SshKey::writePrivateKeyFile(string path, *string passphrase, int format = 0) [flags=NAMED_ARGS] {
     if (!ssh_file_format_valid(format)) {
         xsink->raiseException("SSHKEY-ARG-ERROR",
             "invalid file format %d; use SSH_FILE_FORMAT_DEFAULT (0), "
@@ -761,7 +761,7 @@ nothing SshKey::writePrivateKeyFile(string path, *string passphrase, int format 
 key.writePublicKeyFile("/tmp/id_ed25519.pub");
     @endcode
 */
-nothing SshKey::writePublicKeyFile(string path) {
+nothing SshKey::writePublicKeyFile(string path) [flags=NAMED_ARGS] {
     priv->writePublicKeyFile(path->c_str(), xsink);
 }
 
@@ -780,7 +780,7 @@ nothing SshKey::writePublicKeyFile(string path) {
 string pem = key.getPrivateKeyString();
     @endcode
 */
-string SshKey::getPrivateKeyString(*string passphrase, int format = 0) [flags=RET_VALUE_ONLY] {
+string SshKey::getPrivateKeyString(*string passphrase, int format = 0) [flags=RET_VALUE_ONLY,NAMED_ARGS] {
     if (!ssh_file_format_valid(format)) {
         xsink->raiseException("SSHKEY-ARG-ERROR",
             "invalid file format %d; use SSH_FILE_FORMAT_DEFAULT (0), "
@@ -857,6 +857,6 @@ SshKey pub = key.getPublicKey();
 assertTrue(key.equals(pub));
     @endcode
 */
-bool SshKey::equals(SshKey[SshKeyPriv] other) [flags=CONSTANT] {
+bool SshKey::equals(SshKey[SshKeyPriv] other) [flags=CONSTANT,NAMED_ARGS] {
     return priv->equals(*other, xsink);
 }

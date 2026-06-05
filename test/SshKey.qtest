@@ -45,6 +45,7 @@ class SshKeyTest inherits QUnit::Test {
         addTestCase("generate ECDSA-P256 key", \testGenerateEcdsaP256());
         addTestCase("generate ECDSA-P384 key", \testGenerateEcdsaP384());
         addTestCase("generate ECDSA-P521 key", \testGenerateEcdsaP521());
+        addTestCase("named arguments", \testNamedArguments());
 
         # Key info tests
         addTestCase("getInfo returns correct SshKeyInfo", \testGetInfo());
@@ -152,6 +153,35 @@ class SshKeyTest inherits QUnit::Test {
         assertEq(Qore::Ssh::SSH_KEYTYPE_ECDSA_P521, key.getType());
         assertTrue(key.isPrivate());
         assertTrue(key.isPublic());
+    }
+
+    testNamedArguments() {
+        Qore::Ssh::SshKey key = Qore::Ssh::SshKey::generate(key_type: Qore::Ssh::SSH_KEYTYPE_ED25519);
+        assertEq(Qore::Ssh::SSH_KEYTYPE_ED25519, key.getType());
+
+        string fp = key.getFingerprint(hash_type: Qore::Ssh::SSH_PUBLICKEY_HASH_SHA256);
+        assertTrue(fp.size() > 0);
+
+        string pem = key.getPrivateKeyString(format: Qore::Ssh::SSH_FILE_FORMAT_OPENSSH);
+        Qore::Ssh::SshKey imported = Qore::Ssh::SshKey::readPrivateKeyString(pem: pem);
+        assertTrue(key.equals(other: imported));
+
+        string private_path = tmp_dir + "/named_privkey";
+        key.writePrivateKeyFile(path: private_path, passphrase: "named-pass",
+            format: Qore::Ssh::SSH_FILE_FORMAT_OPENSSH);
+        Qore::Ssh::SshKey from_ctor(path: private_path, passphrase: "named-pass");
+        Qore::Ssh::SshKey from_static = Qore::Ssh::SshKey::readPrivateKeyFile(
+            path: private_path, passphrase: "named-pass");
+        assertTrue(key.equals(other: from_ctor));
+        assertTrue(key.equals(other: from_static));
+
+        string public_path = tmp_dir + "/named_privkey.pub";
+        key.writePublicKeyFile(path: public_path);
+        Qore::Ssh::SshKey public_file = Qore::Ssh::SshKey::readPublicKeyFile(path: public_path);
+        Qore::Ssh::SshKey public_string = Qore::Ssh::SshKey::readPublicKeyString(
+            base64: key.getPublicKeyBase64(), key_type: Qore::Ssh::SSH_KEYTYPE_ED25519);
+        assertTrue(key.equals(other: public_file));
+        assertTrue(key.equals(other: public_string));
     }
 
     # --- Key info tests ---

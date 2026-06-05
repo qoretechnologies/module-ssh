@@ -503,6 +503,7 @@ class SftpSessionTest inherits QUnit::Test {
         addTestCase("typed backend is accepted and works through SftpSession", \testTypedBackendRoundtrip());
         addTestCase("logger roundtrip", \testLoggerRoundtrip());
         addTestCase("close updates connected state", \testCloseLifecycle());
+        addTestCase("named arguments", \testNamedArguments());
         addTestCase("copy is denied", \testCopyDenied());
         set_return_value(main());
     }
@@ -1156,6 +1157,33 @@ class SftpSessionTest inherits QUnit::Test {
         assertFalse(s.connected());
         s.close();
         assertFalse(s.connected());
+    }
+
+    testNamedArguments() {
+        TestSftpBackend backend("named");
+        TestLogger logger();
+        Qore::Ssh::SftpSession s(session_info: getSftpInfo());
+        s.setBackend(backend: backend);
+        s.setLogger(logger: logger);
+        s.applyTransferInfo(transfer_info: getTransferInfo());
+        assertEq("upload", s.getTransferInfo().operation);
+        s.clearTransferInfo();
+
+        hash<Qore::Ssh::SftpOperationResult> submit_result = s.submitData(
+            path: "/exchange/named.dat", data: binary("named payload\n"),
+            metadata: {"kind": "named"}, checksum: "sha256:dummy");
+        assertTrue(submit_result.completed);
+
+        hash<Qore::Ssh::SftpListResult> listing = s.listAvailable(
+            request: <Qore::Ssh::SftpPathRequest>{"path": "/exchange"});
+        assertTrue(listing.entries.size() > 0);
+
+        binary payload = s.retrieveData(path: "/exchange/named.dat", metadata: {"kind": "named"});
+        assertEq(binary("named payload\n"), payload);
+
+        hash<Qore::Ssh::SftpOperationResult> complete = s.completeRetrieveDelete(
+            path: "/exchange/named.dat", metadata: {"kind": "named"});
+        assertTrue(complete.completed);
     }
 
     testCopyDenied() {

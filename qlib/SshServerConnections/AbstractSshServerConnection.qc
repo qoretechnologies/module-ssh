@@ -267,7 +267,7 @@ public class AbstractSshServerConnection inherits ConnectionProvider::AbstractCo
             listener.allow_sftp_service = getDefaultAllowSftpService();
         }
         if (opts.server_options) {
-            listener.server_options = cast<hash<auto>>(opts.server_options);
+            listener.server_options = opts.server_options;
         }
         if (exists opts.keepalive_interval_seconds) {
             listener.keepalive_interval_seconds = opts.keepalive_interval_seconds;
@@ -347,7 +347,7 @@ public class AbstractSshServerConnection inherits ConnectionProvider::AbstractCo
             return NOTHING;
         }
         try {
-            return cast<hash<SshServerConnectionLimits>>(cast<hash<auto>>(opts.limits));
+            return cast<hash<SshServerConnectionLimits>>(opts.limits);
         } catch (auto e) {
             throw "CONNECTION-OPTION-ERROR",
                 sprintf("connection %y option %y must be a hash compatible with "
@@ -360,7 +360,7 @@ public class AbstractSshServerConnection inherits ConnectionProvider::AbstractCo
             return NOTHING;
         }
         try {
-            return cast<hash<SshServerConnectionServices>>(cast<hash<auto>>(opts.services));
+            return cast<hash<SshServerConnectionServices>>(opts.services);
         } catch (auto e) {
             throw "CONNECTION-OPTION-ERROR",
                 sprintf("connection %y option %y must be a hash compatible with "
@@ -373,7 +373,7 @@ public class AbstractSshServerConnection inherits ConnectionProvider::AbstractCo
             return NOTHING;
         }
         try {
-            return cast<hash<SshServerConnectionSecurity>>(cast<hash<auto>>(opts.security));
+            return cast<hash<SshServerConnectionSecurity>>(opts.security);
         } catch (auto e) {
             throw "CONNECTION-OPTION-ERROR",
                 sprintf("connection %y option %y must be a hash compatible with "
@@ -387,7 +387,7 @@ public class AbstractSshServerConnection inherits ConnectionProvider::AbstractCo
         }
         try {
             hash<SshServerAuthProvider::VirtualSshAuthProviderOptions> auth
-                = cast<hash<SshServerAuthProvider::VirtualSshAuthProviderOptions>>(cast<hash<auto>>(opts.auth));
+                = cast<hash<SshServerAuthProvider::VirtualSshAuthProviderOptions>>(opts.auth);
             if (auth.logger == NOTHING && opts.logger != NOTHING) {
                 auth.logger = cast<LoggerInterface>(opts.logger);
             }
@@ -454,16 +454,16 @@ public class AbstractSshServerConnection inherits ConnectionProvider::AbstractCo
             };
         }
         if (opts.auth_config) {
-            config.auth_config = cast<hash<auto>>(opts.auth_config);
+            config.auth_config = opts.auth_config;
         }
         if (opts.command_config) {
-            config.command_config = cast<hash<auto>>(opts.command_config);
+            config.command_config = opts.command_config;
         }
         if (opts.audit_config) {
-            config.audit_config = cast<hash<auto>>(opts.audit_config);
+            config.audit_config = opts.audit_config;
         }
         if (opts.sftp_config) {
-            config.sftp_config = cast<hash<auto>>(opts.sftp_config);
+            config.sftp_config = opts.sftp_config;
         }
         if (exists opts.default_command_timeout_ms) {
             config.default_command_timeout_ms = opts.default_command_timeout_ms;
