@@ -206,7 +206,7 @@ public namespace SshServerAuthProvider {
         */
         hash<Qore::Ssh::SshAuthDecision> authenticate(hash<Qore::Ssh::SshAuthContextInfo> ctx) {
             throw "SSH-AUTH-PROVIDER-ERROR",
-                sprintf("%y must implement authenticate(hash<SshAuthContextInfo>)", self.getClassName());
+                sprintf("%y must implement authenticate(hash<SshAuthContextInfo>)", self.className());
         }
     }
 
