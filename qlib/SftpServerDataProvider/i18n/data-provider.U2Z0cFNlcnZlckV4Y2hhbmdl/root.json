@@ -1,0 +1,2577 @@
+{
+  "schema_version": 1,
+  "locales": {
+    "root": {
+      "messages": {
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.display_name": {
+          "source": "SFTP Server Exchange",
+          "message": "SFTP Server Exchange"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.short_desc": {
+          "source": "Generic virtual SFTP exchange data provider",
+          "message": "Generic virtual SFTP exchange data provider"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.desc": {
+          "source": "Generic data-provider API for virtualized SFTP exchange workflows built on top of the `module-ssh` server-side SFTP backend.\n\nThis initial provider layer is intentionally generic and backend-driven:\n- it uses typed request and response models\n- it is backed by `VirtualSftpExchangeRecordStore`\n- it exposes generic outbound retrieval and completion operations plus inbound submission\n\nThe app is served by the `sftpserver` connection scheme through `SshServerConnections::SftpServerConnection`.",
+          "message": "Generic data-provider API for virtualized SFTP exchange workflows built on top of the `module-ssh` server-side SFTP backend.\n\nThis initial provider layer is intentionally generic and backend-driven:\n- it uses typed request and response models\n- it is backed by `VirtualSftpExchangeRecordStore`\n- it exposes generic outbound retrieval and completion operations plus inbound submission\n\nThe app is served by the `sftpserver` connection scheme through `SshServerConnections::SftpServerConnection`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.display_name": {
+          "source": "Submit Inbound File",
+          "message": "Submit Inbound File"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.short_desc": {
+          "source": "Submit an inbound file to a virtual SFTP exchange",
+          "message": "Submit an inbound file to a virtual SFTP exchange"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.desc": {
+          "source": "Submits an inbound file into the configured virtual SFTP exchange backend.",
+          "message": "Submits an inbound file into the configured virtual SFTP exchange backend."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "Virtual Exchange Backend"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "Existing virtual exchange or record-store backend object"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "Inbound Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "Virtual inbound exchange directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "Optional virtual inbound exchange directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "Outbound Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "Virtual outbound exchange directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "Optional virtual outbound exchange directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "Archive Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "Virtual archive directory for completed outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "Optional virtual archive directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "Claim Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "Virtual claim directory for claimed outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "Optional virtual claim directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "Inbound File Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "Typed policy for accepting inbound SFTP files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "Inbound Retention Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "Retention metadata and cleanup policy for inbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "Archive Retention Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "Retention metadata and cleanup policy for archived outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "Claim Retention Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "Retention metadata and cleanup policy for claimed outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "Inbound Event Payload Mode"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "Control whether inbound events include payload data"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "None"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "Inline"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "Generate Inbound Checksum"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "Generate SHA-256 checksums for accepted inbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "Default File Permissions"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "Default permissions for created virtual files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "Optional default virtual file permissions for new backend instances."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "Default Directory Permissions"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "Default permissions for created virtual directories"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "Optional default virtual directory permissions for new backend instances."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "Logger"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "Optional logger for helper and provider events"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "Optional `LoggerInterface` object inherited by the virtual backend and child providers."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.bmFtZQ.display_name": {
+          "source": "Entry Name",
+          "message": "Entry Name"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.bmFtZQ.short_desc": {
+          "source": "The inbound exchange entry name",
+          "message": "The inbound exchange entry name"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.bmFtZQ.desc": {
+          "source": "The inbound exchange entry name.",
+          "message": "The inbound exchange entry name."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.ZGF0YQ.display_name": {
+          "source": "Payload",
+          "message": "Payload"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.ZGF0YQ.short_desc": {
+          "source": "The binary payload to submit",
+          "message": "The binary payload to submit"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.ZGF0YQ.desc": {
+          "source": "The binary payload to submit.",
+          "message": "The binary payload to submit."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.bWV0YWRhdGE.display_name": {
+          "source": "Metadata",
+          "message": "Metadata"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.bWV0YWRhdGE.short_desc": {
+          "source": "Optional free-form metadata for the entry",
+          "message": "Optional free-form metadata for the entry"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.bWV0YWRhdGE.desc": {
+          "source": "Optional free-form metadata to associate with the entry.",
+          "message": "Optional free-form metadata to associate with the entry."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.display_name": {
+          "source": "List Outbound Files",
+          "message": "List Outbound Files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.short_desc": {
+          "source": "List available outbound files in a virtual SFTP exchange",
+          "message": "List available outbound files in a virtual SFTP exchange"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.desc": {
+          "source": "Lists currently available outbound files in the configured virtual SFTP exchange backend.",
+          "message": "Lists currently available outbound files in the configured virtual SFTP exchange backend."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "Virtual Exchange Backend"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "Existing virtual exchange or record-store backend object"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "Inbound Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "Virtual inbound exchange directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "Optional virtual inbound exchange directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "Outbound Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "Virtual outbound exchange directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "Optional virtual outbound exchange directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "Archive Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "Virtual archive directory for completed outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "Optional virtual archive directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "Claim Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "Virtual claim directory for claimed outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "Optional virtual claim directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "Inbound File Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "Typed policy for accepting inbound SFTP files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "Inbound Retention Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "Retention metadata and cleanup policy for inbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "Archive Retention Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "Retention metadata and cleanup policy for archived outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "Claim Retention Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "Retention metadata and cleanup policy for claimed outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "Inbound Event Payload Mode"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "Control whether inbound events include payload data"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "None"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "Inline"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "Generate Inbound Checksum"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "Generate SHA-256 checksums for accepted inbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "Default File Permissions"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "Default permissions for created virtual files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "Optional default virtual file permissions for new backend instances."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "Default Directory Permissions"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "Default permissions for created virtual directories"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "Optional default virtual directory permissions for new backend instances."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "Logger"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "Optional logger for helper and provider events"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "Optional `LoggerInterface` object inherited by the virtual backend and child providers."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.display_name": {
+          "source": "Retrieve Outbound File",
+          "message": "Retrieve Outbound File"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.short_desc": {
+          "source": "Retrieve an outbound file from a virtual SFTP exchange",
+          "message": "Retrieve an outbound file from a virtual SFTP exchange"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.desc": {
+          "source": "Retrieves an outbound file payload from the configured virtual SFTP exchange backend.",
+          "message": "Retrieves an outbound file payload from the configured virtual SFTP exchange backend."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "Virtual Exchange Backend"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "Existing virtual exchange or record-store backend object"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "Inbound Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "Virtual inbound exchange directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "Optional virtual inbound exchange directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "Outbound Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "Virtual outbound exchange directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "Optional virtual outbound exchange directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "Archive Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "Virtual archive directory for completed outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "Optional virtual archive directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "Claim Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "Virtual claim directory for claimed outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "Optional virtual claim directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "Inbound File Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "Typed policy for accepting inbound SFTP files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "Inbound Retention Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "Retention metadata and cleanup policy for inbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "Archive Retention Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "Retention metadata and cleanup policy for archived outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "Claim Retention Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "Retention metadata and cleanup policy for claimed outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "Inbound Event Payload Mode"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "Control whether inbound events include payload data"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "None"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "Inline"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "Generate Inbound Checksum"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "Generate SHA-256 checksums for accepted inbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "Default File Permissions"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "Default permissions for created virtual files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "Optional default virtual file permissions for new backend instances."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "Default Directory Permissions"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "Default permissions for created virtual directories"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "Optional default virtual directory permissions for new backend instances."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "Logger"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "Optional logger for helper and provider events"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "Optional `LoggerInterface` object inherited by the virtual backend and child providers."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.bmFtZQ.display_name": {
+          "source": "Entry Name",
+          "message": "Entry Name"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.bmFtZQ.short_desc": {
+          "source": "The exchange entry name",
+          "message": "The exchange entry name"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.bmFtZQ.desc": {
+          "source": "The exchange entry name.",
+          "message": "The exchange entry name."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.bWV0YWRhdGE.display_name": {
+          "source": "Metadata",
+          "message": "Metadata"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.bWV0YWRhdGE.short_desc": {
+          "source": "Optional free-form metadata for the operation",
+          "message": "Optional free-form metadata for the operation"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.bWV0YWRhdGE.desc": {
+          "source": "Optional free-form metadata for the operation.",
+          "message": "Optional free-form metadata for the operation."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.display_name": {
+          "source": "Claim Outbound File",
+          "message": "Claim Outbound File"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.short_desc": {
+          "source": "Claim an outbound file in a virtual SFTP exchange",
+          "message": "Claim an outbound file in a virtual SFTP exchange"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.desc": {
+          "source": "Marks an outbound file as claimed in the configured virtual SFTP exchange backend.",
+          "message": "Marks an outbound file as claimed in the configured virtual SFTP exchange backend."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "Virtual Exchange Backend"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "Existing virtual exchange or record-store backend object"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "Inbound Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "Virtual inbound exchange directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "Optional virtual inbound exchange directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "Outbound Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "Virtual outbound exchange directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "Optional virtual outbound exchange directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "Archive Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "Virtual archive directory for completed outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "Optional virtual archive directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "Claim Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "Virtual claim directory for claimed outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "Optional virtual claim directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "Inbound File Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "Typed policy for accepting inbound SFTP files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "Inbound Retention Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "Retention metadata and cleanup policy for inbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "Archive Retention Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "Retention metadata and cleanup policy for archived outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "Claim Retention Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "Retention metadata and cleanup policy for claimed outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "Inbound Event Payload Mode"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "Control whether inbound events include payload data"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "None"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "Inline"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "Generate Inbound Checksum"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "Generate SHA-256 checksums for accepted inbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "Default File Permissions"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "Default permissions for created virtual files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "Optional default virtual file permissions for new backend instances."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "Default Directory Permissions"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "Default permissions for created virtual directories"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "Optional default virtual directory permissions for new backend instances."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "Logger"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "Optional logger for helper and provider events"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "Optional `LoggerInterface` object inherited by the virtual backend and child providers."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.bmFtZQ.display_name": {
+          "source": "Entry Name",
+          "message": "Entry Name"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.bmFtZQ.short_desc": {
+          "source": "The exchange entry name",
+          "message": "The exchange entry name"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.bmFtZQ.desc": {
+          "source": "The exchange entry name.",
+          "message": "The exchange entry name."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.bWV0YWRhdGE.display_name": {
+          "source": "Metadata",
+          "message": "Metadata"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.bWV0YWRhdGE.short_desc": {
+          "source": "Optional free-form metadata for the operation",
+          "message": "Optional free-form metadata for the operation"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.bWV0YWRhdGE.desc": {
+          "source": "Optional free-form metadata for the operation.",
+          "message": "Optional free-form metadata for the operation."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.ZmluYWxfbmFtZQ.display_name": {
+          "source": "Final Name",
+          "message": "Final Name"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.ZmluYWxfbmFtZQ.short_desc": {
+          "source": "Optional final entry name for claim or archive",
+          "message": "Optional final entry name for claim or archive"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.ZmluYWxfbmFtZQ.desc": {
+          "source": "Optional final entry name for `claim` or `archive` operations.",
+          "message": "Optional final entry name for `claim` or `archive` operations."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y29tcGxldGlvbl9tb2Rl.display_name": {
+          "source": "Completion Mode",
+          "message": "Completion Mode"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y29tcGxldGlvbl9tb2Rl.short_desc": {
+          "source": "How the retrieval is finalized",
+          "message": "How the retrieval is finalized"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y29tcGxldGlvbl9tb2Rl.desc": {
+          "source": "Optional typed completion mode.\n\n- `claim` -- move the entry to the claim queue\n- `archive` -- move the entry to the archive queue\n- `delete` -- delete the entry",
+          "message": "Optional typed completion mode.\n\n- `claim` -- move the entry to the claim queue\n- `archive` -- move the entry to the archive queue\n- `delete` -- delete the entry"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y29tcGxldGlvbl9tb2Rl.allowed-value.c3RyaW5nOmNsYWlt.display_name": {
+          "source": "Claim",
+          "message": "Claim"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y29tcGxldGlvbl9tb2Rl.allowed-value.c3RyaW5nOmFyY2hpdmU.display_name": {
+          "source": "Archive",
+          "message": "Archive"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y29tcGxldGlvbl9tb2Rl.allowed-value.c3RyaW5nOmRlbGV0ZQ.display_name": {
+          "source": "Delete",
+          "message": "Delete"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.display_name": {
+          "source": "Archive Outbound File",
+          "message": "Archive Outbound File"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.short_desc": {
+          "source": "Archive an outbound file in a virtual SFTP exchange",
+          "message": "Archive an outbound file in a virtual SFTP exchange"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.desc": {
+          "source": "Moves an outbound file to archive storage in the configured virtual SFTP exchange backend.",
+          "message": "Moves an outbound file to archive storage in the configured virtual SFTP exchange backend."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "Virtual Exchange Backend"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "Existing virtual exchange or record-store backend object"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "Inbound Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "Virtual inbound exchange directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "Optional virtual inbound exchange directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "Outbound Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "Virtual outbound exchange directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "Optional virtual outbound exchange directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "Archive Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "Virtual archive directory for completed outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "Optional virtual archive directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "Claim Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "Virtual claim directory for claimed outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "Optional virtual claim directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "Inbound File Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "Typed policy for accepting inbound SFTP files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "Inbound Retention Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "Retention metadata and cleanup policy for inbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "Archive Retention Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "Retention metadata and cleanup policy for archived outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "Claim Retention Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "Retention metadata and cleanup policy for claimed outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "Inbound Event Payload Mode"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "Control whether inbound events include payload data"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "None"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "Inline"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "Generate Inbound Checksum"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "Generate SHA-256 checksums for accepted inbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "Default File Permissions"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "Default permissions for created virtual files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "Optional default virtual file permissions for new backend instances."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "Default Directory Permissions"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "Default permissions for created virtual directories"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "Optional default virtual directory permissions for new backend instances."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "Logger"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "Optional logger for helper and provider events"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "Optional `LoggerInterface` object inherited by the virtual backend and child providers."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.bmFtZQ.display_name": {
+          "source": "Entry Name",
+          "message": "Entry Name"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.bmFtZQ.short_desc": {
+          "source": "The exchange entry name",
+          "message": "The exchange entry name"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.bmFtZQ.desc": {
+          "source": "The exchange entry name.",
+          "message": "The exchange entry name."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.bWV0YWRhdGE.display_name": {
+          "source": "Metadata",
+          "message": "Metadata"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.bWV0YWRhdGE.short_desc": {
+          "source": "Optional free-form metadata for the operation",
+          "message": "Optional free-form metadata for the operation"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.bWV0YWRhdGE.desc": {
+          "source": "Optional free-form metadata for the operation.",
+          "message": "Optional free-form metadata for the operation."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.ZmluYWxfbmFtZQ.display_name": {
+          "source": "Final Name",
+          "message": "Final Name"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.ZmluYWxfbmFtZQ.short_desc": {
+          "source": "Optional final entry name for claim or archive",
+          "message": "Optional final entry name for claim or archive"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.ZmluYWxfbmFtZQ.desc": {
+          "source": "Optional final entry name for `claim` or `archive` operations.",
+          "message": "Optional final entry name for `claim` or `archive` operations."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y29tcGxldGlvbl9tb2Rl.display_name": {
+          "source": "Completion Mode",
+          "message": "Completion Mode"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y29tcGxldGlvbl9tb2Rl.short_desc": {
+          "source": "How the retrieval is finalized",
+          "message": "How the retrieval is finalized"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y29tcGxldGlvbl9tb2Rl.desc": {
+          "source": "Optional typed completion mode.\n\n- `claim` -- move the entry to the claim queue\n- `archive` -- move the entry to the archive queue\n- `delete` -- delete the entry",
+          "message": "Optional typed completion mode.\n\n- `claim` -- move the entry to the claim queue\n- `archive` -- move the entry to the archive queue\n- `delete` -- delete the entry"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y29tcGxldGlvbl9tb2Rl.allowed-value.c3RyaW5nOmNsYWlt.display_name": {
+          "source": "Claim",
+          "message": "Claim"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y29tcGxldGlvbl9tb2Rl.allowed-value.c3RyaW5nOmFyY2hpdmU.display_name": {
+          "source": "Archive",
+          "message": "Archive"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y29tcGxldGlvbl9tb2Rl.allowed-value.c3RyaW5nOmRlbGV0ZQ.display_name": {
+          "source": "Delete",
+          "message": "Delete"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.display_name": {
+          "source": "Delete Outbound File",
+          "message": "Delete Outbound File"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.short_desc": {
+          "source": "Delete an outbound file from a virtual SFTP exchange",
+          "message": "Delete an outbound file from a virtual SFTP exchange"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.desc": {
+          "source": "Deletes an outbound file from the configured virtual SFTP exchange backend.",
+          "message": "Deletes an outbound file from the configured virtual SFTP exchange backend."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "Virtual Exchange Backend"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "Existing virtual exchange or record-store backend object"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "Inbound Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "Virtual inbound exchange directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "Optional virtual inbound exchange directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "Outbound Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "Virtual outbound exchange directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "Optional virtual outbound exchange directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "Archive Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "Virtual archive directory for completed outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "Optional virtual archive directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "Claim Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "Virtual claim directory for claimed outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "Optional virtual claim directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "Inbound File Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "Typed policy for accepting inbound SFTP files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "Inbound Retention Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "Retention metadata and cleanup policy for inbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "Archive Retention Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "Retention metadata and cleanup policy for archived outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "Claim Retention Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "Retention metadata and cleanup policy for claimed outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "Inbound Event Payload Mode"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "Control whether inbound events include payload data"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "None"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "Inline"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "Generate Inbound Checksum"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "Generate SHA-256 checksums for accepted inbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "Default File Permissions"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "Default permissions for created virtual files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "Optional default virtual file permissions for new backend instances."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "Default Directory Permissions"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "Default permissions for created virtual directories"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "Optional default virtual directory permissions for new backend instances."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "Logger"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "Optional logger for helper and provider events"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "Optional `LoggerInterface` object inherited by the virtual backend and child providers."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.bmFtZQ.display_name": {
+          "source": "Entry Name",
+          "message": "Entry Name"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.bmFtZQ.short_desc": {
+          "source": "The exchange entry name",
+          "message": "The exchange entry name"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.bmFtZQ.desc": {
+          "source": "The exchange entry name.",
+          "message": "The exchange entry name."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.bWV0YWRhdGE.display_name": {
+          "source": "Metadata",
+          "message": "Metadata"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.bWV0YWRhdGE.short_desc": {
+          "source": "Optional free-form metadata for the operation",
+          "message": "Optional free-form metadata for the operation"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.bWV0YWRhdGE.desc": {
+          "source": "Optional free-form metadata for the operation.",
+          "message": "Optional free-form metadata for the operation."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.ZmluYWxfbmFtZQ.display_name": {
+          "source": "Final Name",
+          "message": "Final Name"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.ZmluYWxfbmFtZQ.short_desc": {
+          "source": "Optional final entry name for claim or archive",
+          "message": "Optional final entry name for claim or archive"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.ZmluYWxfbmFtZQ.desc": {
+          "source": "Optional final entry name for `claim` or `archive` operations.",
+          "message": "Optional final entry name for `claim` or `archive` operations."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y29tcGxldGlvbl9tb2Rl.display_name": {
+          "source": "Completion Mode",
+          "message": "Completion Mode"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y29tcGxldGlvbl9tb2Rl.short_desc": {
+          "source": "How the retrieval is finalized",
+          "message": "How the retrieval is finalized"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y29tcGxldGlvbl9tb2Rl.desc": {
+          "source": "Optional typed completion mode.\n\n- `claim` -- move the entry to the claim queue\n- `archive` -- move the entry to the archive queue\n- `delete` -- delete the entry",
+          "message": "Optional typed completion mode.\n\n- `claim` -- move the entry to the claim queue\n- `archive` -- move the entry to the archive queue\n- `delete` -- delete the entry"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y29tcGxldGlvbl9tb2Rl.allowed-value.c3RyaW5nOmNsYWlt.display_name": {
+          "source": "Claim",
+          "message": "Claim"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y29tcGxldGlvbl9tb2Rl.allowed-value.c3RyaW5nOmFyY2hpdmU.display_name": {
+          "source": "Archive",
+          "message": "Archive"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y29tcGxldGlvbl9tb2Rl.allowed-value.c3RyaW5nOmRlbGV0ZQ.display_name": {
+          "source": "Delete",
+          "message": "Delete"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.display_name": {
+          "source": "Cleanup Expired Files",
+          "message": "Cleanup Expired Files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.short_desc": {
+          "source": "Remove expired files according to typed retention policies",
+          "message": "Remove expired files according to typed retention policies"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.desc": {
+          "source": "Runs deterministic retention cleanup against the configured inbound, archive, or claim queue in the virtual SFTP exchange backend.",
+          "message": "Runs deterministic retention cleanup against the configured inbound, archive, or claim queue in the virtual SFTP exchange backend."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "Virtual Exchange Backend"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "Existing virtual exchange or record-store backend object"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "Inbound Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "Virtual inbound exchange directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "Optional virtual inbound exchange directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "Outbound Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "Virtual outbound exchange directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "Optional virtual outbound exchange directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "Archive Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "Virtual archive directory for completed outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "Optional virtual archive directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "Claim Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "Virtual claim directory for claimed outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "Optional virtual claim directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "Inbound File Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "Typed policy for accepting inbound SFTP files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "Inbound Retention Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "Retention metadata and cleanup policy for inbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "Archive Retention Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "Retention metadata and cleanup policy for archived outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "Claim Retention Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "Retention metadata and cleanup policy for claimed outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "Inbound Event Payload Mode"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "Control whether inbound events include payload data"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "None"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "Inline"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "Generate Inbound Checksum"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "Generate SHA-256 checksums for accepted inbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "Default File Permissions"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "Default permissions for created virtual files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "Optional default virtual file permissions for new backend instances."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "Default Directory Permissions"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "Default permissions for created virtual directories"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "Optional default virtual directory permissions for new backend instances."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "Logger"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "Optional logger for helper and provider events"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "Optional `LoggerInterface` object inherited by the virtual backend and child providers."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cXVldWU.display_name": {
+          "source": "Retention Queue",
+          "message": "Retention Queue"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cXVldWU.short_desc": {
+          "source": "The retention queue to clean",
+          "message": "The retention queue to clean"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cXVldWU.desc": {
+          "source": "The retention queue to clean.\n\n- `inbound` -- the inbound submission queue\n- `archive` -- the archived-entry queue\n- `claim` -- the claimed-entry queue",
+          "message": "The retention queue to clean.\n\n- `inbound` -- the inbound submission queue\n- `archive` -- the archived-entry queue\n- `claim` -- the claimed-entry queue"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cXVldWU.allowed-value.c3RyaW5nOmluYm91bmQ.display_name": {
+          "source": "Inbound",
+          "message": "Inbound"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cXVldWU.allowed-value.c3RyaW5nOmFyY2hpdmU.display_name": {
+          "source": "Archive",
+          "message": "Archive"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cXVldWU.allowed-value.c3RyaW5nOmNsYWlt.display_name": {
+          "source": "Claim",
+          "message": "Claim"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.bm93X3M.display_name": {
+          "source": "Evaluation Time",
+          "message": "Evaluation Time"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.bm93X3M.short_desc": {
+          "source": "Optional deterministic evaluation time",
+          "message": "Optional deterministic evaluation time"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.bm93X3M.desc": {
+          "source": "Optional deterministic evaluation time used to compute retention expiration; defaults to the current time when not set.",
+          "message": "Optional deterministic evaluation time used to compute retention expiration; defaults to the current time when not set."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cHJpbmNpcGFs.display_name": {
+          "source": "Principal",
+          "message": "Principal"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cHJpbmNpcGFs.short_desc": {
+          "source": "Optional principal to scope retention cleanup",
+          "message": "Optional principal to scope retention cleanup"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cHJpbmNpcGFs.desc": {
+          "source": "Optional authenticated principal to scope retention cleanup.",
+          "message": "Optional authenticated principal to scope retention cleanup."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cmVtb3ZlX2VtcHR5X2RpcmVjdG9yaWVz.display_name": {
+          "source": "Remove Empty Directories",
+          "message": "Remove Empty Directories"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cmVtb3ZlX2VtcHR5X2RpcmVjdG9yaWVz.short_desc": {
+          "source": "Remove empty directories after deleting expired files",
+          "message": "Remove empty directories after deleting expired files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cmVtb3ZlX2VtcHR5X2RpcmVjdG9yaWVz.desc": {
+          "source": "Whether empty directories should be removed after expired files are deleted.",
+          "message": "Whether empty directories should be removed after expired files are deleted."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.display_name": {
+          "source": "Inbound File Accepted",
+          "message": "Inbound File Accepted"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.short_desc": {
+          "source": "Raise an event when a new inbound file is accepted",
+          "message": "Raise an event when a new inbound file is accepted"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.desc": {
+          "source": "Raises a typed event when a new inbound file is accepted by the configured virtual SFTP exchange backend, including files uploaded through accepted SFTP sessions.",
+          "message": "Raises a typed event when a new inbound file is accepted by the configured virtual SFTP exchange backend, including files uploaded through accepted SFTP sessions."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "Virtual Exchange Backend"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "Existing virtual exchange or record-store backend object"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "Inbound Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "Virtual inbound exchange directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "Optional virtual inbound exchange directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "Outbound Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "Virtual outbound exchange directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "Optional virtual outbound exchange directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "Archive Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "Virtual archive directory for completed outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "Optional virtual archive directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "Claim Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "Virtual claim directory for claimed outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "Optional virtual claim directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "Inbound File Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "Typed policy for accepting inbound SFTP files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "Inbound Retention Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "Retention metadata and cleanup policy for inbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "Archive Retention Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "Retention metadata and cleanup policy for archived outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "Claim Retention Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "Retention metadata and cleanup policy for claimed outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "Inbound Event Payload Mode"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "Control whether inbound events include payload data"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "None"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "Inline"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "Generate Inbound Checksum"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "Generate SHA-256 checksums for accepted inbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "Default File Permissions"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "Default permissions for created virtual files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "Optional default virtual file permissions for new backend instances."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "Default Directory Permissions"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "Default permissions for created virtual directories"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "Optional default virtual directory permissions for new backend instances."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "Logger"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "Optional logger for helper and provider events"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "Optional `LoggerInterface` object inherited by the virtual backend and child providers."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.display_name": {
+          "source": "Inbound File Rejected",
+          "message": "Inbound File Rejected"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.short_desc": {
+          "source": "Raise an event when an inbound file is rejected",
+          "message": "Raise an event when an inbound file is rejected"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.desc": {
+          "source": "Raises a typed event when an inbound file submission is rejected by the configured virtual SFTP exchange inbound acceptance policy, including uploads through SFTP sessions; the event carries the typed `reason_code` and `reason_desc`.",
+          "message": "Raises a typed event when an inbound file submission is rejected by the configured virtual SFTP exchange inbound acceptance policy, including uploads through SFTP sessions; the event carries the typed `reason_code` and `reason_desc`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "Virtual Exchange Backend"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "Existing virtual exchange or record-store backend object"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "Inbound Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "Virtual inbound exchange directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "Optional virtual inbound exchange directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "Outbound Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "Virtual outbound exchange directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "Optional virtual outbound exchange directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "Archive Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "Virtual archive directory for completed outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "Optional virtual archive directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "Claim Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "Virtual claim directory for claimed outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "Optional virtual claim directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "Inbound File Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "Typed policy for accepting inbound SFTP files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "Inbound Retention Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "Retention metadata and cleanup policy for inbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "Archive Retention Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "Retention metadata and cleanup policy for archived outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "Claim Retention Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "Retention metadata and cleanup policy for claimed outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "Inbound Event Payload Mode"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "Control whether inbound events include payload data"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "None"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "Inline"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "Generate Inbound Checksum"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "Generate SHA-256 checksums for accepted inbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "Default File Permissions"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "Default permissions for created virtual files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "Optional default virtual file permissions for new backend instances."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "Default Directory Permissions"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "Default permissions for created virtual directories"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "Optional default virtual directory permissions for new backend instances."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "Logger"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "Optional logger for helper and provider events"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "Optional `LoggerInterface` object inherited by the virtual backend and child providers."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.display_name": {
+          "source": "Outbound File Claimed",
+          "message": "Outbound File Claimed"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.short_desc": {
+          "source": "Raise an event when an outbound file is claimed",
+          "message": "Raise an event when an outbound file is claimed"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.desc": {
+          "source": "Raises a typed event when an outbound file is claimed from the configured virtual SFTP exchange backend.",
+          "message": "Raises a typed event when an outbound file is claimed from the configured virtual SFTP exchange backend."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "Virtual Exchange Backend"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "Existing virtual exchange or record-store backend object"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "Inbound Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "Virtual inbound exchange directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "Optional virtual inbound exchange directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "Outbound Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "Virtual outbound exchange directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "Optional virtual outbound exchange directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "Archive Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "Virtual archive directory for completed outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "Optional virtual archive directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "Claim Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "Virtual claim directory for claimed outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "Optional virtual claim directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "Inbound File Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "Typed policy for accepting inbound SFTP files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "Inbound Retention Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "Retention metadata and cleanup policy for inbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "Archive Retention Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "Retention metadata and cleanup policy for archived outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "Claim Retention Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "Retention metadata and cleanup policy for claimed outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "Inbound Event Payload Mode"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "Control whether inbound events include payload data"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "None"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "Inline"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "Generate Inbound Checksum"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "Generate SHA-256 checksums for accepted inbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "Default File Permissions"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "Default permissions for created virtual files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "Optional default virtual file permissions for new backend instances."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "Default Directory Permissions"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "Default permissions for created virtual directories"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "Optional default virtual directory permissions for new backend instances."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "Logger"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "Optional logger for helper and provider events"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "Optional `LoggerInterface` object inherited by the virtual backend and child providers."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.display_name": {
+          "source": "Outbound File Archived",
+          "message": "Outbound File Archived"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.short_desc": {
+          "source": "Raise an event when an outbound file is archived",
+          "message": "Raise an event when an outbound file is archived"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.desc": {
+          "source": "Raises a typed event when an outbound file is archived by the configured virtual SFTP exchange backend.",
+          "message": "Raises a typed event when an outbound file is archived by the configured virtual SFTP exchange backend."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "Virtual Exchange Backend"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "Existing virtual exchange or record-store backend object"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "Inbound Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "Virtual inbound exchange directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "Optional virtual inbound exchange directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "Outbound Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "Virtual outbound exchange directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "Optional virtual outbound exchange directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "Archive Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "Virtual archive directory for completed outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "Optional virtual archive directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "Claim Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "Virtual claim directory for claimed outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "Optional virtual claim directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "Inbound File Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "Typed policy for accepting inbound SFTP files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "Inbound Retention Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "Retention metadata and cleanup policy for inbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "Archive Retention Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "Retention metadata and cleanup policy for archived outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "Claim Retention Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "Retention metadata and cleanup policy for claimed outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "Inbound Event Payload Mode"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "Control whether inbound events include payload data"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "None"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "Inline"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "Generate Inbound Checksum"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "Generate SHA-256 checksums for accepted inbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "Default File Permissions"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "Default permissions for created virtual files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "Optional default virtual file permissions for new backend instances."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "Default Directory Permissions"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "Default permissions for created virtual directories"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "Optional default virtual directory permissions for new backend instances."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "Logger"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "Optional logger for helper and provider events"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "Optional `LoggerInterface` object inherited by the virtual backend and child providers."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.display_name": {
+          "source": "Outbound File Deleted",
+          "message": "Outbound File Deleted"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.short_desc": {
+          "source": "Raise an event when an outbound file is deleted",
+          "message": "Raise an event when an outbound file is deleted"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.desc": {
+          "source": "Raises a typed event when an outbound file is deleted from the configured virtual SFTP exchange backend.",
+          "message": "Raises a typed event when an outbound file is deleted from the configured virtual SFTP exchange backend."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "Virtual Exchange Backend"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "Existing virtual exchange or record-store backend object"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "Inbound Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "Virtual inbound exchange directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "Optional virtual inbound exchange directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "Outbound Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "Virtual outbound exchange directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "Optional virtual outbound exchange directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "Archive Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "Virtual archive directory for completed outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "Optional virtual archive directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "Claim Directory"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "Virtual claim directory for claimed outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "Optional virtual claim directory when creating a backend from constructor options."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "Inbound File Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "Typed policy for accepting inbound SFTP files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "Inbound Retention Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "Retention metadata and cleanup policy for inbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "Archive Retention Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "Retention metadata and cleanup policy for archived outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "Claim Retention Policy"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "Retention metadata and cleanup policy for claimed outbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "Inbound Event Payload Mode"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "Control whether inbound events include payload data"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "None"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "Inline"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "Generate Inbound Checksum"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "Generate SHA-256 checksums for accepted inbound files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "Default File Permissions"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "Default permissions for created virtual files"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "Optional default virtual file permissions for new backend instances."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "Default Directory Permissions"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "Default permissions for created virtual directories"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "Optional default virtual directory permissions for new backend instances."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "Logger"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "Optional logger for helper and provider events"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "Optional `LoggerInterface` object inherited by the virtual backend and child providers."
+        }
+      }
+    }
+  }
+}

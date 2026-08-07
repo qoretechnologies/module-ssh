@@ -49,6 +49,7 @@ module SftpServerDataProvider {
 
         DataProviderActionCatalog::registerApp(<DataProviderAppInfo>{
             "name": SftpServerDataProvider::AppName,
+            "presentation_source_locale": "en",
             "display_name": "SFTP Server Exchange",
             "short_desc": "Generic virtual SFTP exchange data provider",
             "scheme": "sftpserver",
