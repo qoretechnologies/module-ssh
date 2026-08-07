@@ -31,6 +31,9 @@ cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX}
 make -j${MAKE_JOBS}
 make install
 
+# Verify that source-owned provider presentation catalogs match this checkout.
+${MODULE_SRC_DIR}/test/docker_test/check-i18n.sh
+
 if ! grep -q "^qore:x:${QORE_GID}" /etc/group; then
     addgroup -g ${QORE_GID} qore
 fi
