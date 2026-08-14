@@ -1,0 +1,2577 @@
+{
+  "schema_version": 1,
+  "locales": {
+    "ja": {
+      "messages": {
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.desc": {
+          "source": "Marks an outbound file as claimed in the configured virtual SFTP exchange backend.",
+          "message": "構成された仮想SFTP Exchangeバックエンドで、送信ファイルをクレーム済みとしてマークします。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.display_name": {
+          "source": "Claim Outbound File",
+          "message": "送信ファイルのクレーム"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y29tcGxldGlvbl9tb2Rl.allowed-value.c3RyaW5nOmFyY2hpdmU.display_name": {
+          "source": "Archive",
+          "message": "アーカイブ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y29tcGxldGlvbl9tb2Rl.allowed-value.c3RyaW5nOmNsYWlt.display_name": {
+          "source": "Claim",
+          "message": "クレーム"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y29tcGxldGlvbl9tb2Rl.allowed-value.c3RyaW5nOmRlbGV0ZQ.display_name": {
+          "source": "Delete",
+          "message": "削除"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y29tcGxldGlvbl9tb2Rl.desc": {
+          "source": "Optional typed completion mode.\n\n- `claim` -- move the entry to the claim queue\n- `archive` -- move the entry to the archive queue\n- `delete` -- delete the entry",
+          "message": "オプションの型指定された完了モード。\n\n- `claim` -- エントリをクレームキューに移動\n- `archive` -- エントリをアーカイブキューに移動\n- `delete` -- エントリを削除"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y29tcGxldGlvbl9tb2Rl.display_name": {
+          "source": "Completion Mode",
+          "message": "完了モード"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y29tcGxldGlvbl9tb2Rl.short_desc": {
+          "source": "How the retrieval is finalized",
+          "message": "取得の完了方法"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想クレームディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "クレームディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "クレームされた送信ファイルの仮想クレームディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "クレームファイルのオプションの型指定された保持ポリシー。現在サポートされているキーには `max_age_seconds` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "クレーム保持ポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "クレームされた送信ファイルの保持メタデータおよびクリーンアップポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想アーカイブディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "アーカイブディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "完了した送信ファイルの仮想アーカイブディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "アーカイブファイルのオプションの型指定された保持ポリシー。現在サポートされているキーには `max_age_seconds` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "アーカイブ保持ポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "アーカイブされた送信ファイルの保持メタデータおよびクリーンアップポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "プロバイダーバックエンドとして使用する、オプションの既存の `VirtualSftpExchangeRecordStore` または `VirtualSftpExchange` オブジェクト。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "仮想エクスチェンジバックエンド"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "既存の仮想エクスチェンジまたはレコードストアのバックエンドオブジェクト"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "受け入れられたインバウンドのヘルパー/プロバイダー/ライブアップロードが、結果やイベントで型付きの SHA-256 チェックサムを生成し、そのチェックサムを後続の stat/list/retrieve フローのために仮想ファイルメタデータに永続化するかどうかを制御するオプションのフラグ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "インバウンドチェックサムの生成"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "受け入れられたインバウンドファイルの SHA-256 チェックサムを生成する"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "新しいバックエンドインスタンスのオプションのデフォルト仮想ディレクトリ権限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "デフォルトのディレクトリ権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "作成された仮想ディレクトリのデフォルト権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "新しいバックエンドインスタンスのオプションのデフォルト仮想ファイル権限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "デフォルトのファイル権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "作成された仮想ファイルのデフォルト権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.ZmluYWxfbmFtZQ.desc": {
+          "source": "Optional final entry name for `claim` or `archive` operations.",
+          "message": "`claim` または `archive` 操作のオプションの最終エントリ名。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.ZmluYWxfbmFtZQ.display_name": {
+          "source": "Final Name",
+          "message": "最終名"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.ZmluYWxfbmFtZQ.short_desc": {
+          "source": "Optional final entry name for claim or archive",
+          "message": "クレームまたはアーカイブのオプションの最終エントリ名"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想インバウンドエクスチェンジディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "インバウンドディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "仮想インバウンドエクスチェンジディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "なし"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "インライン"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "インバウンド送信イベントのオプションの型付きペイロードモード。\n\n- `none` -- インバウンドイベントはペイロードデータを保持しません (デフォルト)\n- `inline` -- インバウンドイベントに送信されたペイロードが含まれます"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "インバウンドイベントペイロードモード"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "インバウンドイベントにペイロードデータを含めるかどうかを制御する"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの型付きインバウンドファイル受入ポリシー。サポートされているキーには `accept_filename_glob`、`reject_filename_glob`、`accept_filename_regex`、`reject_filename_regex`、`min_size`、`max_size`、`max_file_count`、`max_total_bytes`、`max_concurrent_uploads`、`allow_overwrite`、`reject_duplicate_name`、`reject_duplicate_size`、`reject_duplicate_hash`、`accept_content_prefix`、`reject_content_prefix`、`accept_content_type_hints`、`reject_content_type_hints`、`validation_callback`、`allow_hidden_files`、`allow_principals`、`deny_principals`、`principal_policies`、`directory_policies`、および `principal_routes` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "インバウンドファイルポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "インバウンド SFTP ファイルを受け入れるための型付きポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "インバウンドファイルのオプションの型付き保持ポリシー。現在サポートされているキーには `max_age_seconds` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "インバウンド保持ポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "インバウンドファイルの保持メタデータおよびクリーンアップポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想アウトバウンドエクスチェンジディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "アウトバウンドディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "仮想アウトバウンドエクスチェンジディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "仮想バックエンドおよび子プロバイダーによって継承されるオプションの `LoggerInterface` オブジェクト。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "ロガー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "ヘルパーおよびプロバイダーイベント用のオプションのロガー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.bWV0YWRhdGE.desc": {
+          "source": "Optional free-form metadata for the operation.",
+          "message": "操作用のオプションのフリーフォームメタデータ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.bWV0YWRhdGE.display_name": {
+          "source": "Metadata",
+          "message": "メタデータ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.bWV0YWRhdGE.short_desc": {
+          "source": "Optional free-form metadata for the operation",
+          "message": "操作用のオプションのフリーフォームメタデータ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.bmFtZQ.desc": {
+          "source": "The exchange entry name.",
+          "message": "エクスチェンジのエントリ名。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.bmFtZQ.display_name": {
+          "source": "Entry Name",
+          "message": "エントリ名"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.bmFtZQ.short_desc": {
+          "source": "The exchange entry name",
+          "message": "エクスチェンジのエントリ名"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.short_desc": {
+          "source": "Claim an outbound file in a virtual SFTP exchange",
+          "message": "仮想 SFTP エクスチェンジ内のアウトバウンドファイルをクレームする"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.desc": {
+          "source": "Runs deterministic retention cleanup against the configured inbound, archive, or claim queue in the virtual SFTP exchange backend.",
+          "message": "仮想 SFTP エクスチェンジバックエンドで設定されたインバウンド、アーカイブ、またはクレームキューに対して決定論的な保持クリーンアップを実行します。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.display_name": {
+          "source": "Cleanup Expired Files",
+          "message": "期限切れファイルのクリーンアップ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想クレームディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "クレームディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "クレームされた送信ファイルの仮想クレームディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "クレームファイルのオプションの型指定された保持ポリシー。現在サポートされているキーには `max_age_seconds` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "クレーム保持ポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "クレームされた送信ファイルの保持メタデータおよびクリーンアップポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想アーカイブディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "アーカイブディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "完了した送信ファイルの仮想アーカイブディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "アーカイブファイルのオプションの型指定された保持ポリシー。現在サポートされているキーには `max_age_seconds` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "アーカイブ保持ポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "アーカイブされた送信ファイルの保持メタデータおよびクリーンアップポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "プロバイダーバックエンドとして使用する、オプションの既存の `VirtualSftpExchangeRecordStore` または `VirtualSftpExchange` オブジェクト。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "仮想エクスチェンジバックエンド"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "既存の仮想エクスチェンジまたはレコードストアのバックエンドオブジェクト"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "受け入れられたインバウンドのヘルパー/プロバイダー/ライブアップロードが、結果やイベントで型付きの SHA-256 チェックサムを生成し、そのチェックサムを後続の stat/list/retrieve フローのために仮想ファイルメタデータに永続化するかどうかを制御するオプションのフラグ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "インバウンドチェックサムの生成"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "受け入れられたインバウンドファイルの SHA-256 チェックサムを生成する"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "新しいバックエンドインスタンスのオプションのデフォルト仮想ディレクトリ権限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "デフォルトのディレクトリ権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "作成された仮想ディレクトリのデフォルト権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "新しいバックエンドインスタンスのオプションのデフォルト仮想ファイル権限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "デフォルトのファイル権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "作成された仮想ファイルのデフォルト権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想インバウンドエクスチェンジディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "インバウンドディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "仮想インバウンドエクスチェンジディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "なし"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "インライン"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "インバウンド送信イベントのオプションの型付きペイロードモード。\n\n- `none` -- インバウンドイベントはペイロードデータを保持しません (デフォルト)\n- `inline` -- インバウンドイベントに送信されたペイロードが含まれます"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "インバウンドイベントペイロードモード"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "インバウンドイベントにペイロードデータを含めるかどうかを制御する"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの型付きインバウンドファイル受入ポリシー。サポートされているキーには `accept_filename_glob`、`reject_filename_glob`、`accept_filename_regex`、`reject_filename_regex`、`min_size`、`max_size`、`max_file_count`、`max_total_bytes`、`max_concurrent_uploads`、`allow_overwrite`、`reject_duplicate_name`、`reject_duplicate_size`、`reject_duplicate_hash`、`accept_content_prefix`、`reject_content_prefix`、`accept_content_type_hints`、`reject_content_type_hints`、`validation_callback`、`allow_hidden_files`、`allow_principals`、`deny_principals`、`principal_policies`、`directory_policies`、および `principal_routes` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "インバウンドファイルポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "インバウンド SFTP ファイルを受け入れるための型付きポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "インバウンドファイルのオプションの型付き保持ポリシー。現在サポートされているキーには `max_age_seconds` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "インバウンド保持ポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "インバウンドファイルの保持メタデータおよびクリーンアップポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想アウトバウンドエクスチェンジディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "アウトバウンドディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "仮想アウトバウンドエクスチェンジディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "仮想バックエンドおよび子プロバイダーによって継承されるオプションの `LoggerInterface` オブジェクト。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "ロガー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "ヘルパーおよびプロバイダーイベント用のオプションのロガー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.bm93X3M.desc": {
+          "source": "Optional deterministic evaluation time used to compute retention expiration; defaults to the current time when not set.",
+          "message": "保持期限の計算に使用されるオプションの決定論的な評価時間。設定されていない場合は現在の時間にデフォルト設定されます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.bm93X3M.display_name": {
+          "source": "Evaluation Time",
+          "message": "評価時間"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.bm93X3M.short_desc": {
+          "source": "Optional deterministic evaluation time",
+          "message": "オプションの決定論的な評価時間"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cHJpbmNpcGFs.desc": {
+          "source": "Optional authenticated principal to scope retention cleanup.",
+          "message": "保持クリーンアップのスコープを設定するためのオプションの認証済みプリンシパル。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cHJpbmNpcGFs.display_name": {
+          "source": "Principal",
+          "message": "プリンシパル"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cHJpbmNpcGFs.short_desc": {
+          "source": "Optional principal to scope retention cleanup",
+          "message": "保持クリーンアップのスコープを設定するためのオプションのプリンシパル"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cXVldWU.allowed-value.c3RyaW5nOmFyY2hpdmU.display_name": {
+          "source": "Archive",
+          "message": "アーカイブ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cXVldWU.allowed-value.c3RyaW5nOmNsYWlt.display_name": {
+          "source": "Claim",
+          "message": "クレーム"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cXVldWU.allowed-value.c3RyaW5nOmluYm91bmQ.display_name": {
+          "source": "Inbound",
+          "message": "インバウンド"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cXVldWU.desc": {
+          "source": "The retention queue to clean.\n\n- `inbound` -- the inbound submission queue\n- `archive` -- the archived-entry queue\n- `claim` -- the claimed-entry queue",
+          "message": "クリーンアップする保持キュー。\n\n- `inbound` -- インバウンド送信キュー\n- `archive` -- アーカイブ済みエントリキュー\n- `claim` -- クレーム済みエントリキュー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cXVldWU.display_name": {
+          "source": "Retention Queue",
+          "message": "保持キュー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cXVldWU.short_desc": {
+          "source": "The retention queue to clean",
+          "message": "クリーンアップする保持キュー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cmVtb3ZlX2VtcHR5X2RpcmVjdG9yaWVz.desc": {
+          "source": "Whether empty directories should be removed after expired files are deleted.",
+          "message": "期限切れファイルが削除された後に空のディレクトリを削除するかどうか。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cmVtb3ZlX2VtcHR5X2RpcmVjdG9yaWVz.display_name": {
+          "source": "Remove Empty Directories",
+          "message": "空のディレクトリの削除"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cmVtb3ZlX2VtcHR5X2RpcmVjdG9yaWVz.short_desc": {
+          "source": "Remove empty directories after deleting expired files",
+          "message": "期限切れファイルを削除した後に空のディレクトリを削除する"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.short_desc": {
+          "source": "Remove expired files according to typed retention policies",
+          "message": "型付き保持ポリシーに従って期限切れファイルを削除する"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.desc": {
+          "source": "Moves an outbound file to archive storage in the configured virtual SFTP exchange backend.",
+          "message": "設定された仮想 SFTP エクスチェンジバックエンドでアウトバウンドファイルをアーカイブストレージに移動します。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.display_name": {
+          "source": "Archive Outbound File",
+          "message": "アウトバウンドファイルのアーカイブ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y29tcGxldGlvbl9tb2Rl.allowed-value.c3RyaW5nOmFyY2hpdmU.display_name": {
+          "source": "Archive",
+          "message": "アーカイブ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y29tcGxldGlvbl9tb2Rl.allowed-value.c3RyaW5nOmNsYWlt.display_name": {
+          "source": "Claim",
+          "message": "クレーム"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y29tcGxldGlvbl9tb2Rl.allowed-value.c3RyaW5nOmRlbGV0ZQ.display_name": {
+          "source": "Delete",
+          "message": "削除"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y29tcGxldGlvbl9tb2Rl.desc": {
+          "source": "Optional typed completion mode.\n\n- `claim` -- move the entry to the claim queue\n- `archive` -- move the entry to the archive queue\n- `delete` -- delete the entry",
+          "message": "オプションの型指定された完了モード。\n\n- `claim` -- エントリをクレームキューに移動\n- `archive` -- エントリをアーカイブキューに移動\n- `delete` -- エントリを削除"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y29tcGxldGlvbl9tb2Rl.display_name": {
+          "source": "Completion Mode",
+          "message": "完了モード"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y29tcGxldGlvbl9tb2Rl.short_desc": {
+          "source": "How the retrieval is finalized",
+          "message": "取得の完了方法"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想クレームディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "クレームディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "クレームされた送信ファイルの仮想クレームディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "クレームファイルのオプションの型指定された保持ポリシー。現在サポートされているキーには `max_age_seconds` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "クレーム保持ポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "クレームされた送信ファイルの保持メタデータおよびクリーンアップポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想アーカイブディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "アーカイブディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "完了した送信ファイルの仮想アーカイブディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "アーカイブファイルのオプションの型指定された保持ポリシー。現在サポートされているキーには `max_age_seconds` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "アーカイブ保持ポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "アーカイブされた送信ファイルの保持メタデータおよびクリーンアップポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "プロバイダーバックエンドとして使用する、オプションの既存の `VirtualSftpExchangeRecordStore` または `VirtualSftpExchange` オブジェクト。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "仮想エクスチェンジバックエンド"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "既存の仮想エクスチェンジまたはレコードストアのバックエンドオブジェクト"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "受け入れられたインバウンドのヘルパー/プロバイダー/ライブアップロードが、結果やイベントで型付きの SHA-256 チェックサムを生成し、そのチェックサムを後続の stat/list/retrieve フローのために仮想ファイルメタデータに永続化するかどうかを制御するオプションのフラグ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "インバウンドチェックサムの生成"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "受け入れられたインバウンドファイルの SHA-256 チェックサムを生成する"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "新しいバックエンドインスタンスのオプションのデフォルト仮想ディレクトリ権限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "デフォルトのディレクトリ権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "作成された仮想ディレクトリのデフォルト権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "新しいバックエンドインスタンスのオプションのデフォルト仮想ファイル権限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "デフォルトのファイル権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "作成された仮想ファイルのデフォルト権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.ZmluYWxfbmFtZQ.desc": {
+          "source": "Optional final entry name for `claim` or `archive` operations.",
+          "message": "`claim` または `archive` 操作のオプションの最終エントリ名。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.ZmluYWxfbmFtZQ.display_name": {
+          "source": "Final Name",
+          "message": "最終名"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.ZmluYWxfbmFtZQ.short_desc": {
+          "source": "Optional final entry name for claim or archive",
+          "message": "クレームまたはアーカイブのオプションの最終エントリ名"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想インバウンドエクスチェンジディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "インバウンドディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "仮想インバウンドエクスチェンジディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "なし"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "インライン"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "インバウンド送信イベントのオプションの型付きペイロードモード。\n\n- `none` -- インバウンドイベントはペイロードデータを保持しません (デフォルト)\n- `inline` -- インバウンドイベントに送信されたペイロードが含まれます"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "インバウンドイベントペイロードモード"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "インバウンドイベントにペイロードデータを含めるかどうかを制御する"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの型付きインバウンドファイル受入ポリシー。サポートされているキーには `accept_filename_glob`、`reject_filename_glob`、`accept_filename_regex`、`reject_filename_regex`、`min_size`、`max_size`、`max_file_count`、`max_total_bytes`、`max_concurrent_uploads`、`allow_overwrite`、`reject_duplicate_name`、`reject_duplicate_size`、`reject_duplicate_hash`、`accept_content_prefix`、`reject_content_prefix`、`accept_content_type_hints`、`reject_content_type_hints`、`validation_callback`、`allow_hidden_files`、`allow_principals`、`deny_principals`、`principal_policies`、`directory_policies`、および `principal_routes` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "インバウンドファイルポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "インバウンド SFTP ファイルを受け入れるための型付きポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "インバウンドファイルのオプションの型付き保持ポリシー。現在サポートされているキーには `max_age_seconds` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "インバウンド保持ポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "インバウンドファイルの保持メタデータおよびクリーンアップポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想アウトバウンドエクスチェンジディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "アウトバウンドディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "仮想アウトバウンドエクスチェンジディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "仮想バックエンドおよび子プロバイダーによって継承されるオプションの `LoggerInterface` オブジェクト。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "ロガー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "ヘルパーおよびプロバイダーイベント用のオプションのロガー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.bWV0YWRhdGE.desc": {
+          "source": "Optional free-form metadata for the operation.",
+          "message": "操作用のオプションのフリーフォームメタデータ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.bWV0YWRhdGE.display_name": {
+          "source": "Metadata",
+          "message": "メタデータ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.bWV0YWRhdGE.short_desc": {
+          "source": "Optional free-form metadata for the operation",
+          "message": "操作用のオプションのフリーフォームメタデータ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.bmFtZQ.desc": {
+          "source": "The exchange entry name.",
+          "message": "エクスチェンジのエントリ名。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.bmFtZQ.display_name": {
+          "source": "Entry Name",
+          "message": "エントリ名"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.bmFtZQ.short_desc": {
+          "source": "The exchange entry name",
+          "message": "エクスチェンジのエントリ名"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.short_desc": {
+          "source": "Archive an outbound file in a virtual SFTP exchange",
+          "message": "仮想 SFTP エクスチェンジ内のアウトバウンドファイルをアーカイブする"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.desc": {
+          "source": "Deletes an outbound file from the configured virtual SFTP exchange backend.",
+          "message": "設定された仮想 SFTP エクスチェンジバックエンドからアウトバウンドファイルを削除します。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.display_name": {
+          "source": "Delete Outbound File",
+          "message": "アウトバウンドファイルの削除"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y29tcGxldGlvbl9tb2Rl.allowed-value.c3RyaW5nOmFyY2hpdmU.display_name": {
+          "source": "Archive",
+          "message": "アーカイブ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y29tcGxldGlvbl9tb2Rl.allowed-value.c3RyaW5nOmNsYWlt.display_name": {
+          "source": "Claim",
+          "message": "クレーム"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y29tcGxldGlvbl9tb2Rl.allowed-value.c3RyaW5nOmRlbGV0ZQ.display_name": {
+          "source": "Delete",
+          "message": "削除"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y29tcGxldGlvbl9tb2Rl.desc": {
+          "source": "Optional typed completion mode.\n\n- `claim` -- move the entry to the claim queue\n- `archive` -- move the entry to the archive queue\n- `delete` -- delete the entry",
+          "message": "オプションの型指定された完了モード。\n\n- `claim` -- エントリをクレームキューに移動\n- `archive` -- エントリをアーカイブキューに移動\n- `delete` -- エントリを削除"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y29tcGxldGlvbl9tb2Rl.display_name": {
+          "source": "Completion Mode",
+          "message": "完了モード"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y29tcGxldGlvbl9tb2Rl.short_desc": {
+          "source": "How the retrieval is finalized",
+          "message": "取得の完了方法"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想クレームディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "クレームディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "クレームされた送信ファイルの仮想クレームディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "クレームファイルのオプションの型指定された保持ポリシー。現在サポートされているキーには `max_age_seconds` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "クレーム保持ポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "クレームされた送信ファイルの保持メタデータおよびクリーンアップポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想アーカイブディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "アーカイブディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "完了した送信ファイルの仮想アーカイブディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "アーカイブファイルのオプションの型指定された保持ポリシー。現在サポートされているキーには `max_age_seconds` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "アーカイブ保持ポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "アーカイブされた送信ファイルの保持メタデータおよびクリーンアップポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "プロバイダーバックエンドとして使用する、オプションの既存の `VirtualSftpExchangeRecordStore` または `VirtualSftpExchange` オブジェクト。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "仮想エクスチェンジバックエンド"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "既存の仮想エクスチェンジまたはレコードストアのバックエンドオブジェクト"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "受け入れられたインバウンドのヘルパー/プロバイダー/ライブアップロードが、結果やイベントで型付きの SHA-256 チェックサムを生成し、そのチェックサムを後続の stat/list/retrieve フローのために仮想ファイルメタデータに永続化するかどうかを制御するオプションのフラグ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "インバウンドチェックサムの生成"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "受け入れられたインバウンドファイルの SHA-256 チェックサムを生成する"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "新しいバックエンドインスタンスのオプションのデフォルト仮想ディレクトリ権限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "デフォルトのディレクトリ権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "作成された仮想ディレクトリのデフォルト権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "新しいバックエンドインスタンスのオプションのデフォルト仮想ファイル権限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "デフォルトのファイル権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "作成された仮想ファイルのデフォルト権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.ZmluYWxfbmFtZQ.desc": {
+          "source": "Optional final entry name for `claim` or `archive` operations.",
+          "message": "`claim` または `archive` 操作のオプションの最終エントリ名。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.ZmluYWxfbmFtZQ.display_name": {
+          "source": "Final Name",
+          "message": "最終名"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.ZmluYWxfbmFtZQ.short_desc": {
+          "source": "Optional final entry name for claim or archive",
+          "message": "クレームまたはアーカイブのオプションの最終エントリ名"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想インバウンドエクスチェンジディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "インバウンドディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "仮想インバウンドエクスチェンジディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "なし"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "インライン"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "インバウンド送信イベントのオプションの型付きペイロードモード。\n\n- `none` -- インバウンドイベントはペイロードデータを保持しません (デフォルト)\n- `inline` -- インバウンドイベントに送信されたペイロードが含まれます"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "インバウンドイベントペイロードモード"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "インバウンドイベントにペイロードデータを含めるかどうかを制御する"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの型付きインバウンドファイル受入ポリシー。サポートされているキーには `accept_filename_glob`、`reject_filename_glob`、`accept_filename_regex`、`reject_filename_regex`、`min_size`、`max_size`、`max_file_count`、`max_total_bytes`、`max_concurrent_uploads`、`allow_overwrite`、`reject_duplicate_name`、`reject_duplicate_size`、`reject_duplicate_hash`、`accept_content_prefix`、`reject_content_prefix`、`accept_content_type_hints`、`reject_content_type_hints`、`validation_callback`、`allow_hidden_files`、`allow_principals`、`deny_principals`、`principal_policies`、`directory_policies`、および `principal_routes` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "インバウンドファイルポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "インバウンド SFTP ファイルを受け入れるための型付きポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "インバウンドファイルのオプションの型付き保持ポリシー。現在サポートされているキーには `max_age_seconds` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "インバウンド保持ポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "インバウンドファイルの保持メタデータおよびクリーンアップポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想アウトバウンドエクスチェンジディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "アウトバウンドディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "仮想アウトバウンドエクスチェンジディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "仮想バックエンドおよび子プロバイダーによって継承されるオプションの `LoggerInterface` オブジェクト。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "ロガー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "ヘルパーおよびプロバイダーイベント用のオプションのロガー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.bWV0YWRhdGE.desc": {
+          "source": "Optional free-form metadata for the operation.",
+          "message": "操作用のオプションのフリーフォームメタデータ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.bWV0YWRhdGE.display_name": {
+          "source": "Metadata",
+          "message": "メタデータ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.bWV0YWRhdGE.short_desc": {
+          "source": "Optional free-form metadata for the operation",
+          "message": "操作用のオプションのフリーフォームメタデータ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.bmFtZQ.desc": {
+          "source": "The exchange entry name.",
+          "message": "エクスチェンジのエントリ名。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.bmFtZQ.display_name": {
+          "source": "Entry Name",
+          "message": "エントリ名"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.bmFtZQ.short_desc": {
+          "source": "The exchange entry name",
+          "message": "エクスチェンジのエントリ名"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.short_desc": {
+          "source": "Delete an outbound file from a virtual SFTP exchange",
+          "message": "仮想 SFTP エクスチェンジからアウトバウンドファイルを削除する"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.desc": {
+          "source": "Raises a typed event when a new inbound file is accepted by the configured virtual SFTP exchange backend, including files uploaded through accepted SFTP sessions.",
+          "message": "受け入れられた SFTP セッションを通じてアップロードされたファイルを含め、設定された仮想 SFTP エクスチェンジバックエンドによって新しいインバウンドファイルが受け入れられたときに型付きイベントを発生させます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.display_name": {
+          "source": "Inbound File Accepted",
+          "message": "インバウンドファイル受入完了"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想クレームディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "クレームディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "クレームされた送信ファイルの仮想クレームディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "クレームファイルのオプションの型指定された保持ポリシー。現在サポートされているキーには `max_age_seconds` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "クレーム保持ポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "クレームされた送信ファイルの保持メタデータおよびクリーンアップポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想アーカイブディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "アーカイブディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "完了した送信ファイルの仮想アーカイブディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "アーカイブファイルのオプションの型指定された保持ポリシー。現在サポートされているキーには `max_age_seconds` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "アーカイブ保持ポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "アーカイブされた送信ファイルの保持メタデータおよびクリーンアップポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "プロバイダーバックエンドとして使用する、オプションの既存の `VirtualSftpExchangeRecordStore` または `VirtualSftpExchange` オブジェクト。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "仮想エクスチェンジバックエンド"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "既存の仮想エクスチェンジまたはレコードストアのバックエンドオブジェクト"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "受け入れられたインバウンドのヘルパー/プロバイダー/ライブアップロードが、結果やイベントで型付きの SHA-256 チェックサムを生成し、そのチェックサムを後続の stat/list/retrieve フローのために仮想ファイルメタデータに永続化するかどうかを制御するオプションのフラグ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "インバウンドチェックサムの生成"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "受け入れられたインバウンドファイルの SHA-256 チェックサムを生成する"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "新しいバックエンドインスタンスのオプションのデフォルト仮想ディレクトリ権限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "デフォルトのディレクトリ権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "作成された仮想ディレクトリのデフォルト権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "新しいバックエンドインスタンスのオプションのデフォルト仮想ファイル権限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "デフォルトのファイル権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "作成された仮想ファイルのデフォルト権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想インバウンドエクスチェンジディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "インバウンドディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "仮想インバウンドエクスチェンジディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "なし"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "インライン"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "インバウンド送信イベントのオプションの型付きペイロードモード。\n\n- `none` -- インバウンドイベントはペイロードデータを保持しません (デフォルト)\n- `inline` -- インバウンドイベントに送信されたペイロードが含まれます"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "インバウンドイベントペイロードモード"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "インバウンドイベントにペイロードデータを含めるかどうかを制御する"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの型付きインバウンドファイル受入ポリシー。サポートされているキーには `accept_filename_glob`、`reject_filename_glob`、`accept_filename_regex`、`reject_filename_regex`、`min_size`、`max_size`、`max_file_count`、`max_total_bytes`、`max_concurrent_uploads`、`allow_overwrite`、`reject_duplicate_name`、`reject_duplicate_size`、`reject_duplicate_hash`、`accept_content_prefix`、`reject_content_prefix`、`accept_content_type_hints`、`reject_content_type_hints`、`validation_callback`、`allow_hidden_files`、`allow_principals`、`deny_principals`、`principal_policies`、`directory_policies`、および `principal_routes` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "インバウンドファイルポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "インバウンド SFTP ファイルを受け入れるための型付きポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "インバウンドファイルのオプションの型付き保持ポリシー。現在サポートされているキーには `max_age_seconds` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "インバウンド保持ポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "インバウンドファイルの保持メタデータおよびクリーンアップポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想アウトバウンドエクスチェンジディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "アウトバウンドディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "仮想アウトバウンドエクスチェンジディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "仮想バックエンドおよび子プロバイダーによって継承されるオプションの `LoggerInterface` オブジェクト。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "ロガー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "ヘルパーおよびプロバイダーイベント用のオプションのロガー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.short_desc": {
+          "source": "Raise an event when a new inbound file is accepted",
+          "message": "新しいインバウンドファイルが受け入れられたときにイベントを発生させる"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.desc": {
+          "source": "Raises a typed event when an inbound file submission is rejected by the configured virtual SFTP exchange inbound acceptance policy, including uploads through SFTP sessions; the event carries the typed `reason_code` and `reason_desc`.",
+          "message": "SFTPセッション経由のアップロードを含め、設定された仮想SFTPエクスチェンジの受信承認ポリシーによって受信ファイルの送信が拒否された場合に型指定イベントを発行します。イベントには型指定された`reason_code`および`reason_desc`が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.display_name": {
+          "source": "Inbound File Rejected",
+          "message": "受信ファイル拒否"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想クレームディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "クレームディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "クレームされた送信ファイルの仮想クレームディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "クレームファイルのオプションの型指定された保持ポリシー。現在サポートされているキーには `max_age_seconds` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "クレーム保持ポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "クレームされた送信ファイルの保持メタデータおよびクリーンアップポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想アーカイブディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "アーカイブディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "完了した送信ファイルの仮想アーカイブディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "アーカイブファイルのオプションの型指定された保持ポリシー。現在サポートされているキーには `max_age_seconds` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "アーカイブ保持ポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "アーカイブされた送信ファイルの保持メタデータおよびクリーンアップポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "プロバイダーバックエンドとして使用する、オプションの既存の `VirtualSftpExchangeRecordStore` または `VirtualSftpExchange` オブジェクト。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "仮想エクスチェンジバックエンド"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "既存の仮想エクスチェンジまたはレコードストアのバックエンドオブジェクト"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "受け入れられたインバウンドのヘルパー/プロバイダー/ライブアップロードが、結果やイベントで型付きの SHA-256 チェックサムを生成し、そのチェックサムを後続の stat/list/retrieve フローのために仮想ファイルメタデータに永続化するかどうかを制御するオプションのフラグ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "インバウンドチェックサムの生成"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "受け入れられたインバウンドファイルの SHA-256 チェックサムを生成する"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "新しいバックエンドインスタンスのオプションのデフォルト仮想ディレクトリ権限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "デフォルトのディレクトリ権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "作成された仮想ディレクトリのデフォルト権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "新しいバックエンドインスタンスのオプションのデフォルト仮想ファイル権限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "デフォルトのファイル権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "作成された仮想ファイルのデフォルト権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想インバウンドエクスチェンジディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "インバウンドディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "仮想インバウンドエクスチェンジディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "なし"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "インライン"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "インバウンド送信イベントのオプションの型付きペイロードモード。\n\n- `none` -- インバウンドイベントはペイロードデータを保持しません (デフォルト)\n- `inline` -- インバウンドイベントに送信されたペイロードが含まれます"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "インバウンドイベントペイロードモード"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "インバウンドイベントにペイロードデータを含めるかどうかを制御する"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの型付きインバウンドファイル受入ポリシー。サポートされているキーには `accept_filename_glob`、`reject_filename_glob`、`accept_filename_regex`、`reject_filename_regex`、`min_size`、`max_size`、`max_file_count`、`max_total_bytes`、`max_concurrent_uploads`、`allow_overwrite`、`reject_duplicate_name`、`reject_duplicate_size`、`reject_duplicate_hash`、`accept_content_prefix`、`reject_content_prefix`、`accept_content_type_hints`、`reject_content_type_hints`、`validation_callback`、`allow_hidden_files`、`allow_principals`、`deny_principals`、`principal_policies`、`directory_policies`、および `principal_routes` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "インバウンドファイルポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "インバウンド SFTP ファイルを受け入れるための型付きポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "インバウンドファイルのオプションの型付き保持ポリシー。現在サポートされているキーには `max_age_seconds` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "インバウンド保持ポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "インバウンドファイルの保持メタデータおよびクリーンアップポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想アウトバウンドエクスチェンジディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "アウトバウンドディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "仮想アウトバウンドエクスチェンジディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "仮想バックエンドおよび子プロバイダーによって継承されるオプションの `LoggerInterface` オブジェクト。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "ロガー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "ヘルパーおよびプロバイダーイベント用のオプションのロガー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.short_desc": {
+          "source": "Raise an event when an inbound file is rejected",
+          "message": "受信ファイルが拒否されたときにイベントを発行します"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.desc": {
+          "source": "Raises a typed event when an outbound file is archived by the configured virtual SFTP exchange backend.",
+          "message": "設定された仮想SFTPエクスチェンジバックエンドによって送信ファイルがアーカイブされた場合に型指定イベントを発行します。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.display_name": {
+          "source": "Outbound File Archived",
+          "message": "送信ファイルアーカイブ完了"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想クレームディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "クレームディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "クレームされた送信ファイルの仮想クレームディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "クレームファイルのオプションの型指定された保持ポリシー。現在サポートされているキーには `max_age_seconds` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "クレーム保持ポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "クレームされた送信ファイルの保持メタデータおよびクリーンアップポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想アーカイブディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "アーカイブディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "完了した送信ファイルの仮想アーカイブディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "アーカイブファイルのオプションの型指定された保持ポリシー。現在サポートされているキーには `max_age_seconds` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "アーカイブ保持ポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "アーカイブされた送信ファイルの保持メタデータおよびクリーンアップポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "プロバイダーバックエンドとして使用する、オプションの既存の `VirtualSftpExchangeRecordStore` または `VirtualSftpExchange` オブジェクト。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "仮想エクスチェンジバックエンド"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "既存の仮想エクスチェンジまたはレコードストアのバックエンドオブジェクト"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "受け入れられたインバウンドのヘルパー/プロバイダー/ライブアップロードが、結果やイベントで型付きの SHA-256 チェックサムを生成し、そのチェックサムを後続の stat/list/retrieve フローのために仮想ファイルメタデータに永続化するかどうかを制御するオプションのフラグ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "インバウンドチェックサムの生成"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "受け入れられたインバウンドファイルの SHA-256 チェックサムを生成する"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "新しいバックエンドインスタンスのオプションのデフォルト仮想ディレクトリ権限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "デフォルトのディレクトリ権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "作成された仮想ディレクトリのデフォルト権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "新しいバックエンドインスタンスのオプションのデフォルト仮想ファイル権限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "デフォルトのファイル権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "作成された仮想ファイルのデフォルト権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想インバウンドエクスチェンジディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "インバウンドディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "仮想インバウンドエクスチェンジディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "なし"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "インライン"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "インバウンド送信イベントのオプションの型付きペイロードモード。\n\n- `none` -- インバウンドイベントはペイロードデータを保持しません (デフォルト)\n- `inline` -- インバウンドイベントに送信されたペイロードが含まれます"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "インバウンドイベントペイロードモード"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "インバウンドイベントにペイロードデータを含めるかどうかを制御する"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの型付きインバウンドファイル受入ポリシー。サポートされているキーには `accept_filename_glob`、`reject_filename_glob`、`accept_filename_regex`、`reject_filename_regex`、`min_size`、`max_size`、`max_file_count`、`max_total_bytes`、`max_concurrent_uploads`、`allow_overwrite`、`reject_duplicate_name`、`reject_duplicate_size`、`reject_duplicate_hash`、`accept_content_prefix`、`reject_content_prefix`、`accept_content_type_hints`、`reject_content_type_hints`、`validation_callback`、`allow_hidden_files`、`allow_principals`、`deny_principals`、`principal_policies`、`directory_policies`、および `principal_routes` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "インバウンドファイルポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "インバウンド SFTP ファイルを受け入れるための型付きポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "インバウンドファイルのオプションの型付き保持ポリシー。現在サポートされているキーには `max_age_seconds` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "インバウンド保持ポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "インバウンドファイルの保持メタデータおよびクリーンアップポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想アウトバウンドエクスチェンジディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "アウトバウンドディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "仮想アウトバウンドエクスチェンジディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "仮想バックエンドおよび子プロバイダーによって継承されるオプションの `LoggerInterface` オブジェクト。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "ロガー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "ヘルパーおよびプロバイダーイベント用のオプションのロガー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.short_desc": {
+          "source": "Raise an event when an outbound file is archived",
+          "message": "送信ファイルがアーカイブされたときにイベントを発行します"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.desc": {
+          "source": "Raises a typed event when an outbound file is claimed from the configured virtual SFTP exchange backend.",
+          "message": "設定された仮想SFTPエクスチェンジバックエンドから送信ファイルが取得された場合に型指定イベントを発行します。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.display_name": {
+          "source": "Outbound File Claimed",
+          "message": "送信ファイル取得完了"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想クレームディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "クレームディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "クレームされた送信ファイルの仮想クレームディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "クレームファイルのオプションの型指定された保持ポリシー。現在サポートされているキーには `max_age_seconds` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "クレーム保持ポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "クレームされた送信ファイルの保持メタデータおよびクリーンアップポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想アーカイブディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "アーカイブディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "完了した送信ファイルの仮想アーカイブディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "アーカイブファイルのオプションの型指定された保持ポリシー。現在サポートされているキーには `max_age_seconds` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "アーカイブ保持ポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "アーカイブされた送信ファイルの保持メタデータおよびクリーンアップポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "プロバイダーバックエンドとして使用する、オプションの既存の `VirtualSftpExchangeRecordStore` または `VirtualSftpExchange` オブジェクト。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "仮想エクスチェンジバックエンド"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "既存の仮想エクスチェンジまたはレコードストアのバックエンドオブジェクト"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "受け入れられたインバウンドのヘルパー/プロバイダー/ライブアップロードが、結果やイベントで型付きの SHA-256 チェックサムを生成し、そのチェックサムを後続の stat/list/retrieve フローのために仮想ファイルメタデータに永続化するかどうかを制御するオプションのフラグ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "インバウンドチェックサムの生成"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "受け入れられたインバウンドファイルの SHA-256 チェックサムを生成する"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "新しいバックエンドインスタンスのオプションのデフォルト仮想ディレクトリ権限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "デフォルトのディレクトリ権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "作成された仮想ディレクトリのデフォルト権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "新しいバックエンドインスタンスのオプションのデフォルト仮想ファイル権限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "デフォルトのファイル権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "作成された仮想ファイルのデフォルト権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想インバウンドエクスチェンジディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "インバウンドディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "仮想インバウンドエクスチェンジディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "なし"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "インライン"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "インバウンド送信イベントのオプションの型付きペイロードモード。\n\n- `none` -- インバウンドイベントはペイロードデータを保持しません (デフォルト)\n- `inline` -- インバウンドイベントに送信されたペイロードが含まれます"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "インバウンドイベントペイロードモード"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "インバウンドイベントにペイロードデータを含めるかどうかを制御する"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの型付きインバウンドファイル受入ポリシー。サポートされているキーには `accept_filename_glob`、`reject_filename_glob`、`accept_filename_regex`、`reject_filename_regex`、`min_size`、`max_size`、`max_file_count`、`max_total_bytes`、`max_concurrent_uploads`、`allow_overwrite`、`reject_duplicate_name`、`reject_duplicate_size`、`reject_duplicate_hash`、`accept_content_prefix`、`reject_content_prefix`、`accept_content_type_hints`、`reject_content_type_hints`、`validation_callback`、`allow_hidden_files`、`allow_principals`、`deny_principals`、`principal_policies`、`directory_policies`、および `principal_routes` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "インバウンドファイルポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "インバウンド SFTP ファイルを受け入れるための型付きポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "インバウンドファイルのオプションの型付き保持ポリシー。現在サポートされているキーには `max_age_seconds` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "インバウンド保持ポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "インバウンドファイルの保持メタデータおよびクリーンアップポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想アウトバウンドエクスチェンジディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "アウトバウンドディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "仮想アウトバウンドエクスチェンジディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "仮想バックエンドおよび子プロバイダーによって継承されるオプションの `LoggerInterface` オブジェクト。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "ロガー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "ヘルパーおよびプロバイダーイベント用のオプションのロガー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.short_desc": {
+          "source": "Raise an event when an outbound file is claimed",
+          "message": "送信ファイルが取得されたときにイベントを発行します"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.desc": {
+          "source": "Raises a typed event when an outbound file is deleted from the configured virtual SFTP exchange backend.",
+          "message": "設定された仮想SFTPエクスチェンジバックエンドから送信ファイルが削除された場合に型指定イベントを発行します。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.display_name": {
+          "source": "Outbound File Deleted",
+          "message": "送信ファイル削除完了"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想クレームディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "クレームディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "クレームされた送信ファイルの仮想クレームディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "クレームファイルのオプションの型指定された保持ポリシー。現在サポートされているキーには `max_age_seconds` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "クレーム保持ポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "クレームされた送信ファイルの保持メタデータおよびクリーンアップポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想アーカイブディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "アーカイブディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "完了した送信ファイルの仮想アーカイブディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "アーカイブファイルのオプションの型指定された保持ポリシー。現在サポートされているキーには `max_age_seconds` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "アーカイブ保持ポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "アーカイブされた送信ファイルの保持メタデータおよびクリーンアップポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "プロバイダーバックエンドとして使用する、オプションの既存の `VirtualSftpExchangeRecordStore` または `VirtualSftpExchange` オブジェクト。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "仮想エクスチェンジバックエンド"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "既存の仮想エクスチェンジまたはレコードストアのバックエンドオブジェクト"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "受け入れられたインバウンドのヘルパー/プロバイダー/ライブアップロードが、結果やイベントで型付きの SHA-256 チェックサムを生成し、そのチェックサムを後続の stat/list/retrieve フローのために仮想ファイルメタデータに永続化するかどうかを制御するオプションのフラグ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "インバウンドチェックサムの生成"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "受け入れられたインバウンドファイルの SHA-256 チェックサムを生成する"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "新しいバックエンドインスタンスのオプションのデフォルト仮想ディレクトリ権限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "デフォルトのディレクトリ権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "作成された仮想ディレクトリのデフォルト権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "新しいバックエンドインスタンスのオプションのデフォルト仮想ファイル権限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "デフォルトのファイル権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "作成された仮想ファイルのデフォルト権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想インバウンドエクスチェンジディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "インバウンドディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "仮想インバウンドエクスチェンジディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "なし"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "インライン"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "インバウンド送信イベントのオプションの型付きペイロードモード。\n\n- `none` -- インバウンドイベントはペイロードデータを保持しません (デフォルト)\n- `inline` -- インバウンドイベントに送信されたペイロードが含まれます"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "インバウンドイベントペイロードモード"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "インバウンドイベントにペイロードデータを含めるかどうかを制御する"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの型付きインバウンドファイル受入ポリシー。サポートされているキーには `accept_filename_glob`、`reject_filename_glob`、`accept_filename_regex`、`reject_filename_regex`、`min_size`、`max_size`、`max_file_count`、`max_total_bytes`、`max_concurrent_uploads`、`allow_overwrite`、`reject_duplicate_name`、`reject_duplicate_size`、`reject_duplicate_hash`、`accept_content_prefix`、`reject_content_prefix`、`accept_content_type_hints`、`reject_content_type_hints`、`validation_callback`、`allow_hidden_files`、`allow_principals`、`deny_principals`、`principal_policies`、`directory_policies`、および `principal_routes` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "インバウンドファイルポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "インバウンド SFTP ファイルを受け入れるための型付きポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "インバウンドファイルのオプションの型付き保持ポリシー。現在サポートされているキーには `max_age_seconds` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "インバウンド保持ポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "インバウンドファイルの保持メタデータおよびクリーンアップポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想アウトバウンドエクスチェンジディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "アウトバウンドディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "仮想アウトバウンドエクスチェンジディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "仮想バックエンドおよび子プロバイダーによって継承されるオプションの `LoggerInterface` オブジェクト。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "ロガー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "ヘルパーおよびプロバイダーイベント用のオプションのロガー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.short_desc": {
+          "source": "Raise an event when an outbound file is deleted",
+          "message": "送信ファイルが削除されたときにイベントを発行します"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.desc": {
+          "source": "Lists currently available outbound files in the configured virtual SFTP exchange backend.",
+          "message": "設定された仮想SFTPエクスチェンジバックエンドで現在利用可能な送信ファイルの一覧を取得します。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.display_name": {
+          "source": "List Outbound Files",
+          "message": "送信ファイル一覧の取得"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想クレームディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "クレームディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "クレームされた送信ファイルの仮想クレームディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "クレームファイルのオプションの型指定された保持ポリシー。現在サポートされているキーには `max_age_seconds` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "クレーム保持ポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "クレームされた送信ファイルの保持メタデータおよびクリーンアップポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想アーカイブディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "アーカイブディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "完了した送信ファイルの仮想アーカイブディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "アーカイブファイルのオプションの型指定された保持ポリシー。現在サポートされているキーには `max_age_seconds` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "アーカイブ保持ポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "アーカイブされた送信ファイルの保持メタデータおよびクリーンアップポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "プロバイダーバックエンドとして使用する、オプションの既存の `VirtualSftpExchangeRecordStore` または `VirtualSftpExchange` オブジェクト。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "仮想エクスチェンジバックエンド"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "既存の仮想エクスチェンジまたはレコードストアのバックエンドオブジェクト"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "受け入れられたインバウンドのヘルパー/プロバイダー/ライブアップロードが、結果やイベントで型付きの SHA-256 チェックサムを生成し、そのチェックサムを後続の stat/list/retrieve フローのために仮想ファイルメタデータに永続化するかどうかを制御するオプションのフラグ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "インバウンドチェックサムの生成"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "受け入れられたインバウンドファイルの SHA-256 チェックサムを生成する"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "新しいバックエンドインスタンスのオプションのデフォルト仮想ディレクトリ権限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "デフォルトのディレクトリ権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "作成された仮想ディレクトリのデフォルト権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "新しいバックエンドインスタンスのオプションのデフォルト仮想ファイル権限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "デフォルトのファイル権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "作成された仮想ファイルのデフォルト権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想インバウンドエクスチェンジディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "インバウンドディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "仮想インバウンドエクスチェンジディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "なし"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "インライン"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "インバウンド送信イベントのオプションの型付きペイロードモード。\n\n- `none` -- インバウンドイベントはペイロードデータを保持しません (デフォルト)\n- `inline` -- インバウンドイベントに送信されたペイロードが含まれます"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "インバウンドイベントペイロードモード"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "インバウンドイベントにペイロードデータを含めるかどうかを制御する"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの型付きインバウンドファイル受入ポリシー。サポートされているキーには `accept_filename_glob`、`reject_filename_glob`、`accept_filename_regex`、`reject_filename_regex`、`min_size`、`max_size`、`max_file_count`、`max_total_bytes`、`max_concurrent_uploads`、`allow_overwrite`、`reject_duplicate_name`、`reject_duplicate_size`、`reject_duplicate_hash`、`accept_content_prefix`、`reject_content_prefix`、`accept_content_type_hints`、`reject_content_type_hints`、`validation_callback`、`allow_hidden_files`、`allow_principals`、`deny_principals`、`principal_policies`、`directory_policies`、および `principal_routes` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "インバウンドファイルポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "インバウンド SFTP ファイルを受け入れるための型付きポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "インバウンドファイルのオプションの型付き保持ポリシー。現在サポートされているキーには `max_age_seconds` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "インバウンド保持ポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "インバウンドファイルの保持メタデータおよびクリーンアップポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想アウトバウンドエクスチェンジディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "アウトバウンドディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "仮想アウトバウンドエクスチェンジディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "仮想バックエンドおよび子プロバイダーによって継承されるオプションの `LoggerInterface` オブジェクト。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "ロガー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "ヘルパーおよびプロバイダーイベント用のオプションのロガー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.short_desc": {
+          "source": "List available outbound files in a virtual SFTP exchange",
+          "message": "仮想SFTPエクスチェンジで利用可能な送信ファイルの一覧を取得します"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.desc": {
+          "source": "Submits an inbound file into the configured virtual SFTP exchange backend.",
+          "message": "設定された仮想SFTPエクスチェンジバックエンドに受信ファイルを送信します。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.display_name": {
+          "source": "Submit Inbound File",
+          "message": "受信ファイルの送信"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想クレームディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "クレームディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "クレームされた送信ファイルの仮想クレームディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "クレームファイルのオプションの型指定された保持ポリシー。現在サポートされているキーには `max_age_seconds` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "クレーム保持ポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "クレームされた送信ファイルの保持メタデータおよびクリーンアップポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想アーカイブディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "アーカイブディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "完了した送信ファイルの仮想アーカイブディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "アーカイブファイルのオプションの型指定された保持ポリシー。現在サポートされているキーには `max_age_seconds` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "アーカイブ保持ポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "アーカイブされた送信ファイルの保持メタデータおよびクリーンアップポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "プロバイダーバックエンドとして使用する、オプションの既存の `VirtualSftpExchangeRecordStore` または `VirtualSftpExchange` オブジェクト。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "仮想エクスチェンジバックエンド"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "既存の仮想エクスチェンジまたはレコードストアのバックエンドオブジェクト"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "受け入れられたインバウンドのヘルパー/プロバイダー/ライブアップロードが、結果やイベントで型付きの SHA-256 チェックサムを生成し、そのチェックサムを後続の stat/list/retrieve フローのために仮想ファイルメタデータに永続化するかどうかを制御するオプションのフラグ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "インバウンドチェックサムの生成"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "受け入れられたインバウンドファイルの SHA-256 チェックサムを生成する"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.ZGF0YQ.desc": {
+          "source": "The binary payload to submit.",
+          "message": "送信するバイナリペイロード。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.ZGF0YQ.display_name": {
+          "source": "Payload",
+          "message": "ペイロード"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.ZGF0YQ.short_desc": {
+          "source": "The binary payload to submit",
+          "message": "送信するバイナリペイロード"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "新しいバックエンドインスタンスのオプションのデフォルト仮想ディレクトリ権限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "デフォルトのディレクトリ権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "作成された仮想ディレクトリのデフォルト権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "新しいバックエンドインスタンスのオプションのデフォルト仮想ファイル権限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "デフォルトのファイル権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "作成された仮想ファイルのデフォルト権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想インバウンドエクスチェンジディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "インバウンドディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "仮想インバウンドエクスチェンジディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "なし"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "インライン"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "インバウンド送信イベントのオプションの型付きペイロードモード。\n\n- `none` -- インバウンドイベントはペイロードデータを保持しません (デフォルト)\n- `inline` -- インバウンドイベントに送信されたペイロードが含まれます"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "インバウンドイベントペイロードモード"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "インバウンドイベントにペイロードデータを含めるかどうかを制御する"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの型付きインバウンドファイル受入ポリシー。サポートされているキーには `accept_filename_glob`、`reject_filename_glob`、`accept_filename_regex`、`reject_filename_regex`、`min_size`、`max_size`、`max_file_count`、`max_total_bytes`、`max_concurrent_uploads`、`allow_overwrite`、`reject_duplicate_name`、`reject_duplicate_size`、`reject_duplicate_hash`、`accept_content_prefix`、`reject_content_prefix`、`accept_content_type_hints`、`reject_content_type_hints`、`validation_callback`、`allow_hidden_files`、`allow_principals`、`deny_principals`、`principal_policies`、`directory_policies`、および `principal_routes` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "インバウンドファイルポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "インバウンド SFTP ファイルを受け入れるための型付きポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "インバウンドファイルのオプションの型付き保持ポリシー。現在サポートされているキーには `max_age_seconds` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "インバウンド保持ポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "インバウンドファイルの保持メタデータおよびクリーンアップポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想アウトバウンドエクスチェンジディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "アウトバウンドディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "仮想アウトバウンドエクスチェンジディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "仮想バックエンドおよび子プロバイダーによって継承されるオプションの `LoggerInterface` オブジェクト。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "ロガー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "ヘルパーおよびプロバイダーイベント用のオプションのロガー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.bWV0YWRhdGE.desc": {
+          "source": "Optional free-form metadata to associate with the entry.",
+          "message": "エントリに関連付ける任意のフリーフォームメタデータ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.bWV0YWRhdGE.display_name": {
+          "source": "Metadata",
+          "message": "メタデータ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.bWV0YWRhdGE.short_desc": {
+          "source": "Optional free-form metadata for the entry",
+          "message": "エントリの任意のフリーフォームメタデータ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.bmFtZQ.desc": {
+          "source": "The inbound exchange entry name.",
+          "message": "受信エクスチェンジのエントリ名。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.bmFtZQ.display_name": {
+          "source": "Entry Name",
+          "message": "エントリ名"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.bmFtZQ.short_desc": {
+          "source": "The inbound exchange entry name",
+          "message": "受信エクスチェンジのエントリ名"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.short_desc": {
+          "source": "Submit an inbound file to a virtual SFTP exchange",
+          "message": "仮想SFTPエクスチェンジに受信ファイルを送信します"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.desc": {
+          "source": "Retrieves an outbound file payload from the configured virtual SFTP exchange backend.",
+          "message": "設定された仮想SFTPエクスチェンジバックエンドから送信ファイルのペイロードを取得します。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.display_name": {
+          "source": "Retrieve Outbound File",
+          "message": "送信ファイルの取得"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想クレームディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "クレームディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "クレームされた送信ファイルの仮想クレームディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "クレームファイルのオプションの型指定された保持ポリシー。現在サポートされているキーには `max_age_seconds` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "クレーム保持ポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "クレームされた送信ファイルの保持メタデータおよびクリーンアップポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想アーカイブディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "アーカイブディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "完了した送信ファイルの仮想アーカイブディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "アーカイブファイルのオプションの型指定された保持ポリシー。現在サポートされているキーには `max_age_seconds` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "アーカイブ保持ポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "アーカイブされた送信ファイルの保持メタデータおよびクリーンアップポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "プロバイダーバックエンドとして使用する、オプションの既存の `VirtualSftpExchangeRecordStore` または `VirtualSftpExchange` オブジェクト。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "仮想エクスチェンジバックエンド"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "既存の仮想エクスチェンジまたはレコードストアのバックエンドオブジェクト"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "受け入れられたインバウンドのヘルパー/プロバイダー/ライブアップロードが、結果やイベントで型付きの SHA-256 チェックサムを生成し、そのチェックサムを後続の stat/list/retrieve フローのために仮想ファイルメタデータに永続化するかどうかを制御するオプションのフラグ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "インバウンドチェックサムの生成"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "受け入れられたインバウンドファイルの SHA-256 チェックサムを生成する"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "新しいバックエンドインスタンスのオプションのデフォルト仮想ディレクトリ権限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "デフォルトのディレクトリ権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "作成された仮想ディレクトリのデフォルト権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "新しいバックエンドインスタンスのオプションのデフォルト仮想ファイル権限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "デフォルトのファイル権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "作成された仮想ファイルのデフォルト権限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想インバウンドエクスチェンジディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "インバウンドディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "仮想インバウンドエクスチェンジディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "なし"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "インライン"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "インバウンド送信イベントのオプションの型付きペイロードモード。\n\n- `none` -- インバウンドイベントはペイロードデータを保持しません (デフォルト)\n- `inline` -- インバウンドイベントに送信されたペイロードが含まれます"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "インバウンドイベントペイロードモード"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "インバウンドイベントにペイロードデータを含めるかどうかを制御する"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの型付きインバウンドファイル受入ポリシー。サポートされているキーには `accept_filename_glob`、`reject_filename_glob`、`accept_filename_regex`、`reject_filename_regex`、`min_size`、`max_size`、`max_file_count`、`max_total_bytes`、`max_concurrent_uploads`、`allow_overwrite`、`reject_duplicate_name`、`reject_duplicate_size`、`reject_duplicate_hash`、`accept_content_prefix`、`reject_content_prefix`、`accept_content_type_hints`、`reject_content_type_hints`、`validation_callback`、`allow_hidden_files`、`allow_principals`、`deny_principals`、`principal_policies`、`directory_policies`、および `principal_routes` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "インバウンドファイルポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "インバウンド SFTP ファイルを受け入れるための型付きポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "インバウンドファイルのオプションの型付き保持ポリシー。現在サポートされているキーには `max_age_seconds` が含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "インバウンド保持ポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "インバウンドファイルの保持メタデータおよびクリーンアップポリシー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "コンストラクタオプションからバックエンドを作成する際のオプションの仮想アウトバウンドエクスチェンジディレクトリ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "アウトバウンドディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "仮想アウトバウンドエクスチェンジディレクトリ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "仮想バックエンドおよび子プロバイダーによって継承されるオプションの `LoggerInterface` オブジェクト。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "ロガー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "ヘルパーおよびプロバイダーイベント用のオプションのロガー"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.bWV0YWRhdGE.desc": {
+          "source": "Optional free-form metadata for the operation.",
+          "message": "操作用のオプションのフリーフォームメタデータ。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.bWV0YWRhdGE.display_name": {
+          "source": "Metadata",
+          "message": "メタデータ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.bWV0YWRhdGE.short_desc": {
+          "source": "Optional free-form metadata for the operation",
+          "message": "操作用のオプションのフリーフォームメタデータ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.bmFtZQ.desc": {
+          "source": "The exchange entry name.",
+          "message": "エクスチェンジのエントリ名。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.bmFtZQ.display_name": {
+          "source": "Entry Name",
+          "message": "エントリ名"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.bmFtZQ.short_desc": {
+          "source": "The exchange entry name",
+          "message": "エクスチェンジのエントリ名"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.short_desc": {
+          "source": "Retrieve an outbound file from a virtual SFTP exchange",
+          "message": "仮想SFTPエクスチェンジから送信ファイルを取得します"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.desc": {
+          "source": "Generic data-provider API for virtualized SFTP exchange workflows built on top of the `module-ssh` server-side SFTP backend.\n\nThis initial provider layer is intentionally generic and backend-driven:\n- it uses typed request and response models\n- it is backed by `VirtualSftpExchangeRecordStore`\n- it exposes generic outbound retrieval and completion operations plus inbound submission\n\nThe app is served by the `sftpserver` connection scheme through `SshServerConnections::SftpServerConnection`.",
+          "message": "`module-ssh` サーバー側SFTPバックエンド上に構築された仮想化SFTPエクスチェンジワークフロー用の汎用データプロバイダーAPI。\n\nこの初期プロバイダー層は、意図的に汎用的でバックエンド駆動型となっています:\n- 型指定されたリクエストおよびレスポンスモデルを使用します\n- `VirtualSftpExchangeRecordStore` によって裏付けられています\n- 汎用的な送信取得・完了操作および受信送信を公開します\n\nアプリは `SshServerConnections::SftpServerConnection` を介して `sftpserver` 接続スキームにより提供されます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.display_name": {
+          "source": "SFTP Server Exchange",
+          "message": "SFTP Server Exchange"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.short_desc": {
+          "source": "Generic virtual SFTP exchange data provider",
+          "message": "汎用仮想SFTPエクスチェンジデータプロバイダー"
+        }
+      }
+    }
+  }
+}

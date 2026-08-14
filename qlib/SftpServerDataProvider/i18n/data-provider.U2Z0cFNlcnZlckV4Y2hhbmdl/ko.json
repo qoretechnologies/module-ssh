@@ -1,0 +1,2577 @@
+{
+  "schema_version": 1,
+  "locales": {
+    "ko": {
+      "messages": {
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.desc": {
+          "source": "Marks an outbound file as claimed in the configured virtual SFTP exchange backend.",
+          "message": "구성된 가상 SFTP 교환 백엔드에서 아웃바운드 파일을 클레임됨으로 표시합니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.display_name": {
+          "source": "Claim Outbound File",
+          "message": "아웃바운드 파일 클레임"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y29tcGxldGlvbl9tb2Rl.allowed-value.c3RyaW5nOmFyY2hpdmU.display_name": {
+          "source": "Archive",
+          "message": "아카이브"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y29tcGxldGlvbl9tb2Rl.allowed-value.c3RyaW5nOmNsYWlt.display_name": {
+          "source": "Claim",
+          "message": "클레임"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y29tcGxldGlvbl9tb2Rl.allowed-value.c3RyaW5nOmRlbGV0ZQ.display_name": {
+          "source": "Delete",
+          "message": "삭제"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y29tcGxldGlvbl9tb2Rl.desc": {
+          "source": "Optional typed completion mode.\n\n- `claim` -- move the entry to the claim queue\n- `archive` -- move the entry to the archive queue\n- `delete` -- delete the entry",
+          "message": "선택적 유형 지정 완료 모드입니다.\n\n- `claim` -- 항목을 클레임 대기열로 이동\n- `archive` -- 항목을 아카이브 대기열로 이동\n- `delete` -- 항목 삭제"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y29tcGxldGlvbl9tb2Rl.display_name": {
+          "source": "Completion Mode",
+          "message": "완료 모드"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y29tcGxldGlvbl9tb2Rl.short_desc": {
+          "source": "How the retrieval is finalized",
+          "message": "완료 방식"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때 사용할 선택적 가상 클레임 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "클레임 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "클레임된 아웃바운드 파일용 가상 클레임 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "클레임 파일에 대한 선택적 유형 지정 보존 정책입니다. 현재 지원되는 키에는 `max_age_seconds`이(가) 포함됩니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "클레임 보존 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "클레임된 아웃바운드 파일에 대한 보존 메타데이터 및 정리 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때 사용할 선택적 가상 아카이브 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "아카이브 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "완료된 아웃바운드 파일용 가상 아카이브 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "아카이브 파일에 대한 선택적 유형 지정 보존 정책입니다. 현재 지원되는 키에는 `max_age_seconds`이(가) 포함됩니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "아카이브 보존 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "아카이브된 아웃바운드 파일에 대한 보존 메타데이터 및 정리 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "공급자 백엔드로 사용할 기존 선택적 `VirtualSftpExchangeRecordStore` 또는 `VirtualSftpExchange` 객체입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "가상 교환 백엔드"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "기존 가상 교환 또는 레코드 스토어 백엔드 개체"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "수락된 인바운드 헬퍼/제공자/라이브 업로드가 결과 및 이벤트에서 유형화된 SHA-256 체크섬을 생성하고 나중의 stat/list/retrieve 흐름을 위해 가상 파일 메타데이터에 해당 체크섬을 유지할지 여부를 제어하는 선택적 플래그입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "인바운드 체크섬 생성"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "수락된 인바운드 파일에 대한 SHA-256 체크섬 생성"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "새 백엔드 인스턴스에 대한 선택적 기본 가상 디렉터리 권한입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "기본 디렉터리 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "생성된 가상 디렉터리의 기본 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "새 백엔드 인스턴스에 대한 선택적 기본 가상 파일 권한입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "기본 파일 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "생성된 가상 파일의 기본 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.ZmluYWxfbmFtZQ.desc": {
+          "source": "Optional final entry name for `claim` or `archive` operations.",
+          "message": "`claim` 또는 `archive` 작업에 대한 선택적 최종 엔트리 이름입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.ZmluYWxfbmFtZQ.display_name": {
+          "source": "Final Name",
+          "message": "최종 이름"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.ZmluYWxfbmFtZQ.short_desc": {
+          "source": "Optional final entry name for claim or archive",
+          "message": "선점 또는 보관 처리를 위한 선택적 최종 엔트리 이름"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때의 선택적 가상 인바운드 교환 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "인바운드 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "가상 인바운드 교환 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "없음"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "인라인"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "인바운드 제출 이벤트에 대한 선택적 유형 지정 페이로드 모드입니다.\n\n- `none` -- 인바운드 이벤트에 페이로드 데이터가 포함되지 않음 (기본값)\n- `inline` -- 인바운드 이벤트에 제출된 페이로드가 포함됨"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "인바운드 이벤트 페이로드 모드"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "인바운드 이벤트에 페이로드 데이터 포함 여부 제어"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때의 선택적 유형 지정 인바운드 파일 수락 정책입니다. 지원되는 키에는 `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies` 및 `principal_routes`이 있습니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "인바운드 파일 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "인바운드 SFTP 파일 수락을 위한 유형 지정 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "인바운드 파일에 대한 선택적 유형 지정 보존 정책입니다. 현재 지원되는 키에는 `max_age_seconds`이 포함됩니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "인바운드 보존 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "인바운드 파일에 대한 보존 메타데이터 및 정리 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때의 선택적 가상 아웃바운드 교환 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "아웃바운드 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "가상 아웃바운드 교환 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "가상 백엔드 및 자식 제공자에 의해 상속되는 선택적 `LoggerInterface` 개체입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "로거"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "헬퍼 및 제공자 이벤트에 대한 선택적 로거"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.bWV0YWRhdGE.desc": {
+          "source": "Optional free-form metadata for the operation.",
+          "message": "작업에 대한 선택적 자율 형식 메타데이터입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.bWV0YWRhdGE.display_name": {
+          "source": "Metadata",
+          "message": "메타데이터"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.bWV0YWRhdGE.short_desc": {
+          "source": "Optional free-form metadata for the operation",
+          "message": "작업에 대한 선택적 자율 형식 메타데이터"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.bmFtZQ.desc": {
+          "source": "The exchange entry name.",
+          "message": "교환 엔트리 이름입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.bmFtZQ.display_name": {
+          "source": "Entry Name",
+          "message": "엔트리 이름"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.bmFtZQ.short_desc": {
+          "source": "The exchange entry name",
+          "message": "교환 엔트리 이름"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.short_desc": {
+          "source": "Claim an outbound file in a virtual SFTP exchange",
+          "message": "가상 SFTP 교환에서 아웃바운드 파일 선점"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.desc": {
+          "source": "Runs deterministic retention cleanup against the configured inbound, archive, or claim queue in the virtual SFTP exchange backend.",
+          "message": "가상 SFTP 교환 백엔드의 구성된 인바운드, 보관 또는 선점 큐에 대해 결정론적 보존 정리를 실행합니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.display_name": {
+          "source": "Cleanup Expired Files",
+          "message": "만료된 파일 정리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때 사용할 선택적 가상 클레임 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "클레임 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "클레임된 아웃바운드 파일용 가상 클레임 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "클레임 파일에 대한 선택적 유형 지정 보존 정책입니다. 현재 지원되는 키에는 `max_age_seconds`이(가) 포함됩니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "클레임 보존 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "클레임된 아웃바운드 파일에 대한 보존 메타데이터 및 정리 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때 사용할 선택적 가상 아카이브 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "아카이브 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "완료된 아웃바운드 파일용 가상 아카이브 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "아카이브 파일에 대한 선택적 유형 지정 보존 정책입니다. 현재 지원되는 키에는 `max_age_seconds`이(가) 포함됩니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "아카이브 보존 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "아카이브된 아웃바운드 파일에 대한 보존 메타데이터 및 정리 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "공급자 백엔드로 사용할 기존 선택적 `VirtualSftpExchangeRecordStore` 또는 `VirtualSftpExchange` 객체입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "가상 교환 백엔드"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "기존 가상 교환 또는 레코드 스토어 백엔드 개체"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "수락된 인바운드 헬퍼/제공자/라이브 업로드가 결과 및 이벤트에서 유형화된 SHA-256 체크섬을 생성하고 나중의 stat/list/retrieve 흐름을 위해 가상 파일 메타데이터에 해당 체크섬을 유지할지 여부를 제어하는 선택적 플래그입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "인바운드 체크섬 생성"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "수락된 인바운드 파일에 대한 SHA-256 체크섬 생성"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "새 백엔드 인스턴스에 대한 선택적 기본 가상 디렉터리 권한입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "기본 디렉터리 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "생성된 가상 디렉터리의 기본 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "새 백엔드 인스턴스에 대한 선택적 기본 가상 파일 권한입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "기본 파일 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "생성된 가상 파일의 기본 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때의 선택적 가상 인바운드 교환 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "인바운드 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "가상 인바운드 교환 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "없음"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "인라인"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "인바운드 제출 이벤트에 대한 선택적 유형 지정 페이로드 모드입니다.\n\n- `none` -- 인바운드 이벤트에 페이로드 데이터가 포함되지 않음 (기본값)\n- `inline` -- 인바운드 이벤트에 제출된 페이로드가 포함됨"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "인바운드 이벤트 페이로드 모드"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "인바운드 이벤트에 페이로드 데이터 포함 여부 제어"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때의 선택적 유형 지정 인바운드 파일 수락 정책입니다. 지원되는 키에는 `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies` 및 `principal_routes`이 있습니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "인바운드 파일 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "인바운드 SFTP 파일 수락을 위한 유형 지정 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "인바운드 파일에 대한 선택적 유형 지정 보존 정책입니다. 현재 지원되는 키에는 `max_age_seconds`이 포함됩니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "인바운드 보존 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "인바운드 파일에 대한 보존 메타데이터 및 정리 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때의 선택적 가상 아웃바운드 교환 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "아웃바운드 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "가상 아웃바운드 교환 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "가상 백엔드 및 자식 제공자에 의해 상속되는 선택적 `LoggerInterface` 개체입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "로거"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "헬퍼 및 제공자 이벤트에 대한 선택적 로거"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.bm93X3M.desc": {
+          "source": "Optional deterministic evaluation time used to compute retention expiration; defaults to the current time when not set.",
+          "message": "보존 만료를 계산하는 데 사용되는 선택적 결정론적 평가 시간입니다. 설정되지 않은 경우 현재 시간으로 기본 설정됩니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.bm93X3M.display_name": {
+          "source": "Evaluation Time",
+          "message": "평가 시간"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.bm93X3M.short_desc": {
+          "source": "Optional deterministic evaluation time",
+          "message": "선택적 결정론적 평가 시간"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cHJpbmNpcGFs.desc": {
+          "source": "Optional authenticated principal to scope retention cleanup.",
+          "message": "보존 정리 범위를 지정하기 위한 선택적 인증된 주체입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cHJpbmNpcGFs.display_name": {
+          "source": "Principal",
+          "message": "주체"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cHJpbmNpcGFs.short_desc": {
+          "source": "Optional principal to scope retention cleanup",
+          "message": "보존 정리 범위를 지정하기 위한 선택적 주체"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cXVldWU.allowed-value.c3RyaW5nOmFyY2hpdmU.display_name": {
+          "source": "Archive",
+          "message": "아카이브"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cXVldWU.allowed-value.c3RyaW5nOmNsYWlt.display_name": {
+          "source": "Claim",
+          "message": "클레임"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cXVldWU.allowed-value.c3RyaW5nOmluYm91bmQ.display_name": {
+          "source": "Inbound",
+          "message": "인바운드"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cXVldWU.desc": {
+          "source": "The retention queue to clean.\n\n- `inbound` -- the inbound submission queue\n- `archive` -- the archived-entry queue\n- `claim` -- the claimed-entry queue",
+          "message": "정리할 보존 큐입니다.\n\n- `inbound` -- 인바운드 제출 큐\n- `archive` -- 보관된 엔트리 큐\n- `claim` -- 선점된 엔트리 큐"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cXVldWU.display_name": {
+          "source": "Retention Queue",
+          "message": "보존 큐"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cXVldWU.short_desc": {
+          "source": "The retention queue to clean",
+          "message": "정리할 보존 큐"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cmVtb3ZlX2VtcHR5X2RpcmVjdG9yaWVz.desc": {
+          "source": "Whether empty directories should be removed after expired files are deleted.",
+          "message": "만료된 파일이 삭제된 후 빈 디렉터리를 제거해야 하는지 여부입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cmVtb3ZlX2VtcHR5X2RpcmVjdG9yaWVz.display_name": {
+          "source": "Remove Empty Directories",
+          "message": "빈 디렉터리 제거"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cmVtb3ZlX2VtcHR5X2RpcmVjdG9yaWVz.short_desc": {
+          "source": "Remove empty directories after deleting expired files",
+          "message": "만료된 파일 삭제 후 빈 디렉터리 제거"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.short_desc": {
+          "source": "Remove expired files according to typed retention policies",
+          "message": "유형 지정 보존 정책에 따라 만료된 파일 제거"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.desc": {
+          "source": "Moves an outbound file to archive storage in the configured virtual SFTP exchange backend.",
+          "message": "구성된 가상 SFTP 교환 백엔드에서 아웃바운드 파일을 보관 저장소로 이동합니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.display_name": {
+          "source": "Archive Outbound File",
+          "message": "아웃바운드 파일 보관"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y29tcGxldGlvbl9tb2Rl.allowed-value.c3RyaW5nOmFyY2hpdmU.display_name": {
+          "source": "Archive",
+          "message": "아카이브"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y29tcGxldGlvbl9tb2Rl.allowed-value.c3RyaW5nOmNsYWlt.display_name": {
+          "source": "Claim",
+          "message": "클레임"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y29tcGxldGlvbl9tb2Rl.allowed-value.c3RyaW5nOmRlbGV0ZQ.display_name": {
+          "source": "Delete",
+          "message": "삭제"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y29tcGxldGlvbl9tb2Rl.desc": {
+          "source": "Optional typed completion mode.\n\n- `claim` -- move the entry to the claim queue\n- `archive` -- move the entry to the archive queue\n- `delete` -- delete the entry",
+          "message": "선택적 유형 지정 완료 모드입니다.\n\n- `claim` -- 항목을 클레임 대기열로 이동\n- `archive` -- 항목을 아카이브 대기열로 이동\n- `delete` -- 항목 삭제"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y29tcGxldGlvbl9tb2Rl.display_name": {
+          "source": "Completion Mode",
+          "message": "완료 모드"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y29tcGxldGlvbl9tb2Rl.short_desc": {
+          "source": "How the retrieval is finalized",
+          "message": "완료 방식"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때 사용할 선택적 가상 클레임 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "클레임 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "클레임된 아웃바운드 파일용 가상 클레임 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "클레임 파일에 대한 선택적 유형 지정 보존 정책입니다. 현재 지원되는 키에는 `max_age_seconds`이(가) 포함됩니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "클레임 보존 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "클레임된 아웃바운드 파일에 대한 보존 메타데이터 및 정리 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때 사용할 선택적 가상 아카이브 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "아카이브 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "완료된 아웃바운드 파일용 가상 아카이브 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "아카이브 파일에 대한 선택적 유형 지정 보존 정책입니다. 현재 지원되는 키에는 `max_age_seconds`이(가) 포함됩니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "아카이브 보존 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "아카이브된 아웃바운드 파일에 대한 보존 메타데이터 및 정리 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "공급자 백엔드로 사용할 기존 선택적 `VirtualSftpExchangeRecordStore` 또는 `VirtualSftpExchange` 객체입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "가상 교환 백엔드"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "기존 가상 교환 또는 레코드 스토어 백엔드 개체"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "수락된 인바운드 헬퍼/제공자/라이브 업로드가 결과 및 이벤트에서 유형화된 SHA-256 체크섬을 생성하고 나중의 stat/list/retrieve 흐름을 위해 가상 파일 메타데이터에 해당 체크섬을 유지할지 여부를 제어하는 선택적 플래그입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "인바운드 체크섬 생성"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "수락된 인바운드 파일에 대한 SHA-256 체크섬 생성"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "새 백엔드 인스턴스에 대한 선택적 기본 가상 디렉터리 권한입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "기본 디렉터리 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "생성된 가상 디렉터리의 기본 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "새 백엔드 인스턴스에 대한 선택적 기본 가상 파일 권한입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "기본 파일 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "생성된 가상 파일의 기본 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.ZmluYWxfbmFtZQ.desc": {
+          "source": "Optional final entry name for `claim` or `archive` operations.",
+          "message": "`claim` 또는 `archive` 작업에 대한 선택적 최종 엔트리 이름입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.ZmluYWxfbmFtZQ.display_name": {
+          "source": "Final Name",
+          "message": "최종 이름"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.ZmluYWxfbmFtZQ.short_desc": {
+          "source": "Optional final entry name for claim or archive",
+          "message": "선점 또는 보관 처리를 위한 선택적 최종 엔트리 이름"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때의 선택적 가상 인바운드 교환 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "인바운드 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "가상 인바운드 교환 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "없음"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "인라인"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "인바운드 제출 이벤트에 대한 선택적 유형 지정 페이로드 모드입니다.\n\n- `none` -- 인바운드 이벤트에 페이로드 데이터가 포함되지 않음 (기본값)\n- `inline` -- 인바운드 이벤트에 제출된 페이로드가 포함됨"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "인바운드 이벤트 페이로드 모드"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "인바운드 이벤트에 페이로드 데이터 포함 여부 제어"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때의 선택적 유형 지정 인바운드 파일 수락 정책입니다. 지원되는 키에는 `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies` 및 `principal_routes`이 있습니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "인바운드 파일 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "인바운드 SFTP 파일 수락을 위한 유형 지정 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "인바운드 파일에 대한 선택적 유형 지정 보존 정책입니다. 현재 지원되는 키에는 `max_age_seconds`이 포함됩니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "인바운드 보존 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "인바운드 파일에 대한 보존 메타데이터 및 정리 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때의 선택적 가상 아웃바운드 교환 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "아웃바운드 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "가상 아웃바운드 교환 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "가상 백엔드 및 자식 제공자에 의해 상속되는 선택적 `LoggerInterface` 개체입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "로거"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "헬퍼 및 제공자 이벤트에 대한 선택적 로거"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.bWV0YWRhdGE.desc": {
+          "source": "Optional free-form metadata for the operation.",
+          "message": "작업에 대한 선택적 자율 형식 메타데이터입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.bWV0YWRhdGE.display_name": {
+          "source": "Metadata",
+          "message": "메타데이터"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.bWV0YWRhdGE.short_desc": {
+          "source": "Optional free-form metadata for the operation",
+          "message": "작업에 대한 선택적 자율 형식 메타데이터"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.bmFtZQ.desc": {
+          "source": "The exchange entry name.",
+          "message": "교환 엔트리 이름입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.bmFtZQ.display_name": {
+          "source": "Entry Name",
+          "message": "엔트리 이름"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.bmFtZQ.short_desc": {
+          "source": "The exchange entry name",
+          "message": "교환 엔트리 이름"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.short_desc": {
+          "source": "Archive an outbound file in a virtual SFTP exchange",
+          "message": "가상 SFTP 교환에서 아웃바운드 파일 보관"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.desc": {
+          "source": "Deletes an outbound file from the configured virtual SFTP exchange backend.",
+          "message": "구성된 가상 SFTP 교환 백엔드에서 아웃바운드 파일을 삭제합니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.display_name": {
+          "source": "Delete Outbound File",
+          "message": "아웃바운드 파일 삭제"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y29tcGxldGlvbl9tb2Rl.allowed-value.c3RyaW5nOmFyY2hpdmU.display_name": {
+          "source": "Archive",
+          "message": "아카이브"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y29tcGxldGlvbl9tb2Rl.allowed-value.c3RyaW5nOmNsYWlt.display_name": {
+          "source": "Claim",
+          "message": "클레임"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y29tcGxldGlvbl9tb2Rl.allowed-value.c3RyaW5nOmRlbGV0ZQ.display_name": {
+          "source": "Delete",
+          "message": "삭제"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y29tcGxldGlvbl9tb2Rl.desc": {
+          "source": "Optional typed completion mode.\n\n- `claim` -- move the entry to the claim queue\n- `archive` -- move the entry to the archive queue\n- `delete` -- delete the entry",
+          "message": "선택적 유형 지정 완료 모드입니다.\n\n- `claim` -- 항목을 클레임 대기열로 이동\n- `archive` -- 항목을 아카이브 대기열로 이동\n- `delete` -- 항목 삭제"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y29tcGxldGlvbl9tb2Rl.display_name": {
+          "source": "Completion Mode",
+          "message": "완료 모드"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y29tcGxldGlvbl9tb2Rl.short_desc": {
+          "source": "How the retrieval is finalized",
+          "message": "완료 방식"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때 사용할 선택적 가상 클레임 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "클레임 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "클레임된 아웃바운드 파일용 가상 클레임 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "클레임 파일에 대한 선택적 유형 지정 보존 정책입니다. 현재 지원되는 키에는 `max_age_seconds`이(가) 포함됩니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "클레임 보존 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "클레임된 아웃바운드 파일에 대한 보존 메타데이터 및 정리 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때 사용할 선택적 가상 아카이브 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "아카이브 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "완료된 아웃바운드 파일용 가상 아카이브 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "아카이브 파일에 대한 선택적 유형 지정 보존 정책입니다. 현재 지원되는 키에는 `max_age_seconds`이(가) 포함됩니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "아카이브 보존 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "아카이브된 아웃바운드 파일에 대한 보존 메타데이터 및 정리 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "공급자 백엔드로 사용할 기존 선택적 `VirtualSftpExchangeRecordStore` 또는 `VirtualSftpExchange` 객체입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "가상 교환 백엔드"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "기존 가상 교환 또는 레코드 스토어 백엔드 개체"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "수락된 인바운드 헬퍼/제공자/라이브 업로드가 결과 및 이벤트에서 유형화된 SHA-256 체크섬을 생성하고 나중의 stat/list/retrieve 흐름을 위해 가상 파일 메타데이터에 해당 체크섬을 유지할지 여부를 제어하는 선택적 플래그입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "인바운드 체크섬 생성"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "수락된 인바운드 파일에 대한 SHA-256 체크섬 생성"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "새 백엔드 인스턴스에 대한 선택적 기본 가상 디렉터리 권한입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "기본 디렉터리 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "생성된 가상 디렉터리의 기본 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "새 백엔드 인스턴스에 대한 선택적 기본 가상 파일 권한입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "기본 파일 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "생성된 가상 파일의 기본 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.ZmluYWxfbmFtZQ.desc": {
+          "source": "Optional final entry name for `claim` or `archive` operations.",
+          "message": "`claim` 또는 `archive` 작업에 대한 선택적 최종 엔트리 이름입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.ZmluYWxfbmFtZQ.display_name": {
+          "source": "Final Name",
+          "message": "최종 이름"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.ZmluYWxfbmFtZQ.short_desc": {
+          "source": "Optional final entry name for claim or archive",
+          "message": "선점 또는 보관 처리를 위한 선택적 최종 엔트리 이름"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때의 선택적 가상 인바운드 교환 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "인바운드 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "가상 인바운드 교환 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "없음"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "인라인"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "인바운드 제출 이벤트에 대한 선택적 유형 지정 페이로드 모드입니다.\n\n- `none` -- 인바운드 이벤트에 페이로드 데이터가 포함되지 않음 (기본값)\n- `inline` -- 인바운드 이벤트에 제출된 페이로드가 포함됨"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "인바운드 이벤트 페이로드 모드"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "인바운드 이벤트에 페이로드 데이터 포함 여부 제어"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때의 선택적 유형 지정 인바운드 파일 수락 정책입니다. 지원되는 키에는 `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies` 및 `principal_routes`이 있습니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "인바운드 파일 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "인바운드 SFTP 파일 수락을 위한 유형 지정 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "인바운드 파일에 대한 선택적 유형 지정 보존 정책입니다. 현재 지원되는 키에는 `max_age_seconds`이 포함됩니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "인바운드 보존 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "인바운드 파일에 대한 보존 메타데이터 및 정리 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때의 선택적 가상 아웃바운드 교환 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "아웃바운드 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "가상 아웃바운드 교환 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "가상 백엔드 및 자식 제공자에 의해 상속되는 선택적 `LoggerInterface` 개체입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "로거"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "헬퍼 및 제공자 이벤트에 대한 선택적 로거"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.bWV0YWRhdGE.desc": {
+          "source": "Optional free-form metadata for the operation.",
+          "message": "작업에 대한 선택적 자율 형식 메타데이터입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.bWV0YWRhdGE.display_name": {
+          "source": "Metadata",
+          "message": "메타데이터"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.bWV0YWRhdGE.short_desc": {
+          "source": "Optional free-form metadata for the operation",
+          "message": "작업에 대한 선택적 자율 형식 메타데이터"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.bmFtZQ.desc": {
+          "source": "The exchange entry name.",
+          "message": "교환 엔트리 이름입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.bmFtZQ.display_name": {
+          "source": "Entry Name",
+          "message": "엔트리 이름"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.bmFtZQ.short_desc": {
+          "source": "The exchange entry name",
+          "message": "교환 엔트리 이름"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.short_desc": {
+          "source": "Delete an outbound file from a virtual SFTP exchange",
+          "message": "가상 SFTP 교환에서 아웃바운드 파일 삭제"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.desc": {
+          "source": "Raises a typed event when a new inbound file is accepted by the configured virtual SFTP exchange backend, including files uploaded through accepted SFTP sessions.",
+          "message": "수락된 SFTP 세션을 통해 업로드된 파일을 포함하여 구성된 가상 SFTP 교환 백엔드에서 새 인바운드 파일이 수락되면 유형 지정 이벤트를 발생시킵니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.display_name": {
+          "source": "Inbound File Accepted",
+          "message": "인바운드 파일 수락됨"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때 사용할 선택적 가상 클레임 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "클레임 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "클레임된 아웃바운드 파일용 가상 클레임 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "클레임 파일에 대한 선택적 유형 지정 보존 정책입니다. 현재 지원되는 키에는 `max_age_seconds`이(가) 포함됩니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "클레임 보존 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "클레임된 아웃바운드 파일에 대한 보존 메타데이터 및 정리 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때 사용할 선택적 가상 아카이브 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "아카이브 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "완료된 아웃바운드 파일용 가상 아카이브 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "아카이브 파일에 대한 선택적 유형 지정 보존 정책입니다. 현재 지원되는 키에는 `max_age_seconds`이(가) 포함됩니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "아카이브 보존 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "아카이브된 아웃바운드 파일에 대한 보존 메타데이터 및 정리 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "공급자 백엔드로 사용할 기존 선택적 `VirtualSftpExchangeRecordStore` 또는 `VirtualSftpExchange` 객체입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "가상 교환 백엔드"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "기존 가상 교환 또는 레코드 스토어 백엔드 개체"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "수락된 인바운드 헬퍼/제공자/라이브 업로드가 결과 및 이벤트에서 유형화된 SHA-256 체크섬을 생성하고 나중의 stat/list/retrieve 흐름을 위해 가상 파일 메타데이터에 해당 체크섬을 유지할지 여부를 제어하는 선택적 플래그입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "인바운드 체크섬 생성"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "수락된 인바운드 파일에 대한 SHA-256 체크섬 생성"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "새 백엔드 인스턴스에 대한 선택적 기본 가상 디렉터리 권한입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "기본 디렉터리 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "생성된 가상 디렉터리의 기본 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "새 백엔드 인스턴스에 대한 선택적 기본 가상 파일 권한입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "기본 파일 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "생성된 가상 파일의 기본 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때의 선택적 가상 인바운드 교환 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "인바운드 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "가상 인바운드 교환 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "없음"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "인라인"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "인바운드 제출 이벤트에 대한 선택적 유형 지정 페이로드 모드입니다.\n\n- `none` -- 인바운드 이벤트에 페이로드 데이터가 포함되지 않음 (기본값)\n- `inline` -- 인바운드 이벤트에 제출된 페이로드가 포함됨"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "인바운드 이벤트 페이로드 모드"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "인바운드 이벤트에 페이로드 데이터 포함 여부 제어"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때의 선택적 유형 지정 인바운드 파일 수락 정책입니다. 지원되는 키에는 `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies` 및 `principal_routes`이 있습니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "인바운드 파일 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "인바운드 SFTP 파일 수락을 위한 유형 지정 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "인바운드 파일에 대한 선택적 유형 지정 보존 정책입니다. 현재 지원되는 키에는 `max_age_seconds`이 포함됩니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "인바운드 보존 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "인바운드 파일에 대한 보존 메타데이터 및 정리 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때의 선택적 가상 아웃바운드 교환 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "아웃바운드 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "가상 아웃바운드 교환 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "가상 백엔드 및 자식 제공자에 의해 상속되는 선택적 `LoggerInterface` 개체입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "로거"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "헬퍼 및 제공자 이벤트에 대한 선택적 로거"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.short_desc": {
+          "source": "Raise an event when a new inbound file is accepted",
+          "message": "새 인바운드 파일이 수락되면 이벤트 발생"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.desc": {
+          "source": "Raises a typed event when an inbound file submission is rejected by the configured virtual SFTP exchange inbound acceptance policy, including uploads through SFTP sessions; the event carries the typed `reason_code` and `reason_desc`.",
+          "message": "SFTP 세션을 통한 업로드를 포함하여 구성된 가상 SFTP 교환 수신 수락 정책에 의해 수신 파일 제출이 거부될 때 형식 지정 이벤트를 발생시킵니다. 이벤트는 형식 지정된 `reason_code` 및 `reason_desc`을 전달합니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.display_name": {
+          "source": "Inbound File Rejected",
+          "message": "수신 파일 거부됨"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때 사용할 선택적 가상 클레임 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "클레임 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "클레임된 아웃바운드 파일용 가상 클레임 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "클레임 파일에 대한 선택적 유형 지정 보존 정책입니다. 현재 지원되는 키에는 `max_age_seconds`이(가) 포함됩니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "클레임 보존 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "클레임된 아웃바운드 파일에 대한 보존 메타데이터 및 정리 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때 사용할 선택적 가상 아카이브 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "아카이브 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "완료된 아웃바운드 파일용 가상 아카이브 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "아카이브 파일에 대한 선택적 유형 지정 보존 정책입니다. 현재 지원되는 키에는 `max_age_seconds`이(가) 포함됩니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "아카이브 보존 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "아카이브된 아웃바운드 파일에 대한 보존 메타데이터 및 정리 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "공급자 백엔드로 사용할 기존 선택적 `VirtualSftpExchangeRecordStore` 또는 `VirtualSftpExchange` 객체입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "가상 교환 백엔드"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "기존 가상 교환 또는 레코드 스토어 백엔드 개체"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "수락된 인바운드 헬퍼/제공자/라이브 업로드가 결과 및 이벤트에서 유형화된 SHA-256 체크섬을 생성하고 나중의 stat/list/retrieve 흐름을 위해 가상 파일 메타데이터에 해당 체크섬을 유지할지 여부를 제어하는 선택적 플래그입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "인바운드 체크섬 생성"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "수락된 인바운드 파일에 대한 SHA-256 체크섬 생성"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "새 백엔드 인스턴스에 대한 선택적 기본 가상 디렉터리 권한입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "기본 디렉터리 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "생성된 가상 디렉터리의 기본 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "새 백엔드 인스턴스에 대한 선택적 기본 가상 파일 권한입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "기본 파일 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "생성된 가상 파일의 기본 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때의 선택적 가상 인바운드 교환 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "인바운드 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "가상 인바운드 교환 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "없음"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "인라인"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "인바운드 제출 이벤트에 대한 선택적 유형 지정 페이로드 모드입니다.\n\n- `none` -- 인바운드 이벤트에 페이로드 데이터가 포함되지 않음 (기본값)\n- `inline` -- 인바운드 이벤트에 제출된 페이로드가 포함됨"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "인바운드 이벤트 페이로드 모드"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "인바운드 이벤트에 페이로드 데이터 포함 여부 제어"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때의 선택적 유형 지정 인바운드 파일 수락 정책입니다. 지원되는 키에는 `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies` 및 `principal_routes`이 있습니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "인바운드 파일 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "인바운드 SFTP 파일 수락을 위한 유형 지정 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "인바운드 파일에 대한 선택적 유형 지정 보존 정책입니다. 현재 지원되는 키에는 `max_age_seconds`이 포함됩니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "인바운드 보존 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "인바운드 파일에 대한 보존 메타데이터 및 정리 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때의 선택적 가상 아웃바운드 교환 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "아웃바운드 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "가상 아웃바운드 교환 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "가상 백엔드 및 자식 제공자에 의해 상속되는 선택적 `LoggerInterface` 개체입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "로거"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "헬퍼 및 제공자 이벤트에 대한 선택적 로거"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.short_desc": {
+          "source": "Raise an event when an inbound file is rejected",
+          "message": "수신 파일이 거부될 때 이벤트 발생"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.desc": {
+          "source": "Raises a typed event when an outbound file is archived by the configured virtual SFTP exchange backend.",
+          "message": "구성된 가상 SFTP 교환 백엔드에 의해 송신 파일이 보관될 때 형식 지정 이벤트를 발생시킵니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.display_name": {
+          "source": "Outbound File Archived",
+          "message": "송신 파일 보관됨"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때 사용할 선택적 가상 클레임 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "클레임 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "클레임된 아웃바운드 파일용 가상 클레임 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "클레임 파일에 대한 선택적 유형 지정 보존 정책입니다. 현재 지원되는 키에는 `max_age_seconds`이(가) 포함됩니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "클레임 보존 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "클레임된 아웃바운드 파일에 대한 보존 메타데이터 및 정리 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때 사용할 선택적 가상 아카이브 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "아카이브 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "완료된 아웃바운드 파일용 가상 아카이브 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "아카이브 파일에 대한 선택적 유형 지정 보존 정책입니다. 현재 지원되는 키에는 `max_age_seconds`이(가) 포함됩니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "아카이브 보존 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "아카이브된 아웃바운드 파일에 대한 보존 메타데이터 및 정리 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "공급자 백엔드로 사용할 기존 선택적 `VirtualSftpExchangeRecordStore` 또는 `VirtualSftpExchange` 객체입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "가상 교환 백엔드"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "기존 가상 교환 또는 레코드 스토어 백엔드 개체"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "수락된 인바운드 헬퍼/제공자/라이브 업로드가 결과 및 이벤트에서 유형화된 SHA-256 체크섬을 생성하고 나중의 stat/list/retrieve 흐름을 위해 가상 파일 메타데이터에 해당 체크섬을 유지할지 여부를 제어하는 선택적 플래그입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "인바운드 체크섬 생성"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "수락된 인바운드 파일에 대한 SHA-256 체크섬 생성"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "새 백엔드 인스턴스에 대한 선택적 기본 가상 디렉터리 권한입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "기본 디렉터리 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "생성된 가상 디렉터리의 기본 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "새 백엔드 인스턴스에 대한 선택적 기본 가상 파일 권한입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "기본 파일 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "생성된 가상 파일의 기본 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때의 선택적 가상 인바운드 교환 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "인바운드 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "가상 인바운드 교환 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "없음"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "인라인"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "인바운드 제출 이벤트에 대한 선택적 유형 지정 페이로드 모드입니다.\n\n- `none` -- 인바운드 이벤트에 페이로드 데이터가 포함되지 않음 (기본값)\n- `inline` -- 인바운드 이벤트에 제출된 페이로드가 포함됨"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "인바운드 이벤트 페이로드 모드"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "인바운드 이벤트에 페이로드 데이터 포함 여부 제어"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때의 선택적 유형 지정 인바운드 파일 수락 정책입니다. 지원되는 키에는 `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies` 및 `principal_routes`이 있습니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "인바운드 파일 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "인바운드 SFTP 파일 수락을 위한 유형 지정 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "인바운드 파일에 대한 선택적 유형 지정 보존 정책입니다. 현재 지원되는 키에는 `max_age_seconds`이 포함됩니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "인바운드 보존 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "인바운드 파일에 대한 보존 메타데이터 및 정리 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때의 선택적 가상 아웃바운드 교환 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "아웃바운드 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "가상 아웃바운드 교환 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "가상 백엔드 및 자식 제공자에 의해 상속되는 선택적 `LoggerInterface` 개체입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "로거"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "헬퍼 및 제공자 이벤트에 대한 선택적 로거"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.short_desc": {
+          "source": "Raise an event when an outbound file is archived",
+          "message": "송신 파일이 보관될 때 이벤트 발생"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.desc": {
+          "source": "Raises a typed event when an outbound file is claimed from the configured virtual SFTP exchange backend.",
+          "message": "구성된 가상 SFTP 교환 백엔드에서 송신 파일이 클레임될 때 형식 지정 이벤트를 발생시킵니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.display_name": {
+          "source": "Outbound File Claimed",
+          "message": "송신 파일 클레임됨"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때 사용할 선택적 가상 클레임 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "클레임 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "클레임된 아웃바운드 파일용 가상 클레임 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "클레임 파일에 대한 선택적 유형 지정 보존 정책입니다. 현재 지원되는 키에는 `max_age_seconds`이(가) 포함됩니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "클레임 보존 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "클레임된 아웃바운드 파일에 대한 보존 메타데이터 및 정리 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때 사용할 선택적 가상 아카이브 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "아카이브 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "완료된 아웃바운드 파일용 가상 아카이브 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "아카이브 파일에 대한 선택적 유형 지정 보존 정책입니다. 현재 지원되는 키에는 `max_age_seconds`이(가) 포함됩니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "아카이브 보존 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "아카이브된 아웃바운드 파일에 대한 보존 메타데이터 및 정리 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "공급자 백엔드로 사용할 기존 선택적 `VirtualSftpExchangeRecordStore` 또는 `VirtualSftpExchange` 객체입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "가상 교환 백엔드"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "기존 가상 교환 또는 레코드 스토어 백엔드 개체"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "수락된 인바운드 헬퍼/제공자/라이브 업로드가 결과 및 이벤트에서 유형화된 SHA-256 체크섬을 생성하고 나중의 stat/list/retrieve 흐름을 위해 가상 파일 메타데이터에 해당 체크섬을 유지할지 여부를 제어하는 선택적 플래그입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "인바운드 체크섬 생성"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "수락된 인바운드 파일에 대한 SHA-256 체크섬 생성"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "새 백엔드 인스턴스에 대한 선택적 기본 가상 디렉터리 권한입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "기본 디렉터리 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "생성된 가상 디렉터리의 기본 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "새 백엔드 인스턴스에 대한 선택적 기본 가상 파일 권한입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "기본 파일 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "생성된 가상 파일의 기본 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때의 선택적 가상 인바운드 교환 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "인바운드 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "가상 인바운드 교환 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "없음"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "인라인"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "인바운드 제출 이벤트에 대한 선택적 유형 지정 페이로드 모드입니다.\n\n- `none` -- 인바운드 이벤트에 페이로드 데이터가 포함되지 않음 (기본값)\n- `inline` -- 인바운드 이벤트에 제출된 페이로드가 포함됨"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "인바운드 이벤트 페이로드 모드"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "인바운드 이벤트에 페이로드 데이터 포함 여부 제어"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때의 선택적 유형 지정 인바운드 파일 수락 정책입니다. 지원되는 키에는 `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies` 및 `principal_routes`이 있습니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "인바운드 파일 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "인바운드 SFTP 파일 수락을 위한 유형 지정 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "인바운드 파일에 대한 선택적 유형 지정 보존 정책입니다. 현재 지원되는 키에는 `max_age_seconds`이 포함됩니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "인바운드 보존 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "인바운드 파일에 대한 보존 메타데이터 및 정리 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때의 선택적 가상 아웃바운드 교환 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "아웃바운드 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "가상 아웃바운드 교환 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "가상 백엔드 및 자식 제공자에 의해 상속되는 선택적 `LoggerInterface` 개체입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "로거"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "헬퍼 및 제공자 이벤트에 대한 선택적 로거"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.short_desc": {
+          "source": "Raise an event when an outbound file is claimed",
+          "message": "송신 파일이 클레임될 때 이벤트 발생"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.desc": {
+          "source": "Raises a typed event when an outbound file is deleted from the configured virtual SFTP exchange backend.",
+          "message": "구성된 가상 SFTP 교환 백엔드에서 송신 파일이 삭제될 때 형식 지정 이벤트를 발생시킵니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.display_name": {
+          "source": "Outbound File Deleted",
+          "message": "송신 파일 삭제됨"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때 사용할 선택적 가상 클레임 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "클레임 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "클레임된 아웃바운드 파일용 가상 클레임 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "클레임 파일에 대한 선택적 유형 지정 보존 정책입니다. 현재 지원되는 키에는 `max_age_seconds`이(가) 포함됩니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "클레임 보존 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "클레임된 아웃바운드 파일에 대한 보존 메타데이터 및 정리 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때 사용할 선택적 가상 아카이브 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "아카이브 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "완료된 아웃바운드 파일용 가상 아카이브 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "아카이브 파일에 대한 선택적 유형 지정 보존 정책입니다. 현재 지원되는 키에는 `max_age_seconds`이(가) 포함됩니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "아카이브 보존 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "아카이브된 아웃바운드 파일에 대한 보존 메타데이터 및 정리 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "공급자 백엔드로 사용할 기존 선택적 `VirtualSftpExchangeRecordStore` 또는 `VirtualSftpExchange` 객체입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "가상 교환 백엔드"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "기존 가상 교환 또는 레코드 스토어 백엔드 개체"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "수락된 인바운드 헬퍼/제공자/라이브 업로드가 결과 및 이벤트에서 유형화된 SHA-256 체크섬을 생성하고 나중의 stat/list/retrieve 흐름을 위해 가상 파일 메타데이터에 해당 체크섬을 유지할지 여부를 제어하는 선택적 플래그입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "인바운드 체크섬 생성"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "수락된 인바운드 파일에 대한 SHA-256 체크섬 생성"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "새 백엔드 인스턴스에 대한 선택적 기본 가상 디렉터리 권한입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "기본 디렉터리 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "생성된 가상 디렉터리의 기본 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "새 백엔드 인스턴스에 대한 선택적 기본 가상 파일 권한입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "기본 파일 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "생성된 가상 파일의 기본 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때의 선택적 가상 인바운드 교환 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "인바운드 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "가상 인바운드 교환 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "없음"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "인라인"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "인바운드 제출 이벤트에 대한 선택적 유형 지정 페이로드 모드입니다.\n\n- `none` -- 인바운드 이벤트에 페이로드 데이터가 포함되지 않음 (기본값)\n- `inline` -- 인바운드 이벤트에 제출된 페이로드가 포함됨"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "인바운드 이벤트 페이로드 모드"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "인바운드 이벤트에 페이로드 데이터 포함 여부 제어"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때의 선택적 유형 지정 인바운드 파일 수락 정책입니다. 지원되는 키에는 `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies` 및 `principal_routes`이 있습니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "인바운드 파일 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "인바운드 SFTP 파일 수락을 위한 유형 지정 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "인바운드 파일에 대한 선택적 유형 지정 보존 정책입니다. 현재 지원되는 키에는 `max_age_seconds`이 포함됩니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "인바운드 보존 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "인바운드 파일에 대한 보존 메타데이터 및 정리 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때의 선택적 가상 아웃바운드 교환 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "아웃바운드 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "가상 아웃바운드 교환 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "가상 백엔드 및 자식 제공자에 의해 상속되는 선택적 `LoggerInterface` 개체입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "로거"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "헬퍼 및 제공자 이벤트에 대한 선택적 로거"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.short_desc": {
+          "source": "Raise an event when an outbound file is deleted",
+          "message": "송신 파일이 삭제될 때 이벤트 발생"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.desc": {
+          "source": "Lists currently available outbound files in the configured virtual SFTP exchange backend.",
+          "message": "구성된 가상 SFTP 교환 백엔드에서 현재 사용 가능한 송신 파일 목록을 조회합니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.display_name": {
+          "source": "List Outbound Files",
+          "message": "송신 파일 목록 조회"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때 사용할 선택적 가상 클레임 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "클레임 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "클레임된 아웃바운드 파일용 가상 클레임 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "클레임 파일에 대한 선택적 유형 지정 보존 정책입니다. 현재 지원되는 키에는 `max_age_seconds`이(가) 포함됩니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "클레임 보존 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "클레임된 아웃바운드 파일에 대한 보존 메타데이터 및 정리 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때 사용할 선택적 가상 아카이브 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "아카이브 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "완료된 아웃바운드 파일용 가상 아카이브 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "아카이브 파일에 대한 선택적 유형 지정 보존 정책입니다. 현재 지원되는 키에는 `max_age_seconds`이(가) 포함됩니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "아카이브 보존 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "아카이브된 아웃바운드 파일에 대한 보존 메타데이터 및 정리 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "공급자 백엔드로 사용할 기존 선택적 `VirtualSftpExchangeRecordStore` 또는 `VirtualSftpExchange` 객체입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "가상 교환 백엔드"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "기존 가상 교환 또는 레코드 스토어 백엔드 개체"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "수락된 인바운드 헬퍼/제공자/라이브 업로드가 결과 및 이벤트에서 유형화된 SHA-256 체크섬을 생성하고 나중의 stat/list/retrieve 흐름을 위해 가상 파일 메타데이터에 해당 체크섬을 유지할지 여부를 제어하는 선택적 플래그입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "인바운드 체크섬 생성"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "수락된 인바운드 파일에 대한 SHA-256 체크섬 생성"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "새 백엔드 인스턴스에 대한 선택적 기본 가상 디렉터리 권한입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "기본 디렉터리 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "생성된 가상 디렉터리의 기본 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "새 백엔드 인스턴스에 대한 선택적 기본 가상 파일 권한입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "기본 파일 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "생성된 가상 파일의 기본 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때의 선택적 가상 인바운드 교환 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "인바운드 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "가상 인바운드 교환 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "없음"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "인라인"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "인바운드 제출 이벤트에 대한 선택적 유형 지정 페이로드 모드입니다.\n\n- `none` -- 인바운드 이벤트에 페이로드 데이터가 포함되지 않음 (기본값)\n- `inline` -- 인바운드 이벤트에 제출된 페이로드가 포함됨"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "인바운드 이벤트 페이로드 모드"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "인바운드 이벤트에 페이로드 데이터 포함 여부 제어"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때의 선택적 유형 지정 인바운드 파일 수락 정책입니다. 지원되는 키에는 `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies` 및 `principal_routes`이 있습니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "인바운드 파일 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "인바운드 SFTP 파일 수락을 위한 유형 지정 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "인바운드 파일에 대한 선택적 유형 지정 보존 정책입니다. 현재 지원되는 키에는 `max_age_seconds`이 포함됩니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "인바운드 보존 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "인바운드 파일에 대한 보존 메타데이터 및 정리 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때의 선택적 가상 아웃바운드 교환 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "아웃바운드 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "가상 아웃바운드 교환 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "가상 백엔드 및 자식 제공자에 의해 상속되는 선택적 `LoggerInterface` 개체입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "로거"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "헬퍼 및 제공자 이벤트에 대한 선택적 로거"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.short_desc": {
+          "source": "List available outbound files in a virtual SFTP exchange",
+          "message": "가상 SFTP 교환에서 사용 가능한 송신 파일 목록 조회"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.desc": {
+          "source": "Submits an inbound file into the configured virtual SFTP exchange backend.",
+          "message": "구성된 가상 SFTP 교환 백엔드로 수신 파일을 제출합니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.display_name": {
+          "source": "Submit Inbound File",
+          "message": "수신 파일 제출"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때 사용할 선택적 가상 클레임 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "클레임 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "클레임된 아웃바운드 파일용 가상 클레임 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "클레임 파일에 대한 선택적 유형 지정 보존 정책입니다. 현재 지원되는 키에는 `max_age_seconds`이(가) 포함됩니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "클레임 보존 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "클레임된 아웃바운드 파일에 대한 보존 메타데이터 및 정리 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때 사용할 선택적 가상 아카이브 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "아카이브 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "완료된 아웃바운드 파일용 가상 아카이브 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "아카이브 파일에 대한 선택적 유형 지정 보존 정책입니다. 현재 지원되는 키에는 `max_age_seconds`이(가) 포함됩니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "아카이브 보존 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "아카이브된 아웃바운드 파일에 대한 보존 메타데이터 및 정리 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "공급자 백엔드로 사용할 기존 선택적 `VirtualSftpExchangeRecordStore` 또는 `VirtualSftpExchange` 객체입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "가상 교환 백엔드"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "기존 가상 교환 또는 레코드 스토어 백엔드 개체"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "수락된 인바운드 헬퍼/제공자/라이브 업로드가 결과 및 이벤트에서 유형화된 SHA-256 체크섬을 생성하고 나중의 stat/list/retrieve 흐름을 위해 가상 파일 메타데이터에 해당 체크섬을 유지할지 여부를 제어하는 선택적 플래그입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "인바운드 체크섬 생성"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "수락된 인바운드 파일에 대한 SHA-256 체크섬 생성"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.ZGF0YQ.desc": {
+          "source": "The binary payload to submit.",
+          "message": "제출할 바이너리 페이로드입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.ZGF0YQ.display_name": {
+          "source": "Payload",
+          "message": "페이로드"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.ZGF0YQ.short_desc": {
+          "source": "The binary payload to submit",
+          "message": "제출할 바이너리 페이로드"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "새 백엔드 인스턴스에 대한 선택적 기본 가상 디렉터리 권한입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "기본 디렉터리 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "생성된 가상 디렉터리의 기본 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "새 백엔드 인스턴스에 대한 선택적 기본 가상 파일 권한입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "기본 파일 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "생성된 가상 파일의 기본 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때의 선택적 가상 인바운드 교환 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "인바운드 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "가상 인바운드 교환 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "없음"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "인라인"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "인바운드 제출 이벤트에 대한 선택적 유형 지정 페이로드 모드입니다.\n\n- `none` -- 인바운드 이벤트에 페이로드 데이터가 포함되지 않음 (기본값)\n- `inline` -- 인바운드 이벤트에 제출된 페이로드가 포함됨"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "인바운드 이벤트 페이로드 모드"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "인바운드 이벤트에 페이로드 데이터 포함 여부 제어"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때의 선택적 유형 지정 인바운드 파일 수락 정책입니다. 지원되는 키에는 `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies` 및 `principal_routes`이 있습니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "인바운드 파일 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "인바운드 SFTP 파일 수락을 위한 유형 지정 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "인바운드 파일에 대한 선택적 유형 지정 보존 정책입니다. 현재 지원되는 키에는 `max_age_seconds`이 포함됩니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "인바운드 보존 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "인바운드 파일에 대한 보존 메타데이터 및 정리 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때의 선택적 가상 아웃바운드 교환 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "아웃바운드 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "가상 아웃바운드 교환 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "가상 백엔드 및 자식 제공자에 의해 상속되는 선택적 `LoggerInterface` 개체입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "로거"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "헬퍼 및 제공자 이벤트에 대한 선택적 로거"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.bWV0YWRhdGE.desc": {
+          "source": "Optional free-form metadata to associate with the entry.",
+          "message": "항목과 연결할 선택적 자유 형식 메타데이터입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.bWV0YWRhdGE.display_name": {
+          "source": "Metadata",
+          "message": "메타데이터"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.bWV0YWRhdGE.short_desc": {
+          "source": "Optional free-form metadata for the entry",
+          "message": "항목에 대한 선택적 자유 형식 메타데이터"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.bmFtZQ.desc": {
+          "source": "The inbound exchange entry name.",
+          "message": "수신 교환 항목 이름입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.bmFtZQ.display_name": {
+          "source": "Entry Name",
+          "message": "엔트리 이름"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.bmFtZQ.short_desc": {
+          "source": "The inbound exchange entry name",
+          "message": "수신 교환 항목 이름"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.short_desc": {
+          "source": "Submit an inbound file to a virtual SFTP exchange",
+          "message": "가상 SFTP 교환에 수신 파일 제출"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.desc": {
+          "source": "Retrieves an outbound file payload from the configured virtual SFTP exchange backend.",
+          "message": "구성된 가상 SFTP 교환 백엔드에서 송신 파일 페이로드를 가져옵니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.display_name": {
+          "source": "Retrieve Outbound File",
+          "message": "송신 파일 가져오기"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때 사용할 선택적 가상 클레임 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "클레임 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "클레임된 아웃바운드 파일용 가상 클레임 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "클레임 파일에 대한 선택적 유형 지정 보존 정책입니다. 현재 지원되는 키에는 `max_age_seconds`이(가) 포함됩니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "클레임 보존 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "클레임된 아웃바운드 파일에 대한 보존 메타데이터 및 정리 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때 사용할 선택적 가상 아카이브 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "아카이브 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "완료된 아웃바운드 파일용 가상 아카이브 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "아카이브 파일에 대한 선택적 유형 지정 보존 정책입니다. 현재 지원되는 키에는 `max_age_seconds`이(가) 포함됩니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "아카이브 보존 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "아카이브된 아웃바운드 파일에 대한 보존 메타데이터 및 정리 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "공급자 백엔드로 사용할 기존 선택적 `VirtualSftpExchangeRecordStore` 또는 `VirtualSftpExchange` 객체입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "가상 교환 백엔드"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "기존 가상 교환 또는 레코드 스토어 백엔드 개체"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "수락된 인바운드 헬퍼/제공자/라이브 업로드가 결과 및 이벤트에서 유형화된 SHA-256 체크섬을 생성하고 나중의 stat/list/retrieve 흐름을 위해 가상 파일 메타데이터에 해당 체크섬을 유지할지 여부를 제어하는 선택적 플래그입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "인바운드 체크섬 생성"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "수락된 인바운드 파일에 대한 SHA-256 체크섬 생성"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "새 백엔드 인스턴스에 대한 선택적 기본 가상 디렉터리 권한입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "기본 디렉터리 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "생성된 가상 디렉터리의 기본 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "새 백엔드 인스턴스에 대한 선택적 기본 가상 파일 권한입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "기본 파일 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "생성된 가상 파일의 기본 권한"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때의 선택적 가상 인바운드 교환 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "인바운드 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "가상 인바운드 교환 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "없음"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "인라인"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "인바운드 제출 이벤트에 대한 선택적 유형 지정 페이로드 모드입니다.\n\n- `none` -- 인바운드 이벤트에 페이로드 데이터가 포함되지 않음 (기본값)\n- `inline` -- 인바운드 이벤트에 제출된 페이로드가 포함됨"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "인바운드 이벤트 페이로드 모드"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "인바운드 이벤트에 페이로드 데이터 포함 여부 제어"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때의 선택적 유형 지정 인바운드 파일 수락 정책입니다. 지원되는 키에는 `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies` 및 `principal_routes`이 있습니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "인바운드 파일 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "인바운드 SFTP 파일 수락을 위한 유형 지정 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "인바운드 파일에 대한 선택적 유형 지정 보존 정책입니다. 현재 지원되는 키에는 `max_age_seconds`이 포함됩니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "인바운드 보존 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "인바운드 파일에 대한 보존 메타데이터 및 정리 정책"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "생성자 옵션에서 백엔드를 생성할 때의 선택적 가상 아웃바운드 교환 디렉터리입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "아웃바운드 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "가상 아웃바운드 교환 디렉터리"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "가상 백엔드 및 자식 제공자에 의해 상속되는 선택적 `LoggerInterface` 개체입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "로거"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "헬퍼 및 제공자 이벤트에 대한 선택적 로거"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.bWV0YWRhdGE.desc": {
+          "source": "Optional free-form metadata for the operation.",
+          "message": "작업에 대한 선택적 자율 형식 메타데이터입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.bWV0YWRhdGE.display_name": {
+          "source": "Metadata",
+          "message": "메타데이터"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.bWV0YWRhdGE.short_desc": {
+          "source": "Optional free-form metadata for the operation",
+          "message": "작업에 대한 선택적 자율 형식 메타데이터"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.bmFtZQ.desc": {
+          "source": "The exchange entry name.",
+          "message": "교환 엔트리 이름입니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.bmFtZQ.display_name": {
+          "source": "Entry Name",
+          "message": "엔트리 이름"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.bmFtZQ.short_desc": {
+          "source": "The exchange entry name",
+          "message": "교환 엔트리 이름"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.short_desc": {
+          "source": "Retrieve an outbound file from a virtual SFTP exchange",
+          "message": "가상 SFTP 교환에서 송신 파일 가져오기"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.desc": {
+          "source": "Generic data-provider API for virtualized SFTP exchange workflows built on top of the `module-ssh` server-side SFTP backend.\n\nThis initial provider layer is intentionally generic and backend-driven:\n- it uses typed request and response models\n- it is backed by `VirtualSftpExchangeRecordStore`\n- it exposes generic outbound retrieval and completion operations plus inbound submission\n\nThe app is served by the `sftpserver` connection scheme through `SshServerConnections::SftpServerConnection`.",
+          "message": "`module-ssh` 서버 측 SFTP 백엔드 위에 구축된 가상화된 SFTP 교환 워크플로용 일반 데이터 제공자 API입니다.\n\n이 초기 제공자 레이어는 의도적으로 일반적이고 백엔드 중심적입니다.\n- 형식 지정된 요청 및 응답 모델을 사용합니다.\n- `VirtualSftpExchangeRecordStore`의 지원을 받습니다.\n- 일반 송신 가져오기 및 완료 작업과 수신 제출을 노출합니다.\n\n앱은 `SshServerConnections::SftpServerConnection`을 통해 `sftpserver` 연결 스키마로 제공됩니다."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.display_name": {
+          "source": "SFTP Server Exchange",
+          "message": "SFTP 서버 교환"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.short_desc": {
+          "source": "Generic virtual SFTP exchange data provider",
+          "message": "일반 가상 SFTP 교환 데이터 제공자"
+        }
+      }
+    }
+  }
+}

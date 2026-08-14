@@ -1,0 +1,2577 @@
+{
+  "schema_version": 1,
+  "locales": {
+    "zh-Hant": {
+      "messages": {
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.desc": {
+          "source": "Marks an outbound file as claimed in the configured virtual SFTP exchange backend.",
+          "message": "在設定的虛擬 SFTP 交換後端中將出站檔案標記為已認領。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.display_name": {
+          "source": "Claim Outbound File",
+          "message": "認領出站檔案"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y29tcGxldGlvbl9tb2Rl.allowed-value.c3RyaW5nOmFyY2hpdmU.display_name": {
+          "source": "Archive",
+          "message": "封存"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y29tcGxldGlvbl9tb2Rl.allowed-value.c3RyaW5nOmNsYWlt.display_name": {
+          "source": "Claim",
+          "message": "認領"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y29tcGxldGlvbl9tb2Rl.allowed-value.c3RyaW5nOmRlbGV0ZQ.display_name": {
+          "source": "Delete",
+          "message": "刪除"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y29tcGxldGlvbl9tb2Rl.desc": {
+          "source": "Optional typed completion mode.\n\n- `claim` -- move the entry to the claim queue\n- `archive` -- move the entry to the archive queue\n- `delete` -- delete the entry",
+          "message": "選填的具類型完成模式。\n\n- `claim` -- 將項目移至認領佇列\n- `archive` -- 將項目移至封存佇列\n- `delete` -- 刪除項目"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y29tcGxldGlvbl9tb2Rl.display_name": {
+          "source": "Completion Mode",
+          "message": "完成模式"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y29tcGxldGlvbl9tb2Rl.short_desc": {
+          "source": "How the retrieval is finalized",
+          "message": "檢索的完成方式"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "從建構函式選項建立後端時選填的虛擬認領目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "認領目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "已認領出站檔案的虛擬認領目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "選填的認領檔案類型化保留策略。目前支援的鍵包含 `max_age_seconds`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "認領保留策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "已認領出站檔案的保留元資料與清理策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "從建構函式選項建立後端時選填的虛擬封存目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "封存目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "已完成出站檔案的虛擬封存目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "選填的封存檔案類型化保留策略。目前支援的鍵包含 `max_age_seconds`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "封存保留策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "已封存出站檔案的保留元資料與清理策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "可用作提供者後端的選填現有 `VirtualSftpExchangeRecordStore` 或 `VirtualSftpExchange` 物件。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "虛擬交換後端"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "現有的虛擬交換或記錄儲存後端物件"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "可選標記，用於控制已接受的入站 Helper/Provider/Live 上傳是否在結果和事件中生成類型化 SHA-256 校驗和，並將該校驗和持久化於虛擬檔案元數據中，以供後續的 stat/list/retrieve 流程使用。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "生成入站校驗和"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "為已接受的入站檔案生成 SHA-256 校驗和"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "新後端執行個體的可選預設虛擬目錄權限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "預設目錄權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "建立之虛擬目錄的預設權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "新後端執行個體的可選預設虛擬檔案權限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "預設檔案權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "建立之虛擬檔案的預設權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.ZmluYWxfbmFtZQ.desc": {
+          "source": "Optional final entry name for `claim` or `archive` operations.",
+          "message": "`claim` 或 `archive` 操作的可選最終條目名稱。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.ZmluYWxfbmFtZQ.display_name": {
+          "source": "Final Name",
+          "message": "最終名稱"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.ZmluYWxfbmFtZQ.short_desc": {
+          "source": "Optional final entry name for claim or archive",
+          "message": "認領或封存的可選最終條目名稱"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "從建構子選項建立後端時的可選虛擬入站交換目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "入站目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "虛擬入站交換目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "無"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "內聯"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "入站提交事件的可選類型化有效負載模式。\n\n- `none` -- 入站事件不包含有效負載資料（預設）\n- `inline` -- 入站事件包含已提交的有效負載"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "入站事件有效負載模式"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "控制入站事件是否包含有效負載資料"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "從建構子選項建立後端時的可選類型化入站檔案接受策略。支援的金鑰包括 `accept_filename_glob`、`reject_filename_glob`、`accept_filename_regex`、`reject_filename_regex`、`min_size`、`max_size`、`max_file_count`、`max_total_bytes`、`max_concurrent_uploads`、`allow_overwrite`、`reject_duplicate_name`、`reject_duplicate_size`、`reject_duplicate_hash`、`accept_content_prefix`、`reject_content_prefix`、`accept_content_type_hints`、`reject_content_type_hints`、`validation_callback`、`allow_hidden_files`、`allow_principals`、`deny_principals`、`principal_policies`、`directory_policies` 與 `principal_routes`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "入站檔案策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "接受入站 SFTP 檔案的類型化策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "入站檔案的可選類型化保留策略。目前支援的金鑰包括 `max_age_seconds`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "入站保留策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "入站檔案的保留元數據和清理策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "從建構子選項建立後端時的可選虛擬出站交換目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "出站目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "虛擬出站交換目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "由虛擬後端和子 Provider 繼承的可選 `LoggerInterface` 物件。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "記錄器"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "Helper 與 Provider 事件的可選記錄器"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.bWV0YWRhdGE.desc": {
+          "source": "Optional free-form metadata for the operation.",
+          "message": "操作的可選自由格式元數據。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.bWV0YWRhdGE.display_name": {
+          "source": "Metadata",
+          "message": "元資料"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.bWV0YWRhdGE.short_desc": {
+          "source": "Optional free-form metadata for the operation",
+          "message": "操作的可選自由格式元數據"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.bmFtZQ.desc": {
+          "source": "The exchange entry name.",
+          "message": "交換條目名稱。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.bmFtZQ.display_name": {
+          "source": "Entry Name",
+          "message": "條目名稱"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.option.bmFtZQ.short_desc": {
+          "source": "The exchange entry name",
+          "message": "交換條目名稱"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xhaW0tb3V0Ym91bmQ.short_desc": {
+          "source": "Claim an outbound file in a virtual SFTP exchange",
+          "message": "在虛擬 SFTP 交換中認領出站檔案"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.desc": {
+          "source": "Runs deterministic retention cleanup against the configured inbound, archive, or claim queue in the virtual SFTP exchange backend.",
+          "message": "對虛擬 SFTP 交換後端中設定的入站、封存或認領佇列執行確定性保留清理。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.display_name": {
+          "source": "Cleanup Expired Files",
+          "message": "清理過期檔案"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "從建構函式選項建立後端時選填的虛擬認領目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "認領目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "已認領出站檔案的虛擬認領目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "選填的認領檔案類型化保留策略。目前支援的鍵包含 `max_age_seconds`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "認領保留策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "已認領出站檔案的保留元資料與清理策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "從建構函式選項建立後端時選填的虛擬封存目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "封存目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "已完成出站檔案的虛擬封存目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "選填的封存檔案類型化保留策略。目前支援的鍵包含 `max_age_seconds`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "封存保留策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "已封存出站檔案的保留元資料與清理策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "可用作提供者後端的選填現有 `VirtualSftpExchangeRecordStore` 或 `VirtualSftpExchange` 物件。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "虛擬交換後端"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "現有的虛擬交換或記錄儲存後端物件"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "可選標記，用於控制已接受的入站 Helper/Provider/Live 上傳是否在結果和事件中生成類型化 SHA-256 校驗和，並將該校驗和持久化於虛擬檔案元數據中，以供後續的 stat/list/retrieve 流程使用。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "生成入站校驗和"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "為已接受的入站檔案生成 SHA-256 校驗和"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "新後端執行個體的可選預設虛擬目錄權限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "預設目錄權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "建立之虛擬目錄的預設權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "新後端執行個體的可選預設虛擬檔案權限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "預設檔案權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "建立之虛擬檔案的預設權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "從建構子選項建立後端時的可選虛擬入站交換目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "入站目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "虛擬入站交換目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "無"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "內聯"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "入站提交事件的可選類型化有效負載模式。\n\n- `none` -- 入站事件不包含有效負載資料（預設）\n- `inline` -- 入站事件包含已提交的有效負載"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "入站事件有效負載模式"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "控制入站事件是否包含有效負載資料"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "從建構子選項建立後端時的可選類型化入站檔案接受策略。支援的金鑰包括 `accept_filename_glob`、`reject_filename_glob`、`accept_filename_regex`、`reject_filename_regex`、`min_size`、`max_size`、`max_file_count`、`max_total_bytes`、`max_concurrent_uploads`、`allow_overwrite`、`reject_duplicate_name`、`reject_duplicate_size`、`reject_duplicate_hash`、`accept_content_prefix`、`reject_content_prefix`、`accept_content_type_hints`、`reject_content_type_hints`、`validation_callback`、`allow_hidden_files`、`allow_principals`、`deny_principals`、`principal_policies`、`directory_policies` 與 `principal_routes`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "入站檔案策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "接受入站 SFTP 檔案的類型化策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "入站檔案的可選類型化保留策略。目前支援的金鑰包括 `max_age_seconds`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "入站保留策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "入站檔案的保留元數據和清理策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "從建構子選項建立後端時的可選虛擬出站交換目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "出站目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "虛擬出站交換目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "由虛擬後端和子 Provider 繼承的可選 `LoggerInterface` 物件。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "記錄器"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "Helper 與 Provider 事件的可選記錄器"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.bm93X3M.desc": {
+          "source": "Optional deterministic evaluation time used to compute retention expiration; defaults to the current time when not set.",
+          "message": "用於計算保留過期的可選確定性評估時間；若未設定則預設為目前時間。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.bm93X3M.display_name": {
+          "source": "Evaluation Time",
+          "message": "評估時間"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.bm93X3M.short_desc": {
+          "source": "Optional deterministic evaluation time",
+          "message": "可選確定性評估時間"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cHJpbmNpcGFs.desc": {
+          "source": "Optional authenticated principal to scope retention cleanup.",
+          "message": "用於限定保留清理範圍的可選已驗證主體。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cHJpbmNpcGFs.display_name": {
+          "source": "Principal",
+          "message": "主體"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cHJpbmNpcGFs.short_desc": {
+          "source": "Optional principal to scope retention cleanup",
+          "message": "用於限定保留清理範圍的可選主體"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cXVldWU.allowed-value.c3RyaW5nOmFyY2hpdmU.display_name": {
+          "source": "Archive",
+          "message": "封存"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cXVldWU.allowed-value.c3RyaW5nOmNsYWlt.display_name": {
+          "source": "Claim",
+          "message": "認領"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cXVldWU.allowed-value.c3RyaW5nOmluYm91bmQ.display_name": {
+          "source": "Inbound",
+          "message": "入站"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cXVldWU.desc": {
+          "source": "The retention queue to clean.\n\n- `inbound` -- the inbound submission queue\n- `archive` -- the archived-entry queue\n- `claim` -- the claimed-entry queue",
+          "message": "要清理的保留佇列。\n\n- `inbound` -- 入站提交佇列\n- `archive` -- 已封存條目佇列\n- `claim` -- 已認領條目佇列"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cXVldWU.display_name": {
+          "source": "Retention Queue",
+          "message": "保留佇列"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cXVldWU.short_desc": {
+          "source": "The retention queue to clean",
+          "message": "要清理的保留佇列"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cmVtb3ZlX2VtcHR5X2RpcmVjdG9yaWVz.desc": {
+          "source": "Whether empty directories should be removed after expired files are deleted.",
+          "message": "刪除過期檔案後是否應移除空目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cmVtb3ZlX2VtcHR5X2RpcmVjdG9yaWVz.display_name": {
+          "source": "Remove Empty Directories",
+          "message": "移除空目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.option.cmVtb3ZlX2VtcHR5X2RpcmVjdG9yaWVz.short_desc": {
+          "source": "Remove empty directories after deleting expired files",
+          "message": "刪除過期檔案後移除空目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.Y2xlYW51cC1leHBpcmVk.short_desc": {
+          "source": "Remove expired files according to typed retention policies",
+          "message": "根據類型化保留策略移除過期檔案"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.desc": {
+          "source": "Moves an outbound file to archive storage in the configured virtual SFTP exchange backend.",
+          "message": "將出站檔案移至設定之虛擬 SFTP 交換後端中的封存儲存空間。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.display_name": {
+          "source": "Archive Outbound File",
+          "message": "封存出站檔案"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y29tcGxldGlvbl9tb2Rl.allowed-value.c3RyaW5nOmFyY2hpdmU.display_name": {
+          "source": "Archive",
+          "message": "封存"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y29tcGxldGlvbl9tb2Rl.allowed-value.c3RyaW5nOmNsYWlt.display_name": {
+          "source": "Claim",
+          "message": "認領"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y29tcGxldGlvbl9tb2Rl.allowed-value.c3RyaW5nOmRlbGV0ZQ.display_name": {
+          "source": "Delete",
+          "message": "刪除"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y29tcGxldGlvbl9tb2Rl.desc": {
+          "source": "Optional typed completion mode.\n\n- `claim` -- move the entry to the claim queue\n- `archive` -- move the entry to the archive queue\n- `delete` -- delete the entry",
+          "message": "選填的具類型完成模式。\n\n- `claim` -- 將項目移至認領佇列\n- `archive` -- 將項目移至封存佇列\n- `delete` -- 刪除項目"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y29tcGxldGlvbl9tb2Rl.display_name": {
+          "source": "Completion Mode",
+          "message": "完成模式"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y29tcGxldGlvbl9tb2Rl.short_desc": {
+          "source": "How the retrieval is finalized",
+          "message": "檢索的完成方式"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "從建構函式選項建立後端時選填的虛擬認領目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "認領目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "已認領出站檔案的虛擬認領目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "選填的認領檔案類型化保留策略。目前支援的鍵包含 `max_age_seconds`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "認領保留策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "已認領出站檔案的保留元資料與清理策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "從建構函式選項建立後端時選填的虛擬封存目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "封存目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "已完成出站檔案的虛擬封存目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "選填的封存檔案類型化保留策略。目前支援的鍵包含 `max_age_seconds`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "封存保留策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "已封存出站檔案的保留元資料與清理策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "可用作提供者後端的選填現有 `VirtualSftpExchangeRecordStore` 或 `VirtualSftpExchange` 物件。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "虛擬交換後端"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "現有的虛擬交換或記錄儲存後端物件"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "可選標記，用於控制已接受的入站 Helper/Provider/Live 上傳是否在結果和事件中生成類型化 SHA-256 校驗和，並將該校驗和持久化於虛擬檔案元數據中，以供後續的 stat/list/retrieve 流程使用。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "生成入站校驗和"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "為已接受的入站檔案生成 SHA-256 校驗和"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "新後端執行個體的可選預設虛擬目錄權限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "預設目錄權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "建立之虛擬目錄的預設權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "新後端執行個體的可選預設虛擬檔案權限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "預設檔案權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "建立之虛擬檔案的預設權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.ZmluYWxfbmFtZQ.desc": {
+          "source": "Optional final entry name for `claim` or `archive` operations.",
+          "message": "`claim` 或 `archive` 操作的可選最終條目名稱。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.ZmluYWxfbmFtZQ.display_name": {
+          "source": "Final Name",
+          "message": "最終名稱"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.ZmluYWxfbmFtZQ.short_desc": {
+          "source": "Optional final entry name for claim or archive",
+          "message": "認領或封存的可選最終條目名稱"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "從建構子選項建立後端時的可選虛擬入站交換目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "入站目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "虛擬入站交換目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "無"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "內聯"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "入站提交事件的可選類型化有效負載模式。\n\n- `none` -- 入站事件不包含有效負載資料（預設）\n- `inline` -- 入站事件包含已提交的有效負載"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "入站事件有效負載模式"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "控制入站事件是否包含有效負載資料"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "從建構子選項建立後端時的可選類型化入站檔案接受策略。支援的金鑰包括 `accept_filename_glob`、`reject_filename_glob`、`accept_filename_regex`、`reject_filename_regex`、`min_size`、`max_size`、`max_file_count`、`max_total_bytes`、`max_concurrent_uploads`、`allow_overwrite`、`reject_duplicate_name`、`reject_duplicate_size`、`reject_duplicate_hash`、`accept_content_prefix`、`reject_content_prefix`、`accept_content_type_hints`、`reject_content_type_hints`、`validation_callback`、`allow_hidden_files`、`allow_principals`、`deny_principals`、`principal_policies`、`directory_policies` 與 `principal_routes`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "入站檔案策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "接受入站 SFTP 檔案的類型化策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "入站檔案的可選類型化保留策略。目前支援的金鑰包括 `max_age_seconds`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "入站保留策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "入站檔案的保留元數據和清理策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "從建構子選項建立後端時的可選虛擬出站交換目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "出站目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "虛擬出站交換目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "由虛擬後端和子 Provider 繼承的可選 `LoggerInterface` 物件。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "記錄器"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "Helper 與 Provider 事件的可選記錄器"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.bWV0YWRhdGE.desc": {
+          "source": "Optional free-form metadata for the operation.",
+          "message": "操作的可選自由格式元數據。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.bWV0YWRhdGE.display_name": {
+          "source": "Metadata",
+          "message": "元資料"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.bWV0YWRhdGE.short_desc": {
+          "source": "Optional free-form metadata for the operation",
+          "message": "操作的可選自由格式元數據"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.bmFtZQ.desc": {
+          "source": "The exchange entry name.",
+          "message": "交換條目名稱。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.bmFtZQ.display_name": {
+          "source": "Entry Name",
+          "message": "條目名稱"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.option.bmFtZQ.short_desc": {
+          "source": "The exchange entry name",
+          "message": "交換條目名稱"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.YXJjaGl2ZS1vdXRib3VuZA.short_desc": {
+          "source": "Archive an outbound file in a virtual SFTP exchange",
+          "message": "在虛擬 SFTP 交換中封存出站檔案"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.desc": {
+          "source": "Deletes an outbound file from the configured virtual SFTP exchange backend.",
+          "message": "從設定之虛擬 SFTP 交換後端中刪除出站檔案。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.display_name": {
+          "source": "Delete Outbound File",
+          "message": "刪除出站檔案"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y29tcGxldGlvbl9tb2Rl.allowed-value.c3RyaW5nOmFyY2hpdmU.display_name": {
+          "source": "Archive",
+          "message": "封存"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y29tcGxldGlvbl9tb2Rl.allowed-value.c3RyaW5nOmNsYWlt.display_name": {
+          "source": "Claim",
+          "message": "認領"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y29tcGxldGlvbl9tb2Rl.allowed-value.c3RyaW5nOmRlbGV0ZQ.display_name": {
+          "source": "Delete",
+          "message": "刪除"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y29tcGxldGlvbl9tb2Rl.desc": {
+          "source": "Optional typed completion mode.\n\n- `claim` -- move the entry to the claim queue\n- `archive` -- move the entry to the archive queue\n- `delete` -- delete the entry",
+          "message": "選填的具類型完成模式。\n\n- `claim` -- 將項目移至認領佇列\n- `archive` -- 將項目移至封存佇列\n- `delete` -- 刪除項目"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y29tcGxldGlvbl9tb2Rl.display_name": {
+          "source": "Completion Mode",
+          "message": "完成模式"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y29tcGxldGlvbl9tb2Rl.short_desc": {
+          "source": "How the retrieval is finalized",
+          "message": "檢索的完成方式"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "從建構函式選項建立後端時選填的虛擬認領目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "認領目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "已認領出站檔案的虛擬認領目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "選填的認領檔案類型化保留策略。目前支援的鍵包含 `max_age_seconds`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "認領保留策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "已認領出站檔案的保留元資料與清理策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "從建構函式選項建立後端時選填的虛擬封存目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "封存目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "已完成出站檔案的虛擬封存目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "選填的封存檔案類型化保留策略。目前支援的鍵包含 `max_age_seconds`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "封存保留策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "已封存出站檔案的保留元資料與清理策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "可用作提供者後端的選填現有 `VirtualSftpExchangeRecordStore` 或 `VirtualSftpExchange` 物件。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "虛擬交換後端"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "現有的虛擬交換或記錄儲存後端物件"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "可選標記，用於控制已接受的入站 Helper/Provider/Live 上傳是否在結果和事件中生成類型化 SHA-256 校驗和，並將該校驗和持久化於虛擬檔案元數據中，以供後續的 stat/list/retrieve 流程使用。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "生成入站校驗和"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "為已接受的入站檔案生成 SHA-256 校驗和"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "新後端執行個體的可選預設虛擬目錄權限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "預設目錄權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "建立之虛擬目錄的預設權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "新後端執行個體的可選預設虛擬檔案權限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "預設檔案權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "建立之虛擬檔案的預設權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.ZmluYWxfbmFtZQ.desc": {
+          "source": "Optional final entry name for `claim` or `archive` operations.",
+          "message": "`claim` 或 `archive` 操作的可選最終條目名稱。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.ZmluYWxfbmFtZQ.display_name": {
+          "source": "Final Name",
+          "message": "最終名稱"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.ZmluYWxfbmFtZQ.short_desc": {
+          "source": "Optional final entry name for claim or archive",
+          "message": "認領或封存的可選最終條目名稱"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "從建構子選項建立後端時的可選虛擬入站交換目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "入站目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "虛擬入站交換目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "無"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "內聯"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "入站提交事件的可選類型化有效負載模式。\n\n- `none` -- 入站事件不包含有效負載資料（預設）\n- `inline` -- 入站事件包含已提交的有效負載"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "入站事件有效負載模式"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "控制入站事件是否包含有效負載資料"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "從建構子選項建立後端時的可選類型化入站檔案接受策略。支援的金鑰包括 `accept_filename_glob`、`reject_filename_glob`、`accept_filename_regex`、`reject_filename_regex`、`min_size`、`max_size`、`max_file_count`、`max_total_bytes`、`max_concurrent_uploads`、`allow_overwrite`、`reject_duplicate_name`、`reject_duplicate_size`、`reject_duplicate_hash`、`accept_content_prefix`、`reject_content_prefix`、`accept_content_type_hints`、`reject_content_type_hints`、`validation_callback`、`allow_hidden_files`、`allow_principals`、`deny_principals`、`principal_policies`、`directory_policies` 與 `principal_routes`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "入站檔案策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "接受入站 SFTP 檔案的類型化策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "入站檔案的可選類型化保留策略。目前支援的金鑰包括 `max_age_seconds`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "入站保留策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "入站檔案的保留元數據和清理策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "從建構子選項建立後端時的可選虛擬出站交換目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "出站目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "虛擬出站交換目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "由虛擬後端和子 Provider 繼承的可選 `LoggerInterface` 物件。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "記錄器"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "Helper 與 Provider 事件的可選記錄器"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.bWV0YWRhdGE.desc": {
+          "source": "Optional free-form metadata for the operation.",
+          "message": "操作的可選自由格式元數據。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.bWV0YWRhdGE.display_name": {
+          "source": "Metadata",
+          "message": "元資料"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.bWV0YWRhdGE.short_desc": {
+          "source": "Optional free-form metadata for the operation",
+          "message": "操作的可選自由格式元數據"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.bmFtZQ.desc": {
+          "source": "The exchange entry name.",
+          "message": "交換條目名稱。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.bmFtZQ.display_name": {
+          "source": "Entry Name",
+          "message": "條目名稱"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.option.bmFtZQ.short_desc": {
+          "source": "The exchange entry name",
+          "message": "交換條目名稱"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.ZGVsZXRlLW91dGJvdW5k.short_desc": {
+          "source": "Delete an outbound file from a virtual SFTP exchange",
+          "message": "從虛擬 SFTP 交換中刪除出站檔案"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.desc": {
+          "source": "Raises a typed event when a new inbound file is accepted by the configured virtual SFTP exchange backend, including files uploaded through accepted SFTP sessions.",
+          "message": "當設定之虛擬 SFTP 交換後端接受新的入站檔案時（包含透過已接受的 SFTP 工作階段上傳的檔案），引發類型化事件。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.display_name": {
+          "source": "Inbound File Accepted",
+          "message": "入站檔案已接受"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "從建構函式選項建立後端時選填的虛擬認領目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "認領目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "已認領出站檔案的虛擬認領目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "選填的認領檔案類型化保留策略。目前支援的鍵包含 `max_age_seconds`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "認領保留策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "已認領出站檔案的保留元資料與清理策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "從建構函式選項建立後端時選填的虛擬封存目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "封存目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "已完成出站檔案的虛擬封存目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "選填的封存檔案類型化保留策略。目前支援的鍵包含 `max_age_seconds`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "封存保留策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "已封存出站檔案的保留元資料與清理策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "可用作提供者後端的選填現有 `VirtualSftpExchangeRecordStore` 或 `VirtualSftpExchange` 物件。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "虛擬交換後端"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "現有的虛擬交換或記錄儲存後端物件"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "可選標記，用於控制已接受的入站 Helper/Provider/Live 上傳是否在結果和事件中生成類型化 SHA-256 校驗和，並將該校驗和持久化於虛擬檔案元數據中，以供後續的 stat/list/retrieve 流程使用。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "生成入站校驗和"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "為已接受的入站檔案生成 SHA-256 校驗和"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "新後端執行個體的可選預設虛擬目錄權限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "預設目錄權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "建立之虛擬目錄的預設權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "新後端執行個體的可選預設虛擬檔案權限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "預設檔案權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "建立之虛擬檔案的預設權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "從建構子選項建立後端時的可選虛擬入站交換目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "入站目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "虛擬入站交換目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "無"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "內聯"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "入站提交事件的可選類型化有效負載模式。\n\n- `none` -- 入站事件不包含有效負載資料（預設）\n- `inline` -- 入站事件包含已提交的有效負載"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "入站事件有效負載模式"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "控制入站事件是否包含有效負載資料"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "從建構子選項建立後端時的可選類型化入站檔案接受策略。支援的金鑰包括 `accept_filename_glob`、`reject_filename_glob`、`accept_filename_regex`、`reject_filename_regex`、`min_size`、`max_size`、`max_file_count`、`max_total_bytes`、`max_concurrent_uploads`、`allow_overwrite`、`reject_duplicate_name`、`reject_duplicate_size`、`reject_duplicate_hash`、`accept_content_prefix`、`reject_content_prefix`、`accept_content_type_hints`、`reject_content_type_hints`、`validation_callback`、`allow_hidden_files`、`allow_principals`、`deny_principals`、`principal_policies`、`directory_policies` 與 `principal_routes`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "入站檔案策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "接受入站 SFTP 檔案的類型化策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "入站檔案的可選類型化保留策略。目前支援的金鑰包括 `max_age_seconds`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "入站保留策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "入站檔案的保留元數據和清理策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "從建構子選項建立後端時的可選虛擬出站交換目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "出站目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "虛擬出站交換目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "由虛擬後端和子 Provider 繼承的可選 `LoggerInterface` 物件。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "記錄器"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "Helper 與 Provider 事件的可選記錄器"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLWFjY2VwdGVk.short_desc": {
+          "source": "Raise an event when a new inbound file is accepted",
+          "message": "當接受新的入站檔案時引發事件"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.desc": {
+          "source": "Raises a typed event when an inbound file submission is rejected by the configured virtual SFTP exchange inbound acceptance policy, including uploads through SFTP sessions; the event carries the typed `reason_code` and `reason_desc`.",
+          "message": "當傳入檔案提交被已設定的虛擬 SFTP 交換傳入接受策略拒絕時（包括透過 SFTP 會話上傳），引發類型化事件；該事件包含類型化的 `reason_code` 和 `reason_desc`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.display_name": {
+          "source": "Inbound File Rejected",
+          "message": "傳入檔案已拒絕"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "從建構函式選項建立後端時選填的虛擬認領目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "認領目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "已認領出站檔案的虛擬認領目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "選填的認領檔案類型化保留策略。目前支援的鍵包含 `max_age_seconds`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "認領保留策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "已認領出站檔案的保留元資料與清理策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "從建構函式選項建立後端時選填的虛擬封存目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "封存目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "已完成出站檔案的虛擬封存目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "選填的封存檔案類型化保留策略。目前支援的鍵包含 `max_age_seconds`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "封存保留策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "已封存出站檔案的保留元資料與清理策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "可用作提供者後端的選填現有 `VirtualSftpExchangeRecordStore` 或 `VirtualSftpExchange` 物件。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "虛擬交換後端"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "現有的虛擬交換或記錄儲存後端物件"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "可選標記，用於控制已接受的入站 Helper/Provider/Live 上傳是否在結果和事件中生成類型化 SHA-256 校驗和，並將該校驗和持久化於虛擬檔案元數據中，以供後續的 stat/list/retrieve 流程使用。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "生成入站校驗和"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "為已接受的入站檔案生成 SHA-256 校驗和"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "新後端執行個體的可選預設虛擬目錄權限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "預設目錄權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "建立之虛擬目錄的預設權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "新後端執行個體的可選預設虛擬檔案權限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "預設檔案權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "建立之虛擬檔案的預設權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "從建構子選項建立後端時的可選虛擬入站交換目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "入站目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "虛擬入站交換目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "無"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "內聯"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "入站提交事件的可選類型化有效負載模式。\n\n- `none` -- 入站事件不包含有效負載資料（預設）\n- `inline` -- 入站事件包含已提交的有效負載"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "入站事件有效負載模式"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "控制入站事件是否包含有效負載資料"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "從建構子選項建立後端時的可選類型化入站檔案接受策略。支援的金鑰包括 `accept_filename_glob`、`reject_filename_glob`、`accept_filename_regex`、`reject_filename_regex`、`min_size`、`max_size`、`max_file_count`、`max_total_bytes`、`max_concurrent_uploads`、`allow_overwrite`、`reject_duplicate_name`、`reject_duplicate_size`、`reject_duplicate_hash`、`accept_content_prefix`、`reject_content_prefix`、`accept_content_type_hints`、`reject_content_type_hints`、`validation_callback`、`allow_hidden_files`、`allow_principals`、`deny_principals`、`principal_policies`、`directory_policies` 與 `principal_routes`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "入站檔案策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "接受入站 SFTP 檔案的類型化策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "入站檔案的可選類型化保留策略。目前支援的金鑰包括 `max_age_seconds`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "入站保留策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "入站檔案的保留元數據和清理策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "從建構子選項建立後端時的可選虛擬出站交換目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "出站目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "虛擬出站交換目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "由虛擬後端和子 Provider 繼承的可選 `LoggerInterface` 物件。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "記錄器"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "Helper 與 Provider 事件的可選記錄器"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.aW5ib3VuZC1maWxlLXJlamVjdGVk.short_desc": {
+          "source": "Raise an event when an inbound file is rejected",
+          "message": "當傳入檔案被拒絕時引發事件"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.desc": {
+          "source": "Raises a typed event when an outbound file is archived by the configured virtual SFTP exchange backend.",
+          "message": "當傳出檔案被已設定的虛擬 SFTP 交換後端封存時，引發類型化事件。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.display_name": {
+          "source": "Outbound File Archived",
+          "message": "傳出檔案已封存"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "從建構函式選項建立後端時選填的虛擬認領目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "認領目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "已認領出站檔案的虛擬認領目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "選填的認領檔案類型化保留策略。目前支援的鍵包含 `max_age_seconds`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "認領保留策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "已認領出站檔案的保留元資料與清理策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "從建構函式選項建立後端時選填的虛擬封存目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "封存目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "已完成出站檔案的虛擬封存目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "選填的封存檔案類型化保留策略。目前支援的鍵包含 `max_age_seconds`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "封存保留策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "已封存出站檔案的保留元資料與清理策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "可用作提供者後端的選填現有 `VirtualSftpExchangeRecordStore` 或 `VirtualSftpExchange` 物件。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "虛擬交換後端"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "現有的虛擬交換或記錄儲存後端物件"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "可選標記，用於控制已接受的入站 Helper/Provider/Live 上傳是否在結果和事件中生成類型化 SHA-256 校驗和，並將該校驗和持久化於虛擬檔案元數據中，以供後續的 stat/list/retrieve 流程使用。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "生成入站校驗和"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "為已接受的入站檔案生成 SHA-256 校驗和"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "新後端執行個體的可選預設虛擬目錄權限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "預設目錄權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "建立之虛擬目錄的預設權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "新後端執行個體的可選預設虛擬檔案權限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "預設檔案權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "建立之虛擬檔案的預設權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "從建構子選項建立後端時的可選虛擬入站交換目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "入站目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "虛擬入站交換目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "無"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "內聯"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "入站提交事件的可選類型化有效負載模式。\n\n- `none` -- 入站事件不包含有效負載資料（預設）\n- `inline` -- 入站事件包含已提交的有效負載"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "入站事件有效負載模式"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "控制入站事件是否包含有效負載資料"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "從建構子選項建立後端時的可選類型化入站檔案接受策略。支援的金鑰包括 `accept_filename_glob`、`reject_filename_glob`、`accept_filename_regex`、`reject_filename_regex`、`min_size`、`max_size`、`max_file_count`、`max_total_bytes`、`max_concurrent_uploads`、`allow_overwrite`、`reject_duplicate_name`、`reject_duplicate_size`、`reject_duplicate_hash`、`accept_content_prefix`、`reject_content_prefix`、`accept_content_type_hints`、`reject_content_type_hints`、`validation_callback`、`allow_hidden_files`、`allow_principals`、`deny_principals`、`principal_policies`、`directory_policies` 與 `principal_routes`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "入站檔案策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "接受入站 SFTP 檔案的類型化策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "入站檔案的可選類型化保留策略。目前支援的金鑰包括 `max_age_seconds`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "入站保留策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "入站檔案的保留元數據和清理策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "從建構子選項建立後端時的可選虛擬出站交換目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "出站目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "虛擬出站交換目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "由虛擬後端和子 Provider 繼承的可選 `LoggerInterface` 物件。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "記錄器"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "Helper 與 Provider 事件的可選記錄器"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1hcmNoaXZlZA.short_desc": {
+          "source": "Raise an event when an outbound file is archived",
+          "message": "當傳出檔案被封存時引發事件"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.desc": {
+          "source": "Raises a typed event when an outbound file is claimed from the configured virtual SFTP exchange backend.",
+          "message": "當傳出檔案從已設定的虛擬 SFTP 交換後端申領時，引發類型化事件。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.display_name": {
+          "source": "Outbound File Claimed",
+          "message": "傳出檔案已申領"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "從建構函式選項建立後端時選填的虛擬認領目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "認領目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "已認領出站檔案的虛擬認領目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "選填的認領檔案類型化保留策略。目前支援的鍵包含 `max_age_seconds`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "認領保留策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "已認領出站檔案的保留元資料與清理策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "從建構函式選項建立後端時選填的虛擬封存目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "封存目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "已完成出站檔案的虛擬封存目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "選填的封存檔案類型化保留策略。目前支援的鍵包含 `max_age_seconds`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "封存保留策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "已封存出站檔案的保留元資料與清理策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "可用作提供者後端的選填現有 `VirtualSftpExchangeRecordStore` 或 `VirtualSftpExchange` 物件。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "虛擬交換後端"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "現有的虛擬交換或記錄儲存後端物件"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "可選標記，用於控制已接受的入站 Helper/Provider/Live 上傳是否在結果和事件中生成類型化 SHA-256 校驗和，並將該校驗和持久化於虛擬檔案元數據中，以供後續的 stat/list/retrieve 流程使用。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "生成入站校驗和"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "為已接受的入站檔案生成 SHA-256 校驗和"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "新後端執行個體的可選預設虛擬目錄權限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "預設目錄權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "建立之虛擬目錄的預設權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "新後端執行個體的可選預設虛擬檔案權限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "預設檔案權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "建立之虛擬檔案的預設權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "從建構子選項建立後端時的可選虛擬入站交換目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "入站目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "虛擬入站交換目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "無"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "內聯"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "入站提交事件的可選類型化有效負載模式。\n\n- `none` -- 入站事件不包含有效負載資料（預設）\n- `inline` -- 入站事件包含已提交的有效負載"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "入站事件有效負載模式"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "控制入站事件是否包含有效負載資料"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "從建構子選項建立後端時的可選類型化入站檔案接受策略。支援的金鑰包括 `accept_filename_glob`、`reject_filename_glob`、`accept_filename_regex`、`reject_filename_regex`、`min_size`、`max_size`、`max_file_count`、`max_total_bytes`、`max_concurrent_uploads`、`allow_overwrite`、`reject_duplicate_name`、`reject_duplicate_size`、`reject_duplicate_hash`、`accept_content_prefix`、`reject_content_prefix`、`accept_content_type_hints`、`reject_content_type_hints`、`validation_callback`、`allow_hidden_files`、`allow_principals`、`deny_principals`、`principal_policies`、`directory_policies` 與 `principal_routes`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "入站檔案策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "接受入站 SFTP 檔案的類型化策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "入站檔案的可選類型化保留策略。目前支援的金鑰包括 `max_age_seconds`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "入站保留策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "入站檔案的保留元數據和清理策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "從建構子選項建立後端時的可選虛擬出站交換目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "出站目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "虛擬出站交換目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "由虛擬後端和子 Provider 繼承的可選 `LoggerInterface` 物件。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "記錄器"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "Helper 與 Provider 事件的可選記錄器"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1jbGFpbWVk.short_desc": {
+          "source": "Raise an event when an outbound file is claimed",
+          "message": "當傳出檔案被申領時引發事件"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.desc": {
+          "source": "Raises a typed event when an outbound file is deleted from the configured virtual SFTP exchange backend.",
+          "message": "當傳出檔案從已設定的虛擬 SFTP 交換後端刪除時，引發類型化事件。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.display_name": {
+          "source": "Outbound File Deleted",
+          "message": "傳出檔案已刪除"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "從建構函式選項建立後端時選填的虛擬認領目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "認領目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "已認領出站檔案的虛擬認領目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "選填的認領檔案類型化保留策略。目前支援的鍵包含 `max_age_seconds`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "認領保留策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "已認領出站檔案的保留元資料與清理策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "從建構函式選項建立後端時選填的虛擬封存目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "封存目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "已完成出站檔案的虛擬封存目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "選填的封存檔案類型化保留策略。目前支援的鍵包含 `max_age_seconds`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "封存保留策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "已封存出站檔案的保留元資料與清理策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "可用作提供者後端的選填現有 `VirtualSftpExchangeRecordStore` 或 `VirtualSftpExchange` 物件。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "虛擬交換後端"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "現有的虛擬交換或記錄儲存後端物件"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "可選標記，用於控制已接受的入站 Helper/Provider/Live 上傳是否在結果和事件中生成類型化 SHA-256 校驗和，並將該校驗和持久化於虛擬檔案元數據中，以供後續的 stat/list/retrieve 流程使用。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "生成入站校驗和"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "為已接受的入站檔案生成 SHA-256 校驗和"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "新後端執行個體的可選預設虛擬目錄權限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "預設目錄權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "建立之虛擬目錄的預設權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "新後端執行個體的可選預設虛擬檔案權限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "預設檔案權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "建立之虛擬檔案的預設權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "從建構子選項建立後端時的可選虛擬入站交換目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "入站目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "虛擬入站交換目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "無"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "內聯"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "入站提交事件的可選類型化有效負載模式。\n\n- `none` -- 入站事件不包含有效負載資料（預設）\n- `inline` -- 入站事件包含已提交的有效負載"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "入站事件有效負載模式"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "控制入站事件是否包含有效負載資料"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "從建構子選項建立後端時的可選類型化入站檔案接受策略。支援的金鑰包括 `accept_filename_glob`、`reject_filename_glob`、`accept_filename_regex`、`reject_filename_regex`、`min_size`、`max_size`、`max_file_count`、`max_total_bytes`、`max_concurrent_uploads`、`allow_overwrite`、`reject_duplicate_name`、`reject_duplicate_size`、`reject_duplicate_hash`、`accept_content_prefix`、`reject_content_prefix`、`accept_content_type_hints`、`reject_content_type_hints`、`validation_callback`、`allow_hidden_files`、`allow_principals`、`deny_principals`、`principal_policies`、`directory_policies` 與 `principal_routes`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "入站檔案策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "接受入站 SFTP 檔案的類型化策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "入站檔案的可選類型化保留策略。目前支援的金鑰包括 `max_age_seconds`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "入站保留策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "入站檔案的保留元數據和清理策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "從建構子選項建立後端時的可選虛擬出站交換目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "出站目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "虛擬出站交換目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "由虛擬後端和子 Provider 繼承的可選 `LoggerInterface` 物件。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "記錄器"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "Helper 與 Provider 事件的可選記錄器"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.b3V0Ym91bmQtZmlsZS1kZWxldGVk.short_desc": {
+          "source": "Raise an event when an outbound file is deleted",
+          "message": "當傳出檔案被刪除時引發事件"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.desc": {
+          "source": "Lists currently available outbound files in the configured virtual SFTP exchange backend.",
+          "message": "列出已設定的虛擬 SFTP 交換後端中目前可用的傳出檔案。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.display_name": {
+          "source": "List Outbound Files",
+          "message": "列出傳出檔案"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "從建構函式選項建立後端時選填的虛擬認領目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "認領目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "已認領出站檔案的虛擬認領目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "選填的認領檔案類型化保留策略。目前支援的鍵包含 `max_age_seconds`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "認領保留策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "已認領出站檔案的保留元資料與清理策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "從建構函式選項建立後端時選填的虛擬封存目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "封存目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "已完成出站檔案的虛擬封存目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "選填的封存檔案類型化保留策略。目前支援的鍵包含 `max_age_seconds`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "封存保留策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "已封存出站檔案的保留元資料與清理策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "可用作提供者後端的選填現有 `VirtualSftpExchangeRecordStore` 或 `VirtualSftpExchange` 物件。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "虛擬交換後端"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "現有的虛擬交換或記錄儲存後端物件"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "可選標記，用於控制已接受的入站 Helper/Provider/Live 上傳是否在結果和事件中生成類型化 SHA-256 校驗和，並將該校驗和持久化於虛擬檔案元數據中，以供後續的 stat/list/retrieve 流程使用。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "生成入站校驗和"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "為已接受的入站檔案生成 SHA-256 校驗和"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "新後端執行個體的可選預設虛擬目錄權限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "預設目錄權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "建立之虛擬目錄的預設權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "新後端執行個體的可選預設虛擬檔案權限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "預設檔案權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "建立之虛擬檔案的預設權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "從建構子選項建立後端時的可選虛擬入站交換目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "入站目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "虛擬入站交換目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "無"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "內聯"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "入站提交事件的可選類型化有效負載模式。\n\n- `none` -- 入站事件不包含有效負載資料（預設）\n- `inline` -- 入站事件包含已提交的有效負載"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "入站事件有效負載模式"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "控制入站事件是否包含有效負載資料"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "從建構子選項建立後端時的可選類型化入站檔案接受策略。支援的金鑰包括 `accept_filename_glob`、`reject_filename_glob`、`accept_filename_regex`、`reject_filename_regex`、`min_size`、`max_size`、`max_file_count`、`max_total_bytes`、`max_concurrent_uploads`、`allow_overwrite`、`reject_duplicate_name`、`reject_duplicate_size`、`reject_duplicate_hash`、`accept_content_prefix`、`reject_content_prefix`、`accept_content_type_hints`、`reject_content_type_hints`、`validation_callback`、`allow_hidden_files`、`allow_principals`、`deny_principals`、`principal_policies`、`directory_policies` 與 `principal_routes`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "入站檔案策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "接受入站 SFTP 檔案的類型化策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "入站檔案的可選類型化保留策略。目前支援的金鑰包括 `max_age_seconds`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "入站保留策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "入站檔案的保留元數據和清理策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "從建構子選項建立後端時的可選虛擬出站交換目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "出站目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "虛擬出站交換目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "由虛擬後端和子 Provider 繼承的可選 `LoggerInterface` 物件。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "記錄器"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "Helper 與 Provider 事件的可選記錄器"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1vdXRib3VuZA.short_desc": {
+          "source": "List available outbound files in a virtual SFTP exchange",
+          "message": "列出虛擬 SFTP 交換中的可用傳出檔案"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.desc": {
+          "source": "Submits an inbound file into the configured virtual SFTP exchange backend.",
+          "message": "提交傳入檔案至已設定的虛擬 SFTP 交換後端。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.display_name": {
+          "source": "Submit Inbound File",
+          "message": "提交傳入檔案"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "從建構函式選項建立後端時選填的虛擬認領目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "認領目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "已認領出站檔案的虛擬認領目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "選填的認領檔案類型化保留策略。目前支援的鍵包含 `max_age_seconds`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "認領保留策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "已認領出站檔案的保留元資料與清理策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "從建構函式選項建立後端時選填的虛擬封存目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "封存目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "已完成出站檔案的虛擬封存目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "選填的封存檔案類型化保留策略。目前支援的鍵包含 `max_age_seconds`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "封存保留策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "已封存出站檔案的保留元資料與清理策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "可用作提供者後端的選填現有 `VirtualSftpExchangeRecordStore` 或 `VirtualSftpExchange` 物件。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "虛擬交換後端"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "現有的虛擬交換或記錄儲存後端物件"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "可選標記，用於控制已接受的入站 Helper/Provider/Live 上傳是否在結果和事件中生成類型化 SHA-256 校驗和，並將該校驗和持久化於虛擬檔案元數據中，以供後續的 stat/list/retrieve 流程使用。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "生成入站校驗和"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "為已接受的入站檔案生成 SHA-256 校驗和"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.ZGF0YQ.desc": {
+          "source": "The binary payload to submit.",
+          "message": "要提交的二進位裝載。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.ZGF0YQ.display_name": {
+          "source": "Payload",
+          "message": "裝載"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.ZGF0YQ.short_desc": {
+          "source": "The binary payload to submit",
+          "message": "要提交的二進位裝載"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "新後端執行個體的可選預設虛擬目錄權限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "預設目錄權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "建立之虛擬目錄的預設權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "新後端執行個體的可選預設虛擬檔案權限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "預設檔案權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "建立之虛擬檔案的預設權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "從建構子選項建立後端時的可選虛擬入站交換目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "入站目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "虛擬入站交換目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "無"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "內聯"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "入站提交事件的可選類型化有效負載模式。\n\n- `none` -- 入站事件不包含有效負載資料（預設）\n- `inline` -- 入站事件包含已提交的有效負載"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "入站事件有效負載模式"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "控制入站事件是否包含有效負載資料"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "從建構子選項建立後端時的可選類型化入站檔案接受策略。支援的金鑰包括 `accept_filename_glob`、`reject_filename_glob`、`accept_filename_regex`、`reject_filename_regex`、`min_size`、`max_size`、`max_file_count`、`max_total_bytes`、`max_concurrent_uploads`、`allow_overwrite`、`reject_duplicate_name`、`reject_duplicate_size`、`reject_duplicate_hash`、`accept_content_prefix`、`reject_content_prefix`、`accept_content_type_hints`、`reject_content_type_hints`、`validation_callback`、`allow_hidden_files`、`allow_principals`、`deny_principals`、`principal_policies`、`directory_policies` 與 `principal_routes`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "入站檔案策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "接受入站 SFTP 檔案的類型化策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "入站檔案的可選類型化保留策略。目前支援的金鑰包括 `max_age_seconds`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "入站保留策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "入站檔案的保留元數據和清理策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "從建構子選項建立後端時的可選虛擬出站交換目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "出站目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "虛擬出站交換目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "由虛擬後端和子 Provider 繼承的可選 `LoggerInterface` 物件。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "記錄器"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "Helper 與 Provider 事件的可選記錄器"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.bWV0YWRhdGE.desc": {
+          "source": "Optional free-form metadata to associate with the entry.",
+          "message": "要與該條目關聯的選填自由格式元資料。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.bWV0YWRhdGE.display_name": {
+          "source": "Metadata",
+          "message": "元資料"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.bWV0YWRhdGE.short_desc": {
+          "source": "Optional free-form metadata for the entry",
+          "message": "該條目的選填自由格式元資料"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.bmFtZQ.desc": {
+          "source": "The inbound exchange entry name.",
+          "message": "傳入交換條目名稱。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.bmFtZQ.display_name": {
+          "source": "Entry Name",
+          "message": "條目名稱"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.option.bmFtZQ.short_desc": {
+          "source": "The inbound exchange entry name",
+          "message": "傳入交換條目名稱"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.short_desc": {
+          "source": "Submit an inbound file to a virtual SFTP exchange",
+          "message": "提交傳入檔案至虛擬 SFTP 交換"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.desc": {
+          "source": "Retrieves an outbound file payload from the configured virtual SFTP exchange backend.",
+          "message": "從已設定的虛擬 SFTP 交換後端檢索傳出檔案裝載。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.display_name": {
+          "source": "Retrieve Outbound File",
+          "message": "檢索傳出檔案"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.Y2xhaW1fZGly.desc": {
+          "source": "Optional virtual claim directory when creating a backend from constructor options.",
+          "message": "從建構函式選項建立後端時選填的虛擬認領目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.Y2xhaW1fZGly.display_name": {
+          "source": "Claim Directory",
+          "message": "認領目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.Y2xhaW1fZGly.short_desc": {
+          "source": "Virtual claim directory for claimed outbound files",
+          "message": "已認領出站檔案的虛擬認領目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.desc": {
+          "source": "Optional typed retention policy for claim files. Supported keys currently include `max_age_seconds`.",
+          "message": "選填的認領檔案類型化保留策略。目前支援的鍵包含 `max_age_seconds`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.display_name": {
+          "source": "Claim Retention Policy",
+          "message": "認領保留策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.Y2xhaW1fcmV0ZW50aW9uX3BvbGljeQ.short_desc": {
+          "source": "Retention metadata and cleanup policy for claimed outbound files",
+          "message": "已認領出站檔案的保留元資料與清理策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.YXJjaGl2ZV9kaXI.desc": {
+          "source": "Optional virtual archive directory when creating a backend from constructor options.",
+          "message": "從建構函式選項建立後端時選填的虛擬封存目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.YXJjaGl2ZV9kaXI.display_name": {
+          "source": "Archive Directory",
+          "message": "封存目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.YXJjaGl2ZV9kaXI.short_desc": {
+          "source": "Virtual archive directory for completed outbound files",
+          "message": "已完成出站檔案的虛擬封存目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for archive files. Supported keys currently include `max_age_seconds`.",
+          "message": "選填的封存檔案類型化保留策略。目前支援的鍵包含 `max_age_seconds`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Archive Retention Policy",
+          "message": "封存保留策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.YXJjaGl2ZV9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for archived outbound files",
+          "message": "已封存出站檔案的保留元資料與清理策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as the provider backend.",
+          "message": "可用作提供者後端的選填現有 `VirtualSftpExchangeRecordStore` 或 `VirtualSftpExchange` 物件。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "虛擬交換後端"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange or record-store backend object",
+          "message": "現有的虛擬交換或記錄儲存後端物件"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.desc": {
+          "source": "Optional flag controlling whether accepted inbound helper/provider/live uploads generate a typed SHA-256 checksum in results and events and persist that checksum in virtual file metadata for later stat/list/retrieve flows.",
+          "message": "可選標記，用於控制已接受的入站 Helper/Provider/Live 上傳是否在結果和事件中生成類型化 SHA-256 校驗和，並將該校驗和持久化於虛擬檔案元數據中，以供後續的 stat/list/retrieve 流程使用。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.display_name": {
+          "source": "Generate Inbound Checksum",
+          "message": "生成入站校驗和"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.Z2VuZXJhdGVfaW5ib3VuZF9jaGVja3N1bQ.short_desc": {
+          "source": "Generate SHA-256 checksums for accepted inbound files",
+          "message": "為已接受的入站檔案生成 SHA-256 校驗和"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.desc": {
+          "source": "Optional default virtual directory permissions for new backend instances.",
+          "message": "新後端執行個體的可選預設虛擬目錄權限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.display_name": {
+          "source": "Default Directory Permissions",
+          "message": "預設目錄權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.ZGVmYXVsdF9kaXJlY3RvcnlfcGVybWlzc2lvbnM.short_desc": {
+          "source": "Default permissions for created virtual directories",
+          "message": "建立之虛擬目錄的預設權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.desc": {
+          "source": "Optional default virtual file permissions for new backend instances.",
+          "message": "新後端執行個體的可選預設虛擬檔案權限。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.display_name": {
+          "source": "Default File Permissions",
+          "message": "預設檔案權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.ZGVmYXVsdF9maWxlX3Blcm1pc3Npb25z.short_desc": {
+          "source": "Default permissions for created virtual files",
+          "message": "建立之虛擬檔案的預設權限"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9kaXI.desc": {
+          "source": "Optional virtual inbound exchange directory when creating a backend from constructor options.",
+          "message": "從建構子選項建立後端時的可選虛擬入站交換目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9kaXI.display_name": {
+          "source": "Inbound Directory",
+          "message": "入站目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9kaXI.short_desc": {
+          "source": "Virtual inbound exchange directory",
+          "message": "虛擬入站交換目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOm5vbmU.display_name": {
+          "source": "None",
+          "message": "無"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.allowed-value.c3RyaW5nOmlubGluZQ.display_name": {
+          "source": "Inline",
+          "message": "內聯"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.desc": {
+          "source": "Optional typed payload mode for inbound submission events.\n\n- `none` -- inbound events carry no payload data (the default)\n- `inline` -- inbound events include the submitted payload",
+          "message": "入站提交事件的可選類型化有效負載模式。\n\n- `none` -- 入站事件不包含有效負載資料（預設）\n- `inline` -- 入站事件包含已提交的有效負載"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.display_name": {
+          "source": "Inbound Event Payload Mode",
+          "message": "入站事件有效負載模式"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9ldmVudF9wYXlsb2FkX21vZGU.short_desc": {
+          "source": "Control whether inbound events include payload data",
+          "message": "控制入站事件是否包含有效負載資料"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9wb2xpY3k.desc": {
+          "source": "Optional typed inbound-file acceptance policy when creating a backend from constructor options. Supported keys include `accept_filename_glob`, `reject_filename_glob`, `accept_filename_regex`, `reject_filename_regex`, `min_size`, `max_size`, `max_file_count`, `max_total_bytes`, `max_concurrent_uploads`, `allow_overwrite`, `reject_duplicate_name`, `reject_duplicate_size`, `reject_duplicate_hash`, `accept_content_prefix`, `reject_content_prefix`, `accept_content_type_hints`, `reject_content_type_hints`, `validation_callback`, `allow_hidden_files`, `allow_principals`, `deny_principals`, `principal_policies`, `directory_policies`, and `principal_routes`.",
+          "message": "從建構子選項建立後端時的可選類型化入站檔案接受策略。支援的金鑰包括 `accept_filename_glob`、`reject_filename_glob`、`accept_filename_regex`、`reject_filename_regex`、`min_size`、`max_size`、`max_file_count`、`max_total_bytes`、`max_concurrent_uploads`、`allow_overwrite`、`reject_duplicate_name`、`reject_duplicate_size`、`reject_duplicate_hash`、`accept_content_prefix`、`reject_content_prefix`、`accept_content_type_hints`、`reject_content_type_hints`、`validation_callback`、`allow_hidden_files`、`allow_principals`、`deny_principals`、`principal_policies`、`directory_policies` 與 `principal_routes`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9wb2xpY3k.display_name": {
+          "source": "Inbound File Policy",
+          "message": "入站檔案策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9wb2xpY3k.short_desc": {
+          "source": "Typed policy for accepting inbound SFTP files",
+          "message": "接受入站 SFTP 檔案的類型化策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.desc": {
+          "source": "Optional typed retention policy for inbound files. Supported keys currently include `max_age_seconds`.",
+          "message": "入站檔案的可選類型化保留策略。目前支援的金鑰包括 `max_age_seconds`。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.display_name": {
+          "source": "Inbound Retention Policy",
+          "message": "入站保留策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.aW5ib3VuZF9yZXRlbnRpb25fcG9saWN5.short_desc": {
+          "source": "Retention metadata and cleanup policy for inbound files",
+          "message": "入站檔案的保留元數據和清理策略"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.b3V0Ym91bmRfZGly.desc": {
+          "source": "Optional virtual outbound exchange directory when creating a backend from constructor options.",
+          "message": "從建構子選項建立後端時的可選虛擬出站交換目錄。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.b3V0Ym91bmRfZGly.display_name": {
+          "source": "Outbound Directory",
+          "message": "出站目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.b3V0Ym91bmRfZGly.short_desc": {
+          "source": "Virtual outbound exchange directory",
+          "message": "虛擬出站交換目錄"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object inherited by the virtual backend and child providers.",
+          "message": "由虛擬後端和子 Provider 繼承的可選 `LoggerInterface` 物件。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "記錄器"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.bG9nZ2Vy.short_desc": {
+          "source": "Optional logger for helper and provider events",
+          "message": "Helper 與 Provider 事件的可選記錄器"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.bWV0YWRhdGE.desc": {
+          "source": "Optional free-form metadata for the operation.",
+          "message": "操作的可選自由格式元數據。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.bWV0YWRhdGE.display_name": {
+          "source": "Metadata",
+          "message": "元資料"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.bWV0YWRhdGE.short_desc": {
+          "source": "Optional free-form metadata for the operation",
+          "message": "操作的可選自由格式元數據"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.bmFtZQ.desc": {
+          "source": "The exchange entry name.",
+          "message": "交換條目名稱。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.bmFtZQ.display_name": {
+          "source": "Entry Name",
+          "message": "條目名稱"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.option.bmFtZQ.short_desc": {
+          "source": "The exchange entry name",
+          "message": "交換條目名稱"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.cmV0cmlldmUtb3V0Ym91bmQ.short_desc": {
+          "source": "Retrieve an outbound file from a virtual SFTP exchange",
+          "message": "從虛擬 SFTP 交換檢索傳出檔案"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.desc": {
+          "source": "Generic data-provider API for virtualized SFTP exchange workflows built on top of the `module-ssh` server-side SFTP backend.\n\nThis initial provider layer is intentionally generic and backend-driven:\n- it uses typed request and response models\n- it is backed by `VirtualSftpExchangeRecordStore`\n- it exposes generic outbound retrieval and completion operations plus inbound submission\n\nThe app is served by the `sftpserver` connection scheme through `SshServerConnections::SftpServerConnection`.",
+          "message": "建立在 `module-ssh` 伺服器端 SFTP 後端之上的虛擬化 SFTP 交換工作流程通用資料提供者 API。\n\n此初始提供者層經過精心設計，具通用性且由後端驅動：\n- 使用類型化請求與回應模型\n- 由 `VirtualSftpExchangeRecordStore` 提供支援\n- 公開通用傳出檢索與完成操作以及傳入提交\n\n此應用程式透過 `SshServerConnections::SftpServerConnection` 並由 `sftpserver` 連線方案提供服務。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.display_name": {
+          "source": "SFTP Server Exchange",
+          "message": "SFTP 伺服器交換"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.short_desc": {
+          "source": "Generic virtual SFTP exchange data provider",
+          "message": "通用虛擬 SFTP 交換資料提供者"
+        }
+      }
+    }
+  }
+}
