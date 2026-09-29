@@ -23,8 +23,10 @@
 */
 
 %modern
-%requires ../qlib/SftpServerDataProvider
-%requires ../qlib/SshServerConnections
+%prepend-module-path "${SCRIPT_DIR}/../qlib"
+
+%requires SftpServerDataProvider
+%requires SshServerConnections
 %requires ssh
 %requires DataProvider
 %requires QUnit

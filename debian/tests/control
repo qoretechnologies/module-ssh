@@ -1,0 +1,8 @@
+Tests: runtime
+Depends: qore-ssh-module, openssh-client
+# QUnit and expected invalid-input diagnostics use stderr.
+Restrictions: allow-stderr
+
+Tests: compiler
+Depends: qore-ssh-module, libqore-dev
+Restrictions: allow-stderr

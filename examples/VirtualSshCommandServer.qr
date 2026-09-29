@@ -1,3 +1,5 @@
+#!/usr/bin/env qore
+
 /*  VirtualSshCommandServer.qr Copyright 2026 Qore Technologies, s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -19,8 +21,9 @@
     DEALINGS IN THE SOFTWARE.
 */
 
-%requires ../qlib/SshServerConnections
-%requires ../qlib/SshServerCommandProvider
+%prepend-module-path "${SCRIPT_DIR}/../qlib"
+%requires SshServerConnections
+%requires SshServerCommandProvider
 
 SshServerCommandProvider::VirtualSshCommandService service();
 service.addTextCommand("status", "ok\n", NOTHING, 0, True, {"kind": "example"});

@@ -1,0 +1,11 @@
+usr/lib/*/qore-modules/ssh-api-*.qmod
+usr/lib/*/qore-modules/SftpServerDataProvider/
+usr/lib/*/qore-modules/SshServerAuthProvider/
+usr/lib/*/qore-modules/SshServerConnections/
+usr/lib/*/qore-modules/SshServerCommandProvider/
+usr/share/qore-modules/SftpServerDataProvider/
+usr/share/qore-modules/SshServerAuthProvider/
+usr/share/qore-modules/SshServerConnections/
+usr/share/qore-modules/SshServerCommandProvider/
+usr/share/qore/metadata/ssh/*.meta.json
+usr/share/qore/i18n/

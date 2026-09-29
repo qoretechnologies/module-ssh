@@ -21,9 +21,10 @@
     DEALINGS IN THE SOFTWARE.
 */
 
-%requires ../qlib/SftpServerDataProvider
-%requires ../qlib/SshServerConnections
-%requires ../qlib/SshServerAuthProvider
+%prepend-module-path "${SCRIPT_DIR}/../qlib"
+%requires SftpServerDataProvider
+%requires SshServerConnections
+%requires SshServerAuthProvider
 %requires ssh
 %requires DataProvider
 

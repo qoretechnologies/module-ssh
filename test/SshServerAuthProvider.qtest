@@ -23,9 +23,12 @@
 */
 
 %modern
+%prepend-module-path "${SCRIPT_DIR}/../qlib"
+%prepend-module-path "${SCRIPT_DIR}"
+
 %requires QUnit
-%requires ../qlib/SshServerAuthProvider
-%requires ./TestLoggerInterface.qm
+%requires SshServerAuthProvider
+%requires TestLoggerInterface
 
 %exec-class SshServerAuthProviderTest
 

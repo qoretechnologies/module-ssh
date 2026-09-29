@@ -6,3 +6,15 @@ vgcore*
 *~
 src/*.dox.h
 .claude/
+
+# Debian package build products
+/obj-*/
+/debian/.debhelper/
+/debian/debhelper-build-stamp
+/debian/files
+/debian/*.substvars
+/debian/*.debhelper
+/debian/qore-ssh-module/
+/debian/qore-ssh-module-doc/
+/debian/tmp/
+**/__pycache__/

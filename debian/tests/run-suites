@@ -1,0 +1,21 @@
+#!/bin/sh
+# Copyright (C) 2026 David Nichols
+# SPDX-License-Identifier: MIT
+set -eu
+mode=$1
+run_qore() {
+    timeout 240 /usr/bin/qore --enable-debug \
+        -l "$QORE_SSH_TEST_MODULE_DIR/ssh-api-$(/usr/bin/qore --latest-module-api).qmod" \
+        -l "$QORE_SSH_TEST_QMOD_DIR/SftpServerDataProvider/SftpServerDataProvider.qmod" \
+        -l "$QORE_SSH_TEST_QMOD_DIR/SshServerAuthProvider/SshServerAuthProvider.qmod" \
+        -l "$QORE_SSH_TEST_QMOD_DIR/SshServerConnections/SshServerConnections.qmod" \
+        -l "$QORE_SSH_TEST_QMOD_DIR/SshServerCommandProvider/SshServerCommandProvider.qmod" "$@"
+}
+for suite in test/*.qtest; do
+    # This suite checks repository files/design documents, not installed behavior.
+    if [ "$mode" != build ] && [ "$suite" = test/Scaffold.qtest ]; then continue; fi
+    run_qore "$suite" -v
+done
+for example in examples/*.qtest examples/*.qr; do
+    run_qore "$example"
+done

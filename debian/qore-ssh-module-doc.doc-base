@@ -1,0 +1,9 @@
+Document: qore-ssh-module
+Title: Qore SSH Server Module Reference
+Author: Qore Technologies, s.r.o.
+Abstract: SSH server sessions, authentication, commands and virtual SFTP providers.
+Section: Programming
+
+Format: HTML
+Index: /usr/share/doc/qore-ssh-module-doc/docs/ssh/html/index.html
+Files: /usr/share/doc/qore-ssh-module-doc/docs/*/html/*.html

@@ -23,7 +23,9 @@
 */
 
 %modern
-%requires ../qlib/SftpServerDataProvider
+%prepend-module-path "${SCRIPT_DIR}/../qlib"
+
+%requires SftpServerDataProvider
 
 SftpServerDataProvider::VirtualSftpExchangeRecordStore store(<SftpServerDataProvider::VirtualSftpExchangeOptions>{
     "archive_dir": "/archive",

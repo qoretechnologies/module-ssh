@@ -1,0 +1,36 @@
+Qore SSH server module packages
+===============================
+
+This is a development snapshot for the qore-testing PPA, not a final release.
+The native module uses distribution libssh. Four user modules are delivered as
+source and AOT code: SftpServerDataProvider, SshServerAuthProvider,
+SshServerConnections and SshServerCommandProvider. Compiler metadata, provider
+resources and translations accompany the runtime. API references, test fixtures
+and examples are in qore-ssh-module-doc; debug symbols are generated separately.
+Examples retain sibling test/ and demos/ directories so public key fixtures resolve.
+Installing this package starts no service and creates no keys or accounts.
+
+Build natively with dpkg-buildpackage -us -uc using the packaged Qore 3 SDK.
+The build requires no network access and supports nocheck, nodoc, arch-only and
+indep-only builds. Fixed qcc partitions and preserved AOT metadata make output
+reproducible and usable by fresh compiler processes. Cross builds are rejected
+because host qore/qpp tools are required. No prebuilt upstream artifacts ship.
+
+Tests require OpenSSH client binaries and use ephemeral loopback SSH servers.
+No external account, server or private credential is needed. Sandbox fixtures
+explicitly allow 127.0.0.1/32, including the cancellation test; the denial
+fixture proves that a denied range overrides that allow-list. The committed
+keys in test/data are PUBLIC TEST IDENTITIES; never use them for deployment.
+The full build runs all test/*.qtest, examples/*.qtest and examples/*.qr with
+assertions enabled, plus strict provider translation checks. Installed autopkgtests repeat runtime
+suites away from the checkout and compile a fresh program against the SDK.
+Scaffold.qtest checks repository source/design files and runs only in the source
+build, not the installed runtime test. Tests may use temporary files and sockets.
+The old-libssh key-format fallback can skip format tests; qualification must
+record skips explicitly. Ubuntu 26.04 qualification uses libssh with full support.
+
+Before general publication, qualify target Debian/Ubuntu releases and
+architectures, freeze Qore ABI and dependency versions, test relevant upgrades,
+and sign/upload sources after review. A successful local build is not proof
+that Launchpad has published the packages. Independent modules must be built
+against the same qualified SDK and its runtime dependencies.

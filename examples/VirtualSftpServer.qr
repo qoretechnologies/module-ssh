@@ -21,8 +21,9 @@
     DEALINGS IN THE SOFTWARE.
 */
 
-%requires ../qlib/SftpServerDataProvider
-%requires ../qlib/SshServerAuthProvider
+%prepend-module-path "${SCRIPT_DIR}/../qlib"
+%requires SftpServerDataProvider
+%requires SshServerAuthProvider
 %requires ssh
 
 string sub getTmpFile(string suffix) {

@@ -288,6 +288,7 @@ string sub startProviderServer(string mode, string value) {
 }");
         SandboxManager sm();
         sm.setFilesystemDefaultPolicy(False);
+        sm.addNetworkAllowedIPRange("127.0.0.1/32");
         p.setSandboxManager(sm);
         assertEq("ok", p.callFunction("startProviderServer", "text", key_text));
     }
@@ -392,12 +393,9 @@ string sub startProviderServer(string mode, string value) {
         assertEq("ok", p.callFunction("startProviderServer", "text", key_text));
     }
 
-    # S6: with the filesystem permitted (so the host key loads and execution reaches the
-    # pre-bind gate), an explicitly denied IP range covering the bind address must block
-    # the listener bind before libssh opens the listening socket.  (checkBind() is
-    # permissive by design -- it ignores the default policy/allow-list and only denies on
-    # a denied IP range or a restricted port -- so blockLocalhost(), which adds
-    # 127.0.0.0/8 to the denied ranges, is the deterministic deny trigger here.)
+    # S6: an explicit denial must override an allowed loopback address, after the
+    # filesystem permits loading the host key. Default-deny alone must not make this
+    # test pass without exercising the denied IP range.
     testBindNetworkDenied() {
         Program p = makeChildProgram("%modern
 %requires ssh
@@ -421,14 +419,15 @@ string sub startServer(string hk) {
 }");
         SandboxManager sm();
         sm.setFilesystemDefaultPolicy(True);    # allow FS so the host key loads
+        sm.addNetworkAllowedIPRange("127.0.0.1/32");
         sm.blockLocalhost();                    # adds 127.0.0.0/8 + ::1/128 to denied ranges
         p.setSandboxManager(sm);
         assertThrows("NETWORK-ACCESS-DENIED", sub() { p.callFunction("startServer", host_key); });
     }
 
-    # S6 positive control: a denied IP range that does NOT cover the bind address must
-    # leave the listener bind permitted, proving the gate actually evaluates the denied
-    # ranges (rather than blanket-allowing or blanket-denying).  Paired with
+    # S6 positive control: explicitly allow the listener address. A denied IP range
+    # that does NOT cover that address must leave the bind permitted, proving the gate
+    # evaluates the denied ranges (rather than blanket-allowing or blanket-denying).  Paired with
     # testBindNetworkDenied (same setup but loopback denied) this deterministically
     # exercises both sides of the S6 pre-bind network gate.
     testBindNetworkAllowed() {
@@ -454,6 +453,7 @@ string sub startServer(string hk) {
 }");
         SandboxManager sm();
         sm.setFilesystemDefaultPolicy(True);
+        sm.addNetworkAllowedIPRange("127.0.0.1/32");
         sm.addNetworkDeniedIPRange("10.0.0.0/8");   # denies a range that excludes 127.0.0.1
         p.setSandboxManager(sm);
         assertEq("ok", p.callFunction("startServer", host_key),
@@ -487,6 +487,7 @@ string sub acceptBlock(string hk) {
 }");
         SandboxManager sm();
         sm.setFilesystemDefaultPolicy(True);    # allow FS so the server can start
+        sm.addNetworkAllowedIPRange("127.0.0.1/32");
         p.setSandboxManager(sm);
 
         string err = "";

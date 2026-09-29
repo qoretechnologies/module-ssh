@@ -23,10 +23,13 @@
 */
 
 %modern
+%prepend-module-path "${SCRIPT_DIR}/../qlib"
+%prepend-module-path "${SCRIPT_DIR}"
+
 %requires QUnit
-%requires ../qlib/SshServerCommandProvider
-%requires ../qlib/SshServerConnections
-%requires ./TestLoggerInterface.qm
+%requires SshServerCommandProvider
+%requires SshServerConnections
+%requires TestLoggerInterface
 
 %exec-class SshServerCommandProviderTest
 

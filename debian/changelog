@@ -1,0 +1,11 @@
+qore-ssh-module (1.0.0~git20260928.1-0qore1~ubuntu26.04) resolute; urgency=medium
+
+  * Package native SSH server/key bindings, four source/compiled user modules,
+    metadata, resources/translations, docs, examples and debug symbols.
+  * Add installed runtime/compiler qualification and real OpenSSH client tests.
+  * Resolve test/example modules by name to support installed packages.
+  * Give the executable command-server example its missing interpreter line.
+  * Give loopback sandbox fixtures explicit permission to bind.
+  * Preserve AOT metadata and support profiles/reproducible offline builds.
+
+ -- David Nichols <david@qore.org>  Tue, 29 Sep 2026 01:53:05 +0000

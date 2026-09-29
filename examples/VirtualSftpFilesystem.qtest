@@ -23,7 +23,9 @@
 */
 
 %modern
-%requires ../qlib/SftpServerDataProvider
+%prepend-module-path "${SCRIPT_DIR}/../qlib"
+
+%requires SftpServerDataProvider
 %requires ssh
 
 hash<Qore::Ssh::SftpSessionInfo> sub getExampleInfo() {

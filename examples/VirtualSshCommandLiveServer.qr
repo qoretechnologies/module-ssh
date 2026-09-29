@@ -21,9 +21,10 @@
     DEALINGS IN THE SOFTWARE.
 */
 
-%requires ../qlib/SshServerConnections
-%requires ../qlib/SshServerAuthProvider
-%requires ../qlib/SshServerCommandProvider
+%prepend-module-path "${SCRIPT_DIR}/../qlib"
+%requires SshServerConnections
+%requires SshServerAuthProvider
+%requires SshServerCommandProvider
 %requires ssh
 
 string sub getTmpFile(string suffix) {

@@ -23,10 +23,13 @@
 */
 
 %modern
-%requires ../qlib/SftpServerDataProvider
+%prepend-module-path "${SCRIPT_DIR}/../qlib"
+%prepend-module-path "${SCRIPT_DIR}"
+
+%requires SftpServerDataProvider
 %requires ssh
 %requires QUnit
-%requires ./TestLoggerInterface.qm
+%requires TestLoggerInterface
 
 %exec-class SftpServerDataProviderTest
 

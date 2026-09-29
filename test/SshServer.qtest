@@ -23,15 +23,18 @@
 */
 
 %modern
+%prepend-module-path "${SCRIPT_DIR}/../qlib"
+%prepend-module-path "${SCRIPT_DIR}"
+
 %requires qore >= 2.3
 %requires ssh
 %requires sshutil
 %requires QUnit
 %requires DataProvider
-%requires ../qlib/SftpServerDataProvider
-%requires ../qlib/SshServerAuthProvider
-%requires ../qlib/SshServerCommandProvider
-%requires ./TestLoggerInterface.qm
+%requires SftpServerDataProvider
+%requires SshServerAuthProvider
+%requires SshServerCommandProvider
+%requires TestLoggerInterface
 
 %exec-class SshServerTest
 

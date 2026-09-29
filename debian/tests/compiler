@@ -1,0 +1,26 @@
+#!/bin/sh
+# Copyright (C) 2026 David Nichols
+# SPDX-License-Identifier: MIT
+set -eu
+unset QORE_MODULE_DIR QORE_MODULE_DIR_ONLY QORE_INCLUDE_DIR LD_LIBRARY_PATH LD_PRELOAD
+cd "$AUTOPKGTEST_TMP"
+cat > ssh-smoke.q <<'EOF'
+%modern
+%requires ssh
+%requires DataProvider
+%requires SftpServerDataProvider
+%requires SshServerAuthProvider
+%requires SshServerConnections
+%requires SshServerCommandProvider
+SshKey key = SshKey::generate(key_type: SSH_KEYTYPE_ED25519);
+hash<Qore::Ssh::SshKeyInfo> info = key.getInfo();
+SftpServerDataProvider::VirtualSftpFilesystem fs();
+fs.addTextFile("/package.txt", "package-ok");
+if (!info.is_private || key.getType() != SSH_KEYTYPE_ED25519
+        || fs.getFileText("/package.txt") != "package-ok"
+        || DataProvider::getFactory("sftpserver").getInfo().name != "sftpserver") {
+    throw "PACKAGE-TEST-ERROR", "Installed SSH keys or virtual SFTP provider failed";
+}
+EOF
+/usr/bin/qcc -o ssh-smoke ssh-smoke.q
+./ssh-smoke
