@@ -9,7 +9,14 @@ provider documentation table, key tests, README and release notes.
 Validation: Debug builds, 270 Qore cases / 1940 assertions, six examples,
 five fixture tests, strict references and 7704 translations pass on Fedora 44,
 Leap 16.0 and EL10. Key generation uses libssh 0.12 on Fedora/EL and 0.11 on Leap.
-Valgrind qualification is pending; do not commit this review as final.
+All 37 key tests / 117 assertions pass under Valgrind on all three targets,
+with zero errors, zero definite/indirect/possible lost allocations and no
+suppressed allocations. Leap was repeated with default suppressions disabled;
+the stock 20-byte suppression covers still-reachable system storage, not a leak.
+Logs: qore-packaging/results/{target}-ssh-native-1.log,
+{fedora,el10}-ssh-valgrind-1.log and leap-ssh-valgrind-2.log.
+Six generated Doxygen configurations retain strict warnings after regeneration;
+a deliberately unresolved reference fails as required (ssh-doc-negative-2.log).
 
 The context API preserves the original key-generation implementation while
 moving the RSA size into SSH_PKI_OPTION_RSA_KEY_SIZE. Primary references:
