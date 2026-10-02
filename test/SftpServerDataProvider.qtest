@@ -504,14 +504,20 @@ class SftpServerDataProviderTest inherits QUnit::Test {
     }
 
     testSourcePathConfinement() {
-        string root = sprintf("/tmp/module-ssh-m1-%d-%d", getpid(), now_us());
-        mkdir(root, 0700);
+        string parent = sprintf("/tmp/module-ssh-m1-%d-%d", getpid(), now_us());
+        mkdir(parent, 0700);
+        string root = parent + "/allowed";
         string inside = root + "/payload.dat";
+        string outside = parent + "/outside.dat";
         on_exit {
             if (is_file(inside)) { unlink(inside); }
+            if (is_file(outside)) { unlink(outside); }
             if (is_dir(root)) { rmdir(root); }
+            if (is_dir(parent)) { rmdir(parent); }
         }
+        mkdir(root, 0700);
         writeTextFile(inside, "confined payload\n");
+        writeTextFile(outside, "outside payload\n");
 
         # M-1: fail-closed by default — without allowed_source_path_roots a source_path read is denied
         SftpServerDataProvider::VirtualSftpFilesystem closed_vfs();
@@ -532,15 +538,15 @@ class SftpServerDataProviderTest inherits QUnit::Test {
         # M-1: a path outside every allowed root is rejected
         assertThrows("VIRTUAL-SFTP-FS-ERROR", "outside",
             sub() {
-                vfs.submit({"path": "/in/etc.dat", "source_path": "/etc/hostname"});
+                vfs.submit({"path": "/in/etc.dat", "source_path": outside});
             });
         # M-1: a traversal that realpath-resolves outside the root is rejected
-        assertThrows("VIRTUAL-SFTP-FS-ERROR",
+        assertThrows("VIRTUAL-SFTP-FS-ERROR", "outside",
             sub() {
-                vfs.submit({"path": "/in/trav.dat", "source_path": root + "/../../etc/hostname"});
+                vfs.submit({"path": "/in/trav.dat", "source_path": root + "/../outside.dat"});
             });
         # M-1: a non-existent source_path is rejected (cannot be resolved)
-        assertThrows("VIRTUAL-SFTP-FS-ERROR",
+        assertThrows("VIRTUAL-SFTP-FS-ERROR", "cannot be resolved",
             sub() {
                 vfs.submit({"path": "/in/missing.dat", "source_path": root + "/does-not-exist"});
             });
