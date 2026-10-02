@@ -13,6 +13,10 @@
    check_symbol_exists() against ssh_pki_export_privkey_file_format. */
 #cmakedefine HAVE_SSH_FILE_FORMAT
 
+/* Defined when the linked libssh has the context-based key generation API.
+   Older libraries retain the original ssh_pki_generate() API. */
+#cmakedefine HAVE_SSH_PKI_GENERATE_KEY
+
 /* Defined when the C library provides explicit_bzero() (glibc/BSD). When not
    defined, ssh-module.h's ssh_secure_bzero() uses a portable volatile-write
    erase instead. Probed with check_symbol_exists(explicit_bzero). */

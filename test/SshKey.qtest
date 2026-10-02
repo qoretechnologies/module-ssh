@@ -42,6 +42,9 @@ class SshKeyTest inherits QUnit::Test {
         # Key generation tests
         addTestCase("generate ED25519 key", \testGenerateEd25519());
         addTestCase("generate RSA key", \testGenerateRsa());
+        addTestCase("RSA default and explicit sizes are preserved", \testRsaKeySizes());
+        addTestCase("key sizes reject integer overflow and invalid curves", \testKeySizeBounds());
+        addTestCase("ED25519 ignores the key size parameter", \testEd25519SizeIgnored());
         addTestCase("generate ECDSA-P256 key", \testGenerateEcdsaP256());
         addTestCase("generate ECDSA-P384 key", \testGenerateEcdsaP384());
         addTestCase("generate ECDSA-P521 key", \testGenerateEcdsaP521());
@@ -129,6 +132,35 @@ class SshKeyTest inherits QUnit::Test {
         assertEq(Qore::Ssh::SSH_KEYTYPE_RSA, key.getType());
         assertTrue(key.isPrivate());
         assertTrue(key.isPublic());
+    }
+
+    testRsaKeySizes() {
+        Qore::Ssh::SshKey small = Qore::Ssh::SshKey::generate(Qore::Ssh::SSH_KEYTYPE_RSA, 2048);
+        Qore::Ssh::SshKey normal = Qore::Ssh::SshKey::generate(Qore::Ssh::SSH_KEYTYPE_RSA);
+        # RFC 4253: three length prefixes, "ssh-rsa", exponent 65537 and a
+        # positive mpint modulus (one leading zero plus the requested key bytes).
+        assertEq(12 + 7 + 3 + 1 + 256, small.getPublicKeyBlob().size());
+        assertEq(12 + 7 + 3 + 1 + 512, normal.getPublicKeyBlob().size());
+        assertFalse(small.equals(normal));
+    }
+
+    testKeySizeBounds() {
+        foreach int bits in (-1, 2147483648, 4294969344, 9223372036854775807) {
+            assertThrows("SSHKEY-ARG-ERROR", "key size must be between",
+                sub() { Qore::Ssh::SshKey::generate(Qore::Ssh::SSH_KEYTYPE_RSA, bits); });
+        }
+        assertThrows("SSHKEY-ARG-ERROR", "key size must be between",
+            sub() { Qore::Ssh::SshKey::generate(Qore::Ssh::SSH_KEYTYPE_ECDSA_P256, 4294967552); });
+        assertThrows("SSHKEY-ARG-ERROR", "requires 256 bits",
+            sub() { Qore::Ssh::SshKey::generate(Qore::Ssh::SSH_KEYTYPE_ECDSA_P256, 384); });
+    }
+
+    testEd25519SizeIgnored() {
+        foreach int bits in (-1, 4096, 9223372036854775807) {
+            Qore::Ssh::SshKey key = Qore::Ssh::SshKey::generate(Qore::Ssh::SSH_KEYTYPE_ED25519, bits);
+            assertEq(Qore::Ssh::SSH_KEYTYPE_ED25519, key.getType());
+            assertTrue(key.isPrivate());
+        }
     }
 
     testGenerateEcdsaP256() {

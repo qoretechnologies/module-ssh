@@ -4,6 +4,8 @@ project(qore-ssh-module VERSION 1.0.0)
 
 include(CheckCXXCompilerFlag)
 find_package(Qore 2.3 REQUIRED)
+list(APPEND QORE_DOXYGEN_MODULES sshutil)
+option(QORE_SSH_STRICT_DOCS "Fail SSH documentation builds on warnings" OFF)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(LIBSSH REQUIRED libssh)
 
@@ -29,6 +31,7 @@ else()
 endif()
 check_symbol_exists(ssh_pki_export_privkey_file_format "libssh/libssh.h"
     HAVE_SSH_FILE_FORMAT)
+check_symbol_exists(ssh_pki_generate_key "libssh/libssh.h" HAVE_SSH_PKI_GENERATE_KEY)
 set(CMAKE_REQUIRED_INCLUDES "${_saved_cmake_required_includes}")
 set(CMAKE_REQUIRED_LIBRARIES "${_saved_cmake_required_libraries}")
 if (HAVE_SSH_FILE_FORMAT)
@@ -137,3 +140,11 @@ endif()
 # via that macro's dependency list above.
 qore_binary_module_two_phase_docs(${module_name}
     "SftpServerDataProvider;SshServerAuthProvider;SshServerConnections;SshServerCommandProvider")
+
+if (DOXYGEN_FOUND AND QORE_SSH_STRICT_DOCS)
+    file(GLOB _ssh_user_doxyfiles "${CMAKE_BINARY_DIR}/doxygen/Doxyfile.*")
+    foreach(_ssh_doxyfile IN ITEMS "${CMAKE_BINARY_DIR}/Doxyfile" "${CMAKE_BINARY_DIR}/Doxyfile.final"
+            ${_ssh_user_doxyfiles})
+        file(APPEND "${_ssh_doxyfile}" "\nWARN_AS_ERROR = FAIL_ON_WARNINGS\n")
+    endforeach()
+endif()

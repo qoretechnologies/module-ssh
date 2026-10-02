@@ -679,6 +679,15 @@ BUILDING
 Configure the local build with the same install prefix as the active `qore`
 binary, then use the local module build for tests and examples.
 
+Use `-DQORE_SSH_STRICT_DOCS=ON` to reject documentation warnings, including
+the final binary reference pass. Install Qore's public documentation indexes
+to resolve references to its sshutil module.
+
+Key generation uses libssh's context API when the linked library provides it;
+older libssh versions use their original API. Both paths retain the requested
+RSA size (4096 bits by default). Key sizes outside the native integer range
+are rejected before conversion, except for ED25519, which ignores that option.
+
 Typical local preflight:
 
 ```bash

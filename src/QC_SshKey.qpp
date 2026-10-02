@@ -26,6 +26,7 @@
 #include <qore/QoreSandboxManager.h>
 
 #include <cerrno>
+#include <limits>
 #include <mutex>
 #include <string>
 #include <string.h>
@@ -446,7 +447,7 @@ SshKey::destructor() {
 
     @return a new SshKey containing both private and public key material
 
-    @throw SSHKEY-ARG-ERROR unsupported key type
+    @throw SSHKEY-ARG-ERROR unsupported key type or invalid key size
     @throw SSHKEY-GENERATE-ERROR key generation failed
 
     @par Example:
@@ -463,7 +464,15 @@ static SshKey SshKey::generate(int key_type, int bits = 0) [flags=NAMED_ARGS] {
             (int)key_type);
         return QoreValue();
     }
-    int actual_bits = bits ? (int)bits : ssh_key_default_bits(key_type);
+    // Validate before narrowing Qore's 64-bit integer for libssh. ED25519 ignores
+    // the parameter, including values outside the native integer range.
+    if (key_type != SSH_KEYTYPE_ED25519 && (bits < 0 || bits > std::numeric_limits<int>::max())) {
+        xsink->raiseException("SSHKEY-ARG-ERROR", "key size must be between 0 and %d bits",
+            std::numeric_limits<int>::max());
+        return QoreValue();
+    }
+    int actual_bits = key_type == SSH_KEYTYPE_ED25519 ? 0
+        : (bits ? static_cast<int>(bits) : ssh_key_default_bits(key_type));
     // validate bits for specific key types
     // Low/Info: 1024-bit RSA is deprecated (NIST SP 800-57); require >= 2048 bits
     if (key_type == SSH_KEYTYPE_RSA && actual_bits < 2048) {
@@ -487,18 +496,31 @@ static SshKey SshKey::generate(int key_type, int bits = 0) [flags=NAMED_ARGS] {
         return QoreValue();
     }
     ssh_key key = nullptr;
-    int rc = ssh_pki_generate(static_cast<enum ssh_keytypes_e>(key_type), actual_bits, &key);
-    if (rc != SSH_OK || !key) {
-        if (key) {
-            ssh_key_free(key);
+#ifdef HAVE_SSH_PKI_GENERATE_KEY
+    std::unique_ptr<ssh_pki_ctx_struct, decltype(&ssh_pki_ctx_free)> context(nullptr, ssh_pki_ctx_free);
+    if (key_type == SSH_KEYTYPE_RSA) {
+        context.reset(ssh_pki_ctx_new());
+        if (!context || ssh_pki_ctx_options_set(context.get(), SSH_PKI_OPTION_RSA_KEY_SIZE, &actual_bits) != SSH_OK) {
+            xsink->raiseException("SSHKEY-GENERATE-ERROR", "could not configure RSA key generation");
+            return QoreValue();
         }
+    }
+    int rc = ssh_pki_generate_key(static_cast<enum ssh_keytypes_e>(key_type), context.get(), &key);
+#else
+    int rc = ssh_pki_generate(static_cast<enum ssh_keytypes_e>(key_type), actual_bits, &key);
+#endif
+    std::unique_ptr<ssh_key_struct, decltype(&ssh_key_free)> key_holder(key, ssh_key_free);
+    if (rc != SSH_OK || !key) {
         xsink->raiseException("SSHKEY-GENERATE-ERROR",
             "could not generate SSH key of type %d with %d bits",
-            (int)key_type, actual_bits);
+            static_cast<int>(key_type), actual_bits);
         return QoreValue();
     }
     ReferenceHolder<QoreObject> obj(new QoreObject(QC_SSHKEY, getProgram()), xsink);
-    obj->setPrivate(CID_SSHKEY, new SshKeyPriv(key));
+    std::unique_ptr<SshKeyPriv> data(new SshKeyPriv(key_holder.get()));
+    key_holder.release();
+    obj->setPrivate(CID_SSHKEY, data.get());
+    data.release();
     return obj.release();
 }
 
