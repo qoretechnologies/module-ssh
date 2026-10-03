@@ -211,12 +211,12 @@ public namespace SshServerAuthProvider {
     }
 
     /** Built-in config-driven auth provider supporting:
-        - `none`
-        - `password`
-        - `publickey`
-        - `interactive`
-        - `hostbased`
-        - `gssapi-mic`
+        - <tt>none</tt>
+        - <tt>password</tt>
+        - <tt>publickey</tt>
+        - <tt>interactive</tt>
+        - <tt>hostbased</tt>
+        - <tt>gssapi-mic</tt>
 
         Static validation and on-demand app validation use the same provider
         object API.

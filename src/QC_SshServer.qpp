@@ -2631,13 +2631,13 @@ nothing SshServer::stop() {
 }
 
 //! Accepts a single inbound SSH transport and returns typed session metadata
-/** Waits up to `timeout_ms` milliseconds for an incoming connection on any
-    active listener, performs `ssh_bind_accept()` and the initial SSH key
-    exchange, then returns a `SshSessionInfo` snapshot for the accepted
+/** Waits up to <tt>timeout_ms</tt> milliseconds for an incoming connection on any
+    active listener, performs <tt>ssh_bind_accept()</tt> and the initial SSH key
+    exchange, then returns a <tt>SshSessionInfo</tt> snapshot for the accepted
     transport. The transient libssh session is then disconnected and freed.
 
-    @return a `SshSessionInfo` typed hash when a connection is accepted, or
-    `NOTHING` on timeout
+    @return a <tt>SshSessionInfo</tt> typed hash when a connection is accepted, or
+    <tt>NOTHING</tt> on timeout
 
     @par Example:
     @code{.py}
@@ -2650,12 +2650,12 @@ printf("accepted %y:%d on %y\n", info.remote_address, info.remote_port, info.lis
 }
 
 //! Accepts a single inbound SSH transport and returns a live SshSession object
-/** Waits up to `timeout_ms` milliseconds for an incoming connection on any
-    active listener, performs `ssh_bind_accept()` and the initial SSH key
-    exchange, then returns a live `SshSession` wrapper for the accepted
-    transport. Returns `NOTHING` on timeout.
+/** Waits up to <tt>timeout_ms</tt> milliseconds for an incoming connection on any
+    active listener, performs <tt>ssh_bind_accept()</tt> and the initial SSH key
+    exchange, then returns a live <tt>SshSession</tt> wrapper for the accepted
+    transport. Returns <tt>NOTHING</tt> on timeout.
 
-    @return a live `SshSession` object or `NOTHING` on timeout
+    @return a live <tt>SshSession</tt> object or <tt>NOTHING</tt> on timeout
  */
 *SshSession SshServer::acceptSession(int timeout_ms = 0) [flags=NAMED_ARGS] {
     ssh_session session = nullptr;
@@ -2714,7 +2714,7 @@ printf("accepted %y:%d on %y\n", info.remote_address, info.remote_port, info.lis
 
 //! Authenticates a live session using the configured auth provider or callback
 /** Waits for an authentication request on the session, invokes the configured
-    `auth_provider` or `auth_callback`, applies the returned `SshAuthDecision`
+    <tt>auth_provider</tt> or <tt>auth_callback</tt>, applies the returned <tt>SshAuthDecision</tt>
     to the live auth request, and updates the session's public authentication
     state.
 
@@ -2722,7 +2722,7 @@ printf("accepted %y:%d on %y\n", info.remote_address, info.remote_port, info.lis
     @param timeout_ms the maximum time in milliseconds to wait for the next
     authentication request; 0 means wait indefinitely
     @return the typed authentication decision applied to the session or
-    `NOTHING` on timeout
+    <tt>NOTHING</tt> on timeout
  */
 *hash<SshAuthDecision> SshServer::authenticateSession(SshSession session, int timeout_ms = 0) [flags=NAMED_ARGS] {
     // Send auth banner if configured for the session's listener
@@ -2825,15 +2825,15 @@ printf("accepted %y:%d on %y\n", info.remote_address, info.remote_port, info.lis
 
 //! Dispatches the next command request on the session
 /** Waits for the next command-style request on the session, enforces the
-    current session command policy, invokes `command_callback` when allowed,
-    applies the resulting `SshCommandResult` to the live channel, and
+    current session command policy, invokes <tt>command_callback</tt> when allowed,
+    applies the resulting <tt>SshCommandResult</tt> to the live channel, and
     returns the typed result.
 
     @param session the live authenticated session
     @param timeout_ms the maximum time in milliseconds to wait for the request;
     0 means no timeout
     @return the typed command result applied to the live request or
-    `NOTHING` on timeout
+    <tt>NOTHING</tt> on timeout
  */
 *hash<SshCommandResult> SshServer::dispatchCommandSession(SshSession session, int timeout_ms = 0) [flags=NAMED_ARGS] {
     QoreObject* command = ssh_session_wait_command_session(session, getProgram(), timeout_ms, xsink);
@@ -2872,15 +2872,15 @@ printf("accepted %y:%d on %y\n", info.remote_address, info.remote_port, info.lis
 }
 
 //! Accepts and initializes the next SFTP subsystem session
-/** Waits for the next `sftp` subsystem request on the session, enforces the
-    current session SFTP policy via `SshSession::waitSftpSession()`, invokes
-    the optional `sftp_factory_callback`, applies any returned metadata
-    overrides to the live `SftpSession`, and returns the live session.
+/** Waits for the next <tt>sftp</tt> subsystem request on the session, enforces the
+    current session SFTP policy via <tt>SshSession::waitSftpSession()</tt>, invokes
+    the optional <tt>sftp_factory_callback</tt>, applies any returned metadata
+    overrides to the live <tt>SftpSession</tt>, and returns the live session.
 
     @param session the live authenticated session
     @param timeout_ms the maximum time in milliseconds to wait for the request;
     0 means no timeout
-    @return the live `SftpSession` object or `NOTHING` on
+    @return the live <tt>SftpSession</tt> object or <tt>NOTHING</tt> on
     timeout
  */
 *SftpSession SshServer::dispatchSftpSession(SshSession session, int timeout_ms = 0) [flags=NAMED_ARGS] {
@@ -2921,13 +2921,13 @@ printf("accepted %y:%d on %y\n", info.remote_address, info.remote_port, info.lis
 
 //! Evaluates a typed SFTP transfer request against the configured path policy
 /** Builds a default typed transfer decision from the request, invokes the
-    optional `sftp_config.path_policy_callback`, applies the resulting transfer
-    info to the live `SftpSession` when allowed, and returns the final typed
+    optional <tt>sftp_config.path_policy_callback</tt>, applies the resulting transfer
+    info to the live <tt>SftpSession</tt> when allowed, and returns the final typed
     decision.
 
     @param sftp the live authenticated SFTP session
     @param request the typed transfer request to evaluate
-    @return the final typed `SftpTransferDecision`
+    @return the final typed <tt>SftpTransferDecision</tt>
  */
 hash<SftpTransferDecision> SshServer::evaluateSftpTransferRequest(SftpSession sftp,
         hash<SftpTransferRequest> request) [flags=NAMED_ARGS] {
@@ -2985,14 +2985,14 @@ nothing SshServer::setLogger(*LoggerInterfaceBase logger) [flags=NAMED_ARGS] {
 }
 
 //! Returns the configured logger object
-/** @return the configured logger object or `NOTHING`
+/** @return the configured logger object or <tt>NOTHING</tt>
  */
 *LoggerInterfaceBase SshServer::getLogger() [flags=RET_VALUE_ONLY] {
     return priv->getLogger();
 }
 
 //! Returns whether the server is running
-/** @return `True` when the server has been started and not yet stopped
+/** @return <tt>True</tt> when the server has been started and not yet stopped
 
     @par Example:
     @code{.py}
@@ -3006,7 +3006,7 @@ bool SshServer::running() [flags=CONSTANT] {
 }
 
 //! Returns a typed status hash for the current server object
-/** @return a status hash matching `SshServerStatus` with current server state
+/** @return a status hash matching <tt>SshServerStatus</tt> with current server state
 
     @par Example:
     @code{.py}

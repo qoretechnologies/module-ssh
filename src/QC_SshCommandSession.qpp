@@ -340,7 +340,7 @@ private:
 qclass SshCommandSession [arg=SshCommandSessionPriv* priv; ns=Qore::Ssh; dom=NETWORK; flags=final];
 
 //! Creates a command session from a typed request hash
-/** @param request the typed `SshCommandRequest` hash for the command session
+/** @param request the typed <tt>SshCommandRequest</tt> hash for the command session
 
     @par Example:
     @code{.py}
@@ -368,7 +368,7 @@ SshCommandSession::destructor() {
 }
 
 //! Returns the typed command request hash
-/** @return the wrapped `SshCommandRequest` typed hash
+/** @return the wrapped <tt>SshCommandRequest</tt> typed hash
 
     @par Example:
     @code{.py}
@@ -400,7 +400,7 @@ nothing SshCommandSession::setExitStatus(int status) [flags=NAMED_ARGS] {
 }
 
 //! Returns the recorded exit status
-/** @return the recorded exit status or `NOTHING` if no status has been set
+/** @return the recorded exit status or <tt>NOTHING</tt> if no status has been set
  */
 *int SshCommandSession::getExitStatus() [flags=RET_VALUE_ONLY] {
     return priv->getExitStatus();
@@ -424,7 +424,7 @@ nothing SshCommandSession::setLogger(*LoggerInterfaceBase logger) [flags=NAMED_A
 }
 
 //! Returns the configured logger object
-/** @return the configured logger object or `NOTHING`
+/** @return the configured logger object or <tt>NOTHING</tt>
  */
 *LoggerInterfaceBase SshCommandSession::getLogger() [flags=RET_VALUE_ONLY] {
     return priv->getLogger();
@@ -438,7 +438,7 @@ nothing SshCommandSession::closeInput() {
 }
 
 //! Returns whether the command input has been closed
-/** @return `True` when the command input has been closed
+/** @return <tt>True</tt> when the command input has been closed
  */
 bool SshCommandSession::inputClosed() [flags=CONSTANT] {
     return priv->isInputClosed();

@@ -3862,7 +3862,7 @@ private:
 qclass SftpSession [arg=SftpSessionPriv* priv; ns=Qore::Ssh; dom=NETWORK,FILESYSTEM; flags=final];
 
 //! Creates an SFTP session from typed metadata
-/** @param session_info the typed `SftpSessionInfo` hash for the session
+/** @param session_info the typed <tt>SftpSessionInfo</tt> hash for the session
  */
 SftpSession::constructor(hash<SftpSessionInfo> session_info) [flags=NAMED_ARGS] {
     self->setPrivate(CID_SFTPSESSION, new SftpSessionPriv(session_info));
@@ -3883,14 +3883,14 @@ SftpSession::destructor() {
 }
 
 //! Returns the typed SFTP session info hash
-/** @return the wrapped `SftpSessionInfo` typed hash
+/** @return the wrapped <tt>SftpSessionInfo</tt> typed hash
  */
 hash<SftpSessionInfo> SftpSession::getInfo() [flags=RET_VALUE_ONLY] {
     return priv->getInfo(xsink);
 }
 
 //! Returns the current transfer metadata if available
-/** @return the wrapped `SftpTransferInfo` typed hash or `NOTHING`
+/** @return the wrapped <tt>SftpTransferInfo</tt> typed hash or <tt>NOTHING</tt>
  */
 *hash<SftpTransferInfo> SftpSession::getTransferInfo() [flags=RET_VALUE_ONLY] {
     return priv->getTransferInfo(xsink);
@@ -3903,7 +3903,7 @@ hash<SftpSessionInfo> SftpSession::getInfo() [flags=RET_VALUE_ONLY] {
 
     @param timeout_ms the maximum time in milliseconds to wait for packet data;
     0 means wait indefinitely
-    @return the decoded `SftpProtocolMessage` or `NOTHING` on EOF
+    @return the decoded <tt>SftpProtocolMessage</tt> or <tt>NOTHING</tt> on EOF
  */
 *hash<SftpProtocolMessage> SftpSession::waitProtocolMessage(int timeout_ms = 0) [flags=NAMED_ARGS] {
     return priv->waitProtocolMessage(timeout_ms, xsink);
@@ -3919,15 +3919,15 @@ nothing SftpSession::setLogger(*LoggerInterfaceBase logger) [flags=NAMED_ARGS] {
 //! Sets the backend object used by the SFTP session
 /** The backend object represents virtualized path and file semantics for this
     session. The recommended backend contract is to implement typed backend
-    verb overloads using `SftpPathRequest`, `SftpOpenRequest`,
-    `SftpRenameRequest`, `SftpSubmissionRequest`, and
-    `SftpOperationRequest` together with typed results such as
-    `SftpPathInfo`, `SftpListResult`, `SftpOpenResult`, and
-    `SftpOperationResult`. Loose untyped backend methods remain supported as a
+    verb overloads using <tt>SftpPathRequest</tt>, <tt>SftpOpenRequest</tt>,
+    <tt>SftpRenameRequest</tt>, <tt>SftpSubmissionRequest</tt>, and
+    <tt>SftpOperationRequest</tt> together with typed results such as
+    <tt>SftpPathInfo</tt>, <tt>SftpListResult</tt>, <tt>SftpOpenResult</tt>, and
+    <tt>SftpOperationResult</tt>. Loose untyped backend methods remain supported as a
     compatibility path, but typed backend methods are the intended public UX.
 
     @param backend an optional backend object implementing at least
-    `stat()` and `list()`
+    <tt>stat()</tt> and <tt>list()</tt>
  */
 nothing SftpSession::setBackend(*object backend) [flags=NAMED_ARGS] {
     priv->setBackend(backend, xsink);
@@ -3947,7 +3947,7 @@ nothing SftpSession::clearTransferInfo() {
     priv->clearTransferInfo(xsink);
 }
 
-//! Sends an `SSH_FXP_VERSION` reply on the live subsystem channel
+//! Sends an <tt>SSH_FXP_VERSION</tt> reply on the live subsystem channel
 /** Advertises the \c statvfs\@openssh.com extension in the version reply.
 
     @param version the server-side SFTP protocol version to advertise
@@ -3956,7 +3956,7 @@ nothing SftpSession::sendVersion(int version = 3) [flags=NAMED_ARGS] {
     priv->sendVersion(version, xsink);
 }
 
-//! Sends an `SSH_FXP_STATUS` reply on the live subsystem channel
+//! Sends an <tt>SSH_FXP_STATUS</tt> reply on the live subsystem channel
 /** @param request_id the SFTP request id being answered
     @param status_code the numeric SFTP status code
     @param message an optional human-readable status message
@@ -3967,19 +3967,19 @@ nothing SftpSession::sendStatus(int request_id, int status_code, string message 
 }
 
 //! Reads and processes the next SFTP request on the live subsystem channel
-/** Handles the initial `SSH_FXP_INIT` handshake by replying with
-    `SSH_FXP_VERSION`, handles `SSH_FXP_REALPATH` using the module's virtual
-    path normalization rules, handles rooted `SSH_FXP_STAT` / `SSH_FXP_LSTAT`
-    lookups with `SSH_FXP_ATTRS` replies, dispatches `SSH_FXP_SYMLINK`,
-    `SSH_FXP_READLINK`, `SSH_FXP_SETSTAT`, `SSH_FXP_FSETSTAT`, and
-    `SSH_FXP_EXTENDED` (including \c statvfs\@openssh.com) to the backend when
-    available, and replies to unsupported requests with `SSH_FXP_STATUS` /
-    `SSH_FX_OP_UNSUPPORTED`.
+/** Handles the initial <tt>SSH_FXP_INIT</tt> handshake by replying with
+    <tt>SSH_FXP_VERSION</tt>, handles <tt>SSH_FXP_REALPATH</tt> using the module's virtual
+    path normalization rules, handles rooted <tt>SSH_FXP_STAT</tt> / <tt>SSH_FXP_LSTAT</tt>
+    lookups with <tt>SSH_FXP_ATTRS</tt> replies, dispatches <tt>SSH_FXP_SYMLINK</tt>,
+    <tt>SSH_FXP_READLINK</tt>, <tt>SSH_FXP_SETSTAT</tt>, <tt>SSH_FXP_FSETSTAT</tt>, and
+    <tt>SSH_FXP_EXTENDED</tt> (including \c statvfs\@openssh.com) to the backend when
+    available, and replies to unsupported requests with <tt>SSH_FXP_STATUS</tt> /
+    <tt>SSH_FX_OP_UNSUPPORTED</tt>.
 
     @param timeout_ms the maximum time in milliseconds to wait for packet data;
     0 means wait indefinitely
-    @return the decoded `SftpProtocolMessage` that was handled or
-    `NOTHING` on EOF
+    @return the decoded <tt>SftpProtocolMessage</tt> that was handled or
+    <tt>NOTHING</tt> on EOF
  */
 *hash<SftpProtocolMessage> SftpSession::processNextRequest(int timeout_ms = 0) [flags=NAMED_ARGS] {
     return priv->processNextRequest(timeout_ms, xsink);
@@ -4002,13 +4002,13 @@ int SftpSession::processRequests(int timeout_ms = 0, int max_batch = 0) [flags=N
 }
 
 //! Submits content through the backend atomic-exchange helper
-/** Calls backend `submit()` with a typed request. The request may provide
-    either in-memory binary `data` or a local `source_path`; when `source_path`
+/** Calls backend <tt>submit()</tt> with a typed request. The request may provide
+    either in-memory binary <tt>data</tt> or a local <tt>source_path</tt>; when <tt>source_path</tt>
     is provided, the helper reads the file and includes the payload in the
     backend request.
 
-    @param request the typed `SftpSubmissionRequest` describing the submission
-    @return the typed `SftpOperationResult` returned by the backend
+    @param request the typed <tt>SftpSubmissionRequest</tt> describing the submission
+    @return the typed <tt>SftpOperationResult</tt> returned by the backend
  */
 hash<SftpOperationResult> SftpSession::submit(hash<SftpSubmissionRequest> request) [flags=NAMED_ARGS] {
     return priv->submit(request, xsink);
@@ -4016,24 +4016,24 @@ hash<SftpOperationResult> SftpSession::submit(hash<SftpSubmissionRequest> reques
 
 //! Submits in-memory content through the backend atomic-exchange helper
 /** Convenience overload for typed callers that already have a complete
-    `SftpSubmissionRequest` prepared.
+    <tt>SftpSubmissionRequest</tt> prepared.
 
-    @param request the typed `SftpSubmissionRequest`; `data` must be present
-    @return the typed `SftpOperationResult` returned by the backend
+    @param request the typed <tt>SftpSubmissionRequest</tt>; <tt>data</tt> must be present
+    @return the typed <tt>SftpOperationResult</tt> returned by the backend
  */
 hash<SftpOperationResult> SftpSession::submitData(hash<SftpSubmissionRequest> request) [flags=NAMED_ARGS] {
     return priv->submit(request, xsink);
 }
 
 //! Submits in-memory content through the backend atomic-exchange helper
-/** Builds an `SftpSubmissionRequest` from a path and binary payload and then
-    calls `submit(hash<SftpSubmissionRequest>)`.
+/** Builds an <tt>SftpSubmissionRequest</tt> from a path and binary payload and then
+    calls <tt>submit(hash&lt;SftpSubmissionRequest&gt;)</tt>.
 
     @param path the virtual destination path
     @param data the payload to submit
     @param metadata optional backend metadata
     @param checksum optional caller-provided checksum
-    @return the typed `SftpOperationResult` returned by the backend
+    @return the typed <tt>SftpOperationResult</tt> returned by the backend
 
     @par Example:
     @code{.py}
@@ -4056,28 +4056,28 @@ hash<SftpOperationResult> SftpSession::submitData(string path, binary data, *has
 
 //! Submits a local file through the backend atomic-exchange helper
 /** Convenience overload for typed callers that already have a complete
-    `SftpSubmissionRequest` prepared.
+    <tt>SftpSubmissionRequest</tt> prepared.
 
-    @param request the typed `SftpSubmissionRequest`; `source_path` must be present
-    @return the typed `SftpOperationResult` returned by the backend
+    @param request the typed <tt>SftpSubmissionRequest</tt>; <tt>source_path</tt> must be present
+    @return the typed <tt>SftpOperationResult</tt> returned by the backend
  */
 hash<SftpOperationResult> SftpSession::submitLocalFile(hash<SftpSubmissionRequest> request) [flags=NAMED_ARGS] {
     return priv->submit(request, xsink);
 }
 
 //! Submits a local file through the backend atomic-exchange helper
-/** Builds an `SftpSubmissionRequest` using a local `source_path` and then
-    calls `submit(hash<SftpSubmissionRequest>)`.
+/** Builds an <tt>SftpSubmissionRequest</tt> using a local <tt>source_path</tt> and then
+    calls <tt>submit(hash&lt;SftpSubmissionRequest&gt;)</tt>.
 
     @param path the virtual destination path
     @param source_path the local source file to submit
-    @param move if set to `True`, the backend receives the intent that the
+    @param move if set to <tt>True</tt>, the backend receives the intent that the
     local file may be moved rather than copied
-    @param create_parents if set to `True`, create parent directories when
+    @param create_parents if set to <tt>True</tt>, create parent directories when
     applicable in backend-controlled local helpers
     @param metadata optional backend metadata
     @param checksum optional caller-provided checksum
-    @return the typed `SftpOperationResult` returned by the backend
+    @return the typed <tt>SftpOperationResult</tt> returned by the backend
  */
 hash<SftpOperationResult> SftpSession::submitLocalFile(string path, string source_path, bool move = False,
         bool create_parents = True, *hash<auto> metadata, *string checksum) [flags=NAMED_ARGS] {
@@ -4096,20 +4096,20 @@ hash<SftpOperationResult> SftpSession::submitLocalFile(string path, string sourc
 }
 
 //! Lists backend-managed retrievable objects for atomic exchange
-/** Calls backend `listAvailable()` with a typed request.
+/** Calls backend <tt>listAvailable()</tt> with a typed request.
 
-    @param request the typed `SftpPathRequest` describing the listing scope
-    @return the typed `SftpListResult` returned by the backend
+    @param request the typed <tt>SftpPathRequest</tt> describing the listing scope
+    @return the typed <tt>SftpListResult</tt> returned by the backend
  */
 hash<SftpListResult> SftpSession::listAvailable(hash<SftpPathRequest> request) [flags=NAMED_ARGS] {
     return priv->listAvailable(request, xsink);
 }
 
 //! Retrieves backend-managed content for atomic exchange
-/** Calls backend `retrieve()` with a typed request.
+/** Calls backend <tt>retrieve()</tt> with a typed request.
 
-    @param request the typed `SftpOpenRequest` describing the retrieval request
-    @return the typed `SftpOpenResult` returned by the backend
+    @param request the typed <tt>SftpOpenRequest</tt> describing the retrieval request
+    @return the typed <tt>SftpOpenResult</tt> returned by the backend
  */
 hash<SftpOpenResult> SftpSession::retrieve(hash<SftpOpenRequest> request) [flags=NAMED_ARGS] {
     return priv->retrieve(request, xsink);
@@ -4117,9 +4117,9 @@ hash<SftpOpenResult> SftpSession::retrieve(hash<SftpOpenRequest> request) [flags
 
 //! Retrieves backend-managed content as binary data
 /** Convenience overload for typed callers that already have a complete
-    `SftpOpenRequest` prepared.
+    <tt>SftpOpenRequest</tt> prepared.
 
-    @param request the typed `SftpOpenRequest`
+    @param request the typed <tt>SftpOpenRequest</tt>
     @return the retrieved binary payload
  */
 binary SftpSession::retrieveData(hash<SftpOpenRequest> request) [flags=NAMED_ARGS] {
@@ -4137,7 +4137,7 @@ binary SftpSession::retrieveData(hash<SftpOpenRequest> request) [flags=NAMED_ARG
 }
 
 //! Retrieves backend-managed content as binary data
-/** Builds an `SftpOpenRequest` from a virtual path and returns the payload
+/** Builds an <tt>SftpOpenRequest</tt> from a virtual path and returns the payload
     from the backend result. This convenience method is intended for simple
     retrieval flows where the backend returns immediate binary content.
 
@@ -4169,11 +4169,11 @@ binary SftpSession::retrieveData(string path, *hash<auto> metadata, int offset =
 }
 
 //! Finalizes an atomic retrieval workflow
-/** Calls backend `completeRetrieve()` with a typed request so the backend can
+/** Calls backend <tt>completeRetrieve()</tt> with a typed request so the backend can
     claim, archive, or delete the retrieved object.
 
-    @param request the typed `SftpOperationRequest` describing the completion action
-    @return the typed `SftpOperationResult` returned by the backend
+    @param request the typed <tt>SftpOperationRequest</tt> describing the completion action
+    @return the typed <tt>SftpOperationResult</tt> returned by the backend
  */
 hash<SftpOperationResult> SftpSession::completeRetrieve(hash<SftpOperationRequest> request) [flags=NAMED_ARGS] {
     return priv->completeRetrieve(request, xsink);
@@ -4181,11 +4181,11 @@ hash<SftpOperationResult> SftpSession::completeRetrieve(hash<SftpOperationReques
 
 //! Finalizes a retrieval with an explicit completion mode
 /** Convenience overload for typed callers that already have a
-    `SftpOperationRequest` prepared.
+    <tt>SftpOperationRequest</tt> prepared.
 
-    @param request the typed `SftpOperationRequest`
+    @param request the typed <tt>SftpOperationRequest</tt>
     @param completion_mode the backend completion mode
-    @return the typed `SftpOperationResult` returned by the backend
+    @return the typed <tt>SftpOperationResult</tt> returned by the backend
  */
 hash<SftpOperationResult> SftpSession::completeRetrieveMode(hash<SftpOperationRequest> request,
         string completion_mode) [flags=NAMED_ARGS] {
@@ -4204,15 +4204,15 @@ hash<SftpOperationResult> SftpSession::completeRetrieveMode(hash<SftpOperationRe
 }
 
 //! Finalizes a retrieval with an explicit completion mode
-/** Builds an `SftpOperationRequest` for `completeRetrieve(hash<SftpOperationRequest>)`
-    using a simple completion mode name such as `delete`, `claim`, or
-    `archive`.
+/** Builds an <tt>SftpOperationRequest</tt> for <tt>completeRetrieve(hash&lt;SftpOperationRequest&gt;)</tt>
+    using a simple completion mode name such as <tt>delete</tt>, <tt>claim</tt>, or
+    <tt>archive</tt>.
 
     @param path the virtual source path
     @param completion_mode the backend completion mode
     @param target_path an optional local target path associated with the retrieval
     @param metadata optional backend metadata
-    @return the typed `SftpOperationResult` returned by the backend
+    @return the typed <tt>SftpOperationResult</tt> returned by the backend
  */
 hash<SftpOperationResult> SftpSession::completeRetrieveMode(string path, string completion_mode,
         *string target_path, *hash<auto> metadata) [flags=NAMED_ARGS] {
@@ -4231,7 +4231,7 @@ hash<SftpOperationResult> SftpSession::completeRetrieveMode(string path, string 
 }
 
 //! Finalizes a retrieval with delete-on-success semantics
-/** Convenience wrapper for `completeRetrieveMode(path, "delete", ...)`.
+/** Convenience wrapper for <tt>completeRetrieveMode(path, "delete", ...)</tt>.
  */
 hash<SftpOperationResult> SftpSession::completeRetrieveDelete(hash<SftpOperationRequest> request) [flags=NAMED_ARGS] {
     ReferenceHolder<QoreStringNode> completion_mode(new QoreStringNode("delete"), xsink);
@@ -4250,7 +4250,7 @@ hash<SftpOperationResult> SftpSession::completeRetrieveDelete(hash<SftpOperation
 }
 
 //! Finalizes a retrieval with delete-on-success semantics
-/** Convenience wrapper for `completeRetrieveMode(path, "delete", ...)`.
+/** Convenience wrapper for <tt>completeRetrieveMode(path, "delete", ...)</tt>.
  */
 hash<SftpOperationResult> SftpSession::completeRetrieveDelete(string path, *string target_path,
         *hash<auto> metadata) [flags=NAMED_ARGS] {
@@ -4270,7 +4270,7 @@ hash<SftpOperationResult> SftpSession::completeRetrieveDelete(string path, *stri
 }
 
 //! Finalizes a retrieval with claim semantics
-/** Convenience wrapper for `completeRetrieveMode(path, "claim", ...)`.
+/** Convenience wrapper for <tt>completeRetrieveMode(path, "claim", ...)</tt>.
  */
 hash<SftpOperationResult> SftpSession::completeRetrieveClaim(hash<SftpOperationRequest> request) [flags=NAMED_ARGS] {
     ReferenceHolder<QoreStringNode> completion_mode(new QoreStringNode("claim"), xsink);
@@ -4289,7 +4289,7 @@ hash<SftpOperationResult> SftpSession::completeRetrieveClaim(hash<SftpOperationR
 }
 
 //! Finalizes a retrieval with claim semantics
-/** Convenience wrapper for `completeRetrieveMode(path, "claim", ...)`.
+/** Convenience wrapper for <tt>completeRetrieveMode(path, "claim", ...)</tt>.
  */
 hash<SftpOperationResult> SftpSession::completeRetrieveClaim(string path, *string target_path,
         *hash<auto> metadata) [flags=NAMED_ARGS] {
@@ -4309,7 +4309,7 @@ hash<SftpOperationResult> SftpSession::completeRetrieveClaim(string path, *strin
 }
 
 //! Finalizes a retrieval with archive semantics
-/** Convenience wrapper for `completeRetrieveMode(path, "archive", ...)`.
+/** Convenience wrapper for <tt>completeRetrieveMode(path, "archive", ...)</tt>.
  */
 hash<SftpOperationResult> SftpSession::completeRetrieveArchive(hash<SftpOperationRequest> request) [flags=NAMED_ARGS] {
     ReferenceHolder<QoreStringNode> completion_mode(new QoreStringNode("archive"), xsink);
@@ -4328,7 +4328,7 @@ hash<SftpOperationResult> SftpSession::completeRetrieveArchive(hash<SftpOperatio
 }
 
 //! Finalizes a retrieval with archive semantics
-/** Convenience wrapper for `completeRetrieveMode(path, "archive", ...)`.
+/** Convenience wrapper for <tt>completeRetrieveMode(path, "archive", ...)</tt>.
  */
 hash<SftpOperationResult> SftpSession::completeRetrieveArchive(string path, *string target_path,
         *hash<auto> metadata) [flags=NAMED_ARGS] {
@@ -4350,15 +4350,15 @@ hash<SftpOperationResult> SftpSession::completeRetrieveArchive(string path, *str
 //! Retrieves backend-managed content to a local file
 /** Retrieves immediate binary content through the backend atomic-exchange
     helper, writes it to a local target file, and optionally calls
-    `completeRetrieve(hash<SftpOperationRequest>)` to finalize the retrieval
-    with a completion mode such as `delete`, `claim`, or `archive`.
+    <tt>completeRetrieve(hash&lt;SftpOperationRequest&gt;)</tt> to finalize the retrieval
+    with a completion mode such as <tt>delete</tt>, <tt>claim</tt>, or <tt>archive</tt>.
 
     @param path the virtual source path
     @param target_path the local destination file
     @param completion_mode optional backend completion mode
     @param metadata optional backend metadata
-    @param create_parents if set to `True`, creates target parent directories
-    @return the typed `SftpOperationResult` describing the final retrieval state
+    @param create_parents if set to <tt>True</tt>, creates target parent directories
+    @return the typed <tt>SftpOperationResult</tt> describing the final retrieval state
  */
 hash<SftpOperationResult> SftpSession::retrieveToLocalFile(string path, string target_path,
         *string completion_mode, *hash<auto> metadata, bool create_parents = True) [flags=NAMED_ARGS] {
@@ -4408,13 +4408,13 @@ hash<SftpOperationResult> SftpSession::retrieveToLocalFile(string path, string t
 
 //! Retrieves backend-managed content to a local file
 /** Convenience overload for typed callers that already have a complete
-    `SftpOpenRequest` prepared.
+    <tt>SftpOpenRequest</tt> prepared.
 
-    @param request the typed `SftpOpenRequest`
+    @param request the typed <tt>SftpOpenRequest</tt>
     @param target_path the local destination file
     @param completion_mode optional backend completion mode
-    @param create_parents if set to `True`, creates target parent directories
-    @return the typed `SftpOperationResult` describing the final retrieval state
+    @param create_parents if set to <tt>True</tt>, creates target parent directories
+    @return the typed <tt>SftpOperationResult</tt> describing the final retrieval state
  */
 hash<SftpOperationResult> SftpSession::retrieveToLocalFile(hash<SftpOpenRequest> request, string target_path,
         *string completion_mode, bool create_parents = True) [flags=NAMED_ARGS] {
@@ -4461,15 +4461,15 @@ hash<SftpOperationResult> SftpSession::retrieveToLocalFile(hash<SftpOpenRequest>
 }
 
 //! Publishes a local staged file through the active transfer plan
-/** Uses the current `SftpTransferInfo` to copy or rename a local file into
+/** Uses the current <tt>SftpTransferInfo</tt> to copy or rename a local file into
     the planned final destination. When @c atomic_publish is set and a
     temporary path is present, the file is first staged to the temporary path
     and then renamed into place.
 
     @param source_path the local staged file to publish
-    @param move if set to `True`, renames the source instead of copying it
-    @param create_parents if set to `True`, creates parent directories as needed
-    @return the updated `SftpTransferInfo` with @c completed set to `True`
+    @param move if set to <tt>True</tt>, renames the source instead of copying it
+    @param create_parents if set to <tt>True</tt>, creates parent directories as needed
+    @return the updated <tt>SftpTransferInfo</tt> with @c completed set to <tt>True</tt>
 
     @par Example:
     @code{.py}
@@ -4482,14 +4482,14 @@ hash<SftpTransferInfo> SftpSession::publishLocalFile(string source_path, bool mo
 }
 
 //! Retrieves a planned file to a local destination
-/** Uses the current `SftpTransferInfo` to copy or rename a planned server
+/** Uses the current <tt>SftpTransferInfo</tt> to copy or rename a planned server
     file to a local destination path. This is intended for controlled outbound
     retrieval or claim-style handoff workflows.
 
     @param target_path the local destination path
-    @param move if set to `True`, renames the source into place instead of copying it
-    @param create_parents if set to `True`, creates parent directories as needed
-    @return the updated `SftpTransferInfo` with @c completed set to `True`
+    @param move if set to <tt>True</tt>, renames the source into place instead of copying it
+    @param create_parents if set to <tt>True</tt>, creates parent directories as needed
+    @return the updated <tt>SftpTransferInfo</tt> with @c completed set to <tt>True</tt>
 
     @par Example:
     @code{.py}
@@ -4502,21 +4502,21 @@ hash<SftpTransferInfo> SftpSession::retrieveLocalFile(string target_path, bool m
 }
 
 //! Returns the configured logger object
-/** @return the configured logger object or `NOTHING`
+/** @return the configured logger object or <tt>NOTHING</tt>
  */
 *LoggerInterfaceBase SftpSession::getLogger() [flags=RET_VALUE_ONLY] {
     return priv->getLogger();
 }
 
 //! Returns the configured backend object
-/** @return the configured backend object or `NOTHING`
+/** @return the configured backend object or <tt>NOTHING</tt>
  */
 *object SftpSession::getBackend() [flags=RET_VALUE_ONLY] {
     return priv->getBackend();
 }
 
 //! Returns whether the accepted SFTP channel is still connected
-/** @return `True` when the SFTP channel is still open
+/** @return <tt>True</tt> when the SFTP channel is still open
  */
 bool SftpSession::connected() [flags=CONSTANT] {
     return priv->isConnected();

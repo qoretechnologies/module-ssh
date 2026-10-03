@@ -1701,7 +1701,7 @@ SshAuthContext::destructor() {
 }
 
 //! Returns the typed authentication context info hash
-/** @return the wrapped `SshAuthContextInfo` typed hash
+/** @return the wrapped <tt>SshAuthContextInfo</tt> typed hash
  */
 hash<SshAuthContextInfo> SshAuthContext::getInfo() [flags=RET_VALUE_ONLY] {
     return priv->getInfo(xsink);
@@ -1710,7 +1710,7 @@ hash<SshAuthContextInfo> SshAuthContext::getInfo() [flags=RET_VALUE_ONLY] {
 //! Accepts the pending authentication request
 /** Sends SSH auth success for the wrapped pending request.
 
-    @param partial set to `True` when the authentication is partially
+    @param partial set to <tt>True</tt> when the authentication is partially
     accepted and additional authentication is required
 
     @par Example:
@@ -1740,7 +1740,7 @@ nothing SshAuthContext::reject(*list<string> allowed_methods) [flags=NAMED_ARGS]
 
 //! Applies a typed authentication decision to the pending request
 /** Accepts or rejects the pending authentication request according to the
-    supplied `SshAuthDecision` hash.
+    supplied <tt>SshAuthDecision</tt> hash.
 
     @param decision the typed authentication decision to apply
  */
@@ -1756,7 +1756,7 @@ nothing SshAuthContext::setLogger(*LoggerInterfaceBase logger) [flags=NAMED_ARGS
 }
 
 //! Returns the configured logger object
-/** @return the configured logger object or `NOTHING`
+/** @return the configured logger object or <tt>NOTHING</tt>
  */
 *LoggerInterfaceBase SshAuthContext::getLogger() [flags=RET_VALUE_ONLY] {
     return priv->getLogger();
@@ -1798,14 +1798,14 @@ SshSession::destructor() {
 }
 
 //! Returns the typed session info hash
-/** @return the wrapped `SshSessionInfo` typed hash
+/** @return the wrapped <tt>SshSessionInfo</tt> typed hash
  */
 hash<SshSessionInfo> SshSession::getInfo() [flags=RET_VALUE_ONLY] {
     return priv->getInfo(xsink);
 }
 
 //! Returns the typed authentication context hash if available
-/** @return the wrapped `SshAuthContextInfo` typed hash or `NOTHING`
+/** @return the wrapped <tt>SshAuthContextInfo</tt> typed hash or <tt>NOTHING</tt>
  */
 *hash<SshAuthContextInfo> SshSession::getAuthContextInfo() [flags=RET_VALUE_ONLY] {
     return priv->getAuthInfo(xsink);
@@ -1824,13 +1824,13 @@ nothing SshSession::applyAuthDecision(hash<SshAuthContextInfo> auth_context_info
 
 //! Waits for the next authentication request on the session
 /** Automatically accepts the \c ssh-userauth service request and then returns
-    the next authentication request as a `SshAuthContext` object. Returns
-    `NOTHING` on timeout.
+    the next authentication request as a <tt>SshAuthContext</tt> object. Returns
+    <tt>NOTHING</tt> on timeout.
 
     @param timeout_ms the maximum time in milliseconds to wait for an
     authentication request; 0 means no timeout (wait indefinitely)
-    @return a `SshAuthContext` object wrapping the authentication request, or
-    `NOTHING` on timeout
+    @return a <tt>SshAuthContext</tt> object wrapping the authentication request, or
+    <tt>NOTHING</tt> on timeout
 
     @par Example:
     @code{.py}
@@ -1853,24 +1853,24 @@ if (ctx) {
 }
 
 //! Waits for the next exec or subsystem request on the session
-/** Returns a live `SshCommandSession` object for the next command-style
-    request on the authenticated session, or `NOTHING` on timeout.
+/** Returns a live <tt>SshCommandSession</tt> object for the next command-style
+    request on the authenticated session, or <tt>NOTHING</tt> on timeout.
 
     @param timeout_ms the maximum time in milliseconds to wait for a request;
     0 means no timeout
-    @return a live `SshCommandSession` object or `NOTHING`
+    @return a live <tt>SshCommandSession</tt> object or <tt>NOTHING</tt>
  */
 *SshCommandSession SshSession::waitCommandSession(int timeout_ms = 0) [flags=NAMED_ARGS] {
     return priv->waitCommandSession(getProgram(), timeout_ms, xsink);
 }
 
 //! Waits for the next SFTP subsystem request on the session
-/** Returns a live `SftpSession` object for the next `sftp` subsystem
-    request on the authenticated session, or `NOTHING` on timeout.
+/** Returns a live <tt>SftpSession</tt> object for the next <tt>sftp</tt> subsystem
+    request on the authenticated session, or <tt>NOTHING</tt> on timeout.
 
     @param timeout_ms the maximum time in milliseconds to wait for a request;
     0 means no timeout
-    @return a live `SftpSession` object or `NOTHING`
+    @return a live <tt>SftpSession</tt> object or <tt>NOTHING</tt>
  */
 *SftpSession SshSession::waitSftpSession(int timeout_ms = 0) [flags=NAMED_ARGS] {
     return priv->waitSftpSession(getProgram(), timeout_ms, xsink);
@@ -1884,7 +1884,7 @@ nothing SshSession::setLogger(*LoggerInterfaceBase logger) [flags=NAMED_ARGS] {
 }
 
 //! Returns the configured logger object
-/** @return the configured logger object or `NOTHING`
+/** @return the configured logger object or <tt>NOTHING</tt>
  */
 *LoggerInterfaceBase SshSession::getLogger() [flags=RET_VALUE_ONLY] {
     return priv->getLogger();
@@ -1904,7 +1904,7 @@ nothing SshSession::disconnect() {
 }
 
 //! Returns whether the session is connected
-/** @return `True` when the session is connected
+/** @return <tt>True</tt> when the session is connected
  */
 bool SshSession::connected() [flags=CONSTANT] {
     return priv->isConnected();
