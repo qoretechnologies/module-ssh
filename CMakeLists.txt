@@ -77,7 +77,6 @@ set(CPP_SRC
 
 set(QORE_DOX_TMPL_SRC
   docs/mainpage.doxygen.tmpl
-  docs/binary-typed-symbols.doxygen.tmpl
   docs/getting-started.doxygen.tmpl
   docs/authentication.doxygen.tmpl
   docs/sftp-backends.doxygen.tmpl
@@ -87,7 +86,15 @@ set(QORE_DOX_TMPL_SRC
   docs/release-notes.doxygen.tmpl
 )
 
-qore_wrap_qpp_value(QPP_SOURCES METALIST QPP_META_SRC ${QPP_SRC})
+qore_wrap_qpp_value(QPP_SOURCES METALIST QPP_META_SRC DOXLIST QPP_DOX ${QPP_SRC})
+
+# Include public declarations and registered guides only. Scanning the build
+# directory also picks up obsolete documentation-only symbol stubs.
+set(MODULE_DOX_INPUT ${QPP_DOX})
+foreach(_ssh_doc_template IN LISTS QORE_DOX_TMPL_SRC)
+    get_filename_component(_ssh_doc_name "${_ssh_doc_template}" NAME_WE)
+    list(APPEND MODULE_DOX_INPUT "${CMAKE_CURRENT_BINARY_DIR}/${_ssh_doc_name}.dox")
+endforeach()
 
 add_library(${module_name} MODULE ${CPP_SRC} ${QPP_SOURCES})
 set(QORE_DOXYGEN_IMAGES
