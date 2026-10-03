@@ -4,6 +4,8 @@
 
     @section sshintro Ssh Module Introduction
 
+    <img src="generic-sftp-server-exchange-logo.svg" width="96" alt="ssh module logo"/>
+
     The Ssh module provides server-side SSH and SFTP support for Qore through
     <a href="https://www.libssh.org/">libssh</a>. The module is designed for
     controlled command processing, auditable file transfer, and integration
@@ -30,16 +32,6 @@
     - SSH key management through @ref Qore::Ssh::SshKey "SshKey" with key
       generation, import/export, inspection, and comparison
 
-    @section sshnavigation Documentation
-
-    - @subpage sshgettingstarted -- quick-start examples for SFTP and command servers
-    - @subpage sshauthguide -- authentication methods, multi-factor auth, and providers
-    - @subpage sshsftpbackendguide -- SFTP backend types, custom backends, and persistence
-    - @subpage sshkeymanagement -- SSH key generation, import, export, and inspection
-    - @subpage sshcookbook -- complete typed code examples for common scenarios
-    - @subpage sshtypedcontracts -- typed hash reference index grouped by domain
-    - @subpage sshreleasenotes -- version history
-
     @section sshusermodules User Modules
 
     - @ref sshserverconnectionsintro "SshServerConnections" -- @c ConnectionProvider
@@ -54,9 +46,19 @@
       @c publickey, @c interactive, @c hostbased, and @c gssapi-mic methods
     - @ref sshservercommandproviderintro "SshServerCommandProvider" -- virtual
       command-service helpers with policy, audit, and concurrency controls
-    - <img src="generic-sftp-server-exchange-logo.svg" width="28" height="28" alt="SftpServerDataProvider app icon"/> @ref sftpserverdataproviderintro "SftpServerDataProvider" -- virtual SFTP
+    - @ref sftpserverdataproviderintro "SftpServerDataProvider" -- virtual SFTP
       filesystem, exchange, and record-store helpers with @c DataProvider
       integration, inbound policy enforcement, and observable events
+
+    @section sshnavigation Documentation
+
+    - @subpage sshgettingstarted -- quick-start examples for SFTP and command servers
+    - @subpage sshauthguide -- authentication methods, multi-factor auth, and providers
+    - @subpage sshsftpbackendguide -- SFTP backend types, custom backends, and persistence
+    - @subpage sshkeymanagement -- SSH key generation, import, export, and inspection
+    - @subpage sshcookbook -- complete typed code examples for common scenarios
+    - @subpage sshtypedcontracts -- typed hash reference index grouped by domain
+    - @subpage sshreleasenotes -- version history
 
     @section sshquicklinks Quick Links
 
@@ -65,6 +67,5 @@
     - @ref Qore::Ssh::SftpSession "SftpSession class reference"
     - @ref sshtypedcontracts "Typed hash index"
     - @ref sshcookbook "Code examples"
-
 
 */

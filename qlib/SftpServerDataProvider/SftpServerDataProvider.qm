@@ -273,6 +273,8 @@ module SftpServerDataProvider {
 
     @section sftpserverdataproviderintro SftpServerDataProvider Module Introduction
 
+    <img src="generic-sftp-server-exchange-logo.svg" width="96" alt="SftpServerDataProvider module logo"/>
+
     The %SftpServerDataProvider module provides file-oriented APIs for
     atomic submission and retrieval workflows on top of the Ssh module,
     including easy-to-use in-memory helpers for both generic virtual
