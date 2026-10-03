@@ -90,6 +90,9 @@ set(QORE_DOX_TMPL_SRC
 qore_wrap_qpp_value(QPP_SOURCES METALIST QPP_META_SRC ${QPP_SRC})
 
 add_library(${module_name} MODULE ${CPP_SRC} ${QPP_SOURCES})
+set(QORE_DOXYGEN_IMAGES
+    "${CMAKE_SOURCE_DIR}/qlib/SftpServerDataProvider/generic-sftp-server-exchange-logo.svg"
+)
 qore_external_binary_module(${module_name} ${PROJECT_VERSION} ${LIBSSH_LDFLAGS})
 
 if (COMMAND qore_install_qpp_metadata)
