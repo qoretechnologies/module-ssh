@@ -39,3 +39,8 @@ paths. On a disposable runtime image, run unprivileged::
 Add ``--compiler`` on the SDK image to compile and execute the named-argument
 key and virtual-filesystem example. Runtime tests require only Python, OpenSSH
 clients and the installed runtime packages.
+
+Installed documentation scripts use ``/usr/bin/qore`` so their interpreter
+resolves to the packaged runtime. Source-checkout scripts retain their portable
+``/usr/bin/env qore`` shebangs.
+The package descriptions use plain terms recognized by distribution lint tools.

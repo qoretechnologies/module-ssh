@@ -42,14 +42,14 @@ BuildRequires: util-linux-core
 %description
 Native SSH server and key bindings with compiled/source authentication,
 command and virtual SFTP providers, compiler metadata and translations.
-Uses the distribution's libssh implementation and cryptographic policy.
+Uses the distribution's SSH library and security policy.
 
 %if %{with docs}
 %package doc
 Summary: SSH server and SFTP service reference documentation
 BuildArch: noarch
 %description doc
-Native and user-module API references with runnable examples and public test
+API references for native and user modules with examples and public test
 identities. The example keys are test fixtures, not deployment credentials.
 %endif
 
@@ -84,6 +84,10 @@ install -d %{buildroot}%{_docdir}/%{name}-doc/examples/test
 cp -a examples %{buildroot}%{_docdir}/%{name}-doc/examples/demos
 cp -a test/data %{buildroot}%{_docdir}/%{name}-doc/examples/test/
 cp rpm/EXAMPLES.rst %{buildroot}%{_docdir}/%{name}-doc/examples/README.rst
+# Installed examples use the packaged interpreter, independent of PATH.
+sed -i '1s|^#!/usr/bin/env qore$|#!/usr/bin/qore|' \
+  %{buildroot}%{_docdir}/%{name}-doc/examples/demos/*.qtest \
+  %{buildroot}%{_docdir}/%{name}-doc/examples/demos/*.qr
 hardlink -t -O %{buildroot}%{_docdir}/%{name}-doc
 %endif
 %check
@@ -109,6 +113,9 @@ qore-data-provider-i18n --no-color --check-source-tree --require-standard-locale
 %doc %{_docdir}/%{name}-doc/
 %endif
 %changelog
+* Tue Oct 06 2026 David Nichols <david@qore.org> - 1.0.0-1
+- Use the packaged Qore interpreter in installed documentation examples.
+
 * Fri Oct 02 2026 David Nichols <david@qore.org> - 1.0.0-1
 - Package SSH servers, four compiled/source providers, metadata and locales.
 - Include strict API references, runnable examples and offline integration tests.
