@@ -30,7 +30,9 @@
 #include <arpa/inet.h>
 #include <cassert>
 #include <condition_variable>
+#include <chrono>
 #include <ctime>
+#include <fcntl.h>
 #include <libssh/server.h>
 #include <map>
 #include <mutex>
@@ -1061,6 +1063,12 @@ public:
 
     ~SshServerPriv() {
         clearRuntimeState();
+        for (int& fd : wake_fds) {
+            if (fd >= 0) {
+                close(fd);
+                fd = -1;
+            }
+        }
         if (config) {
             config->deref(nullptr);
         }
@@ -1648,8 +1656,55 @@ public:
             started->deref(nullptr);
         }
         started = new DateTimeNode(static_cast<int64>(time(nullptr)));
+        // a wakeup from an earlier stop() no longer applies
+        drainWakePipe();
         running.store(true);
         return 0;
+    }
+
+    //! Performs the key exchange of an accepted session
+    /** With the cancellable wait API, the key exchange runs in non-blocking mode and waits for the session socket
+        with ssh_poll(), so the wait ends as soon as the thread is cancelled or its Program is interrupted; it is
+        bounded by SSH_HANDSHAKE_TIMEOUT_SECONDS
+
+        @param session the accepted session
+        @param error set to the error for an error that libssh does not report (a timeout or a failed wait)
+        @param xsink for the cancellation exception
+
+        @return SSH_OK, SSH_ERROR, or SSH_WAIT_CANCELLED if an exception was raised
+    */
+    static int handleKeyExchange(ssh_session session, std::string& error, ExceptionSink* xsink) {
+#ifdef _QORE_HAS_CANCELLABLE_POLL
+        ssh_set_blocking(session, 0);
+        auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(SSH_HANDSHAKE_TIMEOUT_SECONDS);
+        int rc;
+        while ((rc = ssh_handle_key_exchange(session)) == SSH_AGAIN) {
+            int64 remaining = std::chrono::duration_cast<std::chrono::milliseconds>(
+                deadline - std::chrono::steady_clock::now()).count();
+            if (remaining <= 0) {
+                error = "timeout after " + std::to_string(SSH_HANDSHAKE_TIMEOUT_SECONDS) + " seconds";
+                rc = SSH_ERROR;
+                break;
+            }
+            struct pollfd pfd;
+            pfd.fd = ssh_get_fd(session);
+            pfd.events = POLLIN | ((ssh_get_poll_flags(session) & SSH_WRITE_PENDING) ? POLLOUT : 0);
+            pfd.revents = 0;
+            int prc = ssh_poll(&pfd, 1, static_cast<int>(remaining), "performing SSH key exchange", xsink);
+            if (prc == SSH_WAIT_CANCELLED) {
+                return SSH_WAIT_CANCELLED;
+            }
+            if (prc < 0 && errno != EINTR) {
+                error = std::string("poll() failed: ") + strerror(errno);
+                rc = SSH_ERROR;
+                break;
+            }
+        }
+        ssh_set_blocking(session, 1);
+        return rc;
+#else
+        return ssh_handle_key_exchange(session);
+#endif
     }
 
     int acceptSessionIntern(int timeout_ms, ssh_session& accepted_session, QoreHashNode*& accepted_info,
@@ -1668,10 +1723,10 @@ public:
         // poll() over all listener fds instead of select()/FD_SET: a listener socket fd can
         // exceed FD_SETSIZE in a busy server, making FD_SET()/select() write out of bounds
         // (UB) — this completes the H-2 select()->poll() conversion (the session wait loops
-        // were already converted).  The per-iteration qore_check_cancel() and the
-        // QORE_IO_POLL_INTERVAL_MS-capped wait make a long accept timeout interruptible.
+        // were already converted).  The wait ends as soon as the thread is cancelled or its
+        // Program is interrupted (see ssh_poll()), and stop() wakes it with the wake pipe.
         std::set<socket_t> ready_fds;
-        int remaining_ms = timeout_ms;
+        auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(timeout_ms);
         while (true) {
             if (qore_check_cancel(xsink, "waiting for SSH session")) {
                 return -1;
@@ -1709,33 +1764,64 @@ public:
                         "server has no active listeners to accept sessions");
                     return -1;
                 }
+
+                // stop() wakes the waiting threads with the wake pipe, the last descriptor, and waits until they
+                // have left poll() before it closes the listener descriptors
+                if (createWakePipe(xsink)) {
+                    return -1;
+                }
+                struct pollfd wake_pfd;
+                wake_pfd.fd = wake_fds[0];
+                wake_pfd.events = POLLIN;
+                wake_pfd.revents = 0;
+                pfds.push_back(wake_pfd);
+                ++poll_waiters;
             }
 
-            // phase 2: poll() without the lock so stop()/getStatus() are not blocked.  The
-            // wait is capped at QORE_IO_POLL_INTERVAL_MS and the full timeout_ms is preserved
-            // across iterations; timeout_ms == 0 means a single non-blocking poll.
-            int chunk = (timeout_ms == 0)
-                ? 0
-                : (remaining_ms < QORE_IO_POLL_INTERVAL_MS ? remaining_ms : QORE_IO_POLL_INTERVAL_MS);
-            int poll_rc = poll(pfds.data(), pfds.size(), chunk);
+            // phase 2: poll() without the lock so stop()/getStatus() are not blocked; the full timeout is kept
+            // across iterations; timeout_ms == 0 means a single non-blocking poll.  The wait ends as soon as the
+            // thread is cancelled or its Program is interrupted (without the cancellable wait API, the wait is
+            // capped at QORE_IO_POLL_INTERVAL_MS so that cancellation is checked regularly)
+            int chunk = 0;
+            if (timeout_ms) {
+                int64 remaining = std::chrono::duration_cast<std::chrono::milliseconds>(
+                    deadline - std::chrono::steady_clock::now()).count();
+                chunk = remaining > 0 ? static_cast<int>(remaining) : 0;
+#ifndef _QORE_HAS_CANCELLABLE_POLL
+                if (chunk > QORE_IO_POLL_INTERVAL_MS) {
+                    chunk = QORE_IO_POLL_INTERVAL_MS;
+                }
+#endif
+            }
+            int poll_rc = ssh_poll(pfds.data(), pfds.size(), chunk, "waiting for SSH session", xsink);
+            int poll_errno = errno;
+            {
+                std::lock_guard<std::mutex> lock(mutex);
+                --poll_waiters;
+                cv.notify_all();
+            }
+            if (poll_rc == SSH_WAIT_CANCELLED) {
+                return -1;
+            }
             if (poll_rc < 0) {
-                if (errno == EINTR) {
+                if (poll_errno == EINTR) {
                     continue;
                 }
-                xsink->raiseErrnoException("SSHSERVER-ACCEPT-ERROR", errno,
+                xsink->raiseErrnoException("SSHSERVER-ACCEPT-ERROR", poll_errno,
                     "poll() failed while waiting for an incoming SSH session");
                 return -1;
             }
             if (poll_rc == 0) {
-                if (timeout_ms == 0) {
-                    return 0;
-                }
-                remaining_ms -= chunk;
-                if (remaining_ms <= 0) {
+                if (timeout_ms == 0 || std::chrono::steady_clock::now() >= deadline) {
                     return 0;
                 }
                 continue;
             }
+            if (pfds.back().revents) {
+                // woken by stop(): the next iteration reports that the server is not running
+                continue;
+            }
+            pfds.pop_back();
             for (const auto& pfd : pfds) {
                 if (pfd.revents & (POLLIN | POLLERR | POLLHUP)) {
                     ready_fds.insert(pfd.fd);
@@ -1888,15 +1974,21 @@ public:
             return -1;
         }
 
-        // C3: bound the blocking handshake (libssh applies SSH_OPTIONS_TIMEOUT to the
-        // handshake socket operations) so a slow/malicious client cannot hang this thread.
+        // C3: bound the handshake so a slow/malicious client cannot hang this thread
         {
             long handshake_timeout = SSH_HANDSHAKE_TIMEOUT_SECONDS;
             ssh_options_set(session, SSH_OPTIONS_TIMEOUT, &handshake_timeout);
         }
-        if (ssh_handle_key_exchange(session) != SSH_OK) {
+        std::string kex_error;
+        int kex_rc = handleKeyExchange(session, kex_error, xsink);
+        if (kex_rc == SSH_WAIT_CANCELLED) {
+            ssh_disconnect(session);
+            ssh_free(session);
+            return -1;
+        }
+        if (kex_rc != SSH_OK) {
             std::string msg = "SSH key exchange failed for listener \"" + selected_listener_name + "\": "
-                + ssh_get_libssh_error(session);
+                + (kex_error.empty() ? std::string(ssh_get_libssh_error(session)) : kex_error);
             {
                 std::lock_guard<std::mutex> lock(mutex);
                 listener_states[static_cast<size_t>(selected_listener_index)]
@@ -2463,7 +2555,12 @@ public:
         {
             std::unique_lock<std::mutex> lock(mutex);
             running.store(false);
+            // the threads waiting for a session leave poll() before the listener descriptors are closed
+            wakeWaiters();
             cv.wait(lock, [this]() {
+                if (poll_waiters) {
+                    return false;
+                }
                 for (const auto& listener : listener_states) {
                     if (listener.accept_waiters) {
                         return false;
@@ -2549,6 +2646,49 @@ public:
     QoreObject* logger;
     //! shared so each live SshSession can hold a weak_ptr and unregister itself on disconnect
     std::shared_ptr<SshActiveSessionRegistry> active_session_registry;
+    //! a self-pipe that wakes the threads waiting for a session when the server is stopped; created by the first
+    //! wait, protected by mutex
+    int wake_fds[2] = {-1, -1};
+    //! the number of threads waiting in poll() for a session on the listener descriptors, protected by mutex
+    int poll_waiters = 0;
+
+    //! creates the wake pipe; the mutex must be held
+    int createWakePipe(ExceptionSink* xsink) {
+        if (wake_fds[0] >= 0) {
+            return 0;
+        }
+        int fds[2];
+        if (pipe(fds)) {
+            xsink->raiseErrnoException("SSHSERVER-ACCEPT-ERROR", errno, "cannot create the server wake pipe");
+            return -1;
+        }
+        for (int fd : fds) {
+            fcntl(fd, F_SETFD, FD_CLOEXEC);
+            fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK);
+        }
+        wake_fds[0] = fds[0];
+        wake_fds[1] = fds[1];
+        return 0;
+    }
+
+    //! wakes the threads waiting for a session; the mutex must be held
+    void wakeWaiters() {
+        if (wake_fds[1] >= 0) {
+            char c = 0;
+            // the pipe stays readable until the server is started again; a full pipe is already readable
+            while (write(wake_fds[1], &c, 1) < 0 && errno == EINTR) {
+            }
+        }
+    }
+
+    //! empties the wake pipe when the server is started; the mutex must be held
+    void drainWakePipe() {
+        if (wake_fds[0] >= 0) {
+            char buf[64];
+            while (read(wake_fds[0], buf, sizeof(buf)) > 0) {
+            }
+        }
+    }
 };
 
 //! Server-side SSH listener manager

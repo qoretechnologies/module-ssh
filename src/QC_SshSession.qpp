@@ -688,11 +688,10 @@ public:
                 int effective_ms = getEffectiveSelectTimeout(remaining_ms);
                 // poll() is used instead of select(): the session socket fd can exceed FD_SETSIZE
                 // in a busy server, which would make FD_SET()/select() write out of bounds (UB).
-                struct pollfd pfd;
-                pfd.fd = fd;
-                pfd.events = POLLIN;
-                pfd.revents = 0;
-                int poll_rc = poll(&pfd, 1, effective_ms);
+                int poll_rc = ssh_wait_readable(fd, effective_ms, "waiting for SSH auth request", xsink);
+                if (poll_rc == SSH_WAIT_CANCELLED) {
+                    return nullptr;
+                }
                 if (poll_rc < 0) {
                     if (errno == EINTR) {
                         continue;
@@ -892,11 +891,10 @@ public:
                 int effective_ms = getEffectiveSelectTimeout(remaining_ms);
                 // poll() is used instead of select(): the session socket fd can exceed FD_SETSIZE
                 // in a busy server, which would make FD_SET()/select() write out of bounds (UB).
-                struct pollfd pfd;
-                pfd.fd = fd;
-                pfd.events = POLLIN;
-                pfd.revents = 0;
-                int poll_rc = poll(&pfd, 1, effective_ms);
+                int poll_rc = ssh_wait_readable(fd, effective_ms, "waiting for SSH command request", xsink);
+                if (poll_rc == SSH_WAIT_CANCELLED) {
+                    return nullptr;
+                }
                 if (poll_rc < 0) {
                     if (errno == EINTR) {
                         continue;
@@ -1141,11 +1139,10 @@ public:
                 int effective_ms = getEffectiveSelectTimeout(remaining_ms);
                 // poll() is used instead of select(): the session socket fd can exceed FD_SETSIZE
                 // in a busy server, which would make FD_SET()/select() write out of bounds (UB).
-                struct pollfd pfd;
-                pfd.fd = fd;
-                pfd.events = POLLIN;
-                pfd.revents = 0;
-                int poll_rc = poll(&pfd, 1, effective_ms);
+                int poll_rc = ssh_wait_readable(fd, effective_ms, "waiting for SSH SFTP request", xsink);
+                if (poll_rc == SSH_WAIT_CANCELLED) {
+                    return nullptr;
+                }
                 if (poll_rc < 0) {
                     if (errno == EINTR) {
                         continue;
@@ -1454,12 +1451,14 @@ public:
                 effective = remaining_idle_ms;
             }
         }
-        // S4/C2: cap each poll() wait so the loop re-checks qore_check_cancel() (and idle/
-        // keepalive timers) at least every ~500ms, regardless of keepalive/idle/timeout
-        // settings — bounds interrupt/cancel latency without affecting wall-clock timers.
+#ifndef _QORE_HAS_CANCELLABLE_POLL
+        // S4/C2: without the cancellable wait API, cap each poll() wait so the loop re-checks qore_check_cancel()
+        // at least every ~500ms; with it, the wait ends as soon as the thread is cancelled or its Program is
+        // interrupted (see ssh_wait_readable())
         if (effective > QORE_IO_POLL_INTERVAL_MS) {
             effective = QORE_IO_POLL_INTERVAL_MS;
         }
+#endif
         return effective;
     }
 

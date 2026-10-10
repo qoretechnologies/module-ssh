@@ -24,6 +24,7 @@
 #include "ssh-module.h"
 
 #include <cerrno>
+#include <chrono>
 #include <climits>
 #include <cstdlib>
 #include <qore/QoreAbstractLoggerInterface.h>
@@ -3725,6 +3726,68 @@ public:
 private:
     int readChannelExact(ssh_channel current_channel, void* ptr, size_t size, int timeout_ms, ExceptionSink* xsink,
             const char* what) const {
+#ifdef _QORE_HAS_CANCELLABLE_POLL
+        // the data that libssh has already received is read without waiting; otherwise the session socket is waited
+        // on until data arrives or the timeout expires (timeout_ms <= 0: no timeout), and the wait ends as soon as
+        // the thread is cancelled or its Program is interrupted; returns 0 (full read), 1 (EOF/closed/timeout) or
+        // -1 (error or cancel)
+        size_t offset = 0;
+        auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(timeout_ms > 0 ? timeout_ms : 0);
+        while (offset < size) {
+            if (qore_check_cancel(xsink, "sftp protocol read")) {
+                return -1;
+            }
+
+            // processes the packets received without waiting, and returns the bytes available on the channel
+            int avail = ssh_channel_poll(current_channel, 0);
+            if (avail == SSH_ERROR) {
+                xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR", "cannot read %s: %s",
+                    what ? what : "SFTP data", ssh_get_error(current_channel));
+                return -1;
+            }
+            if (avail == SSH_EOF) {
+                return 1;
+            }
+            if (avail > 0) {
+                int rc = ssh_channel_read_nonblocking(current_channel, reinterpret_cast<char*>(ptr) + offset,
+                    size - offset, 0);
+                if (rc == SSH_ERROR) {
+                    xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR", "cannot read %s: %s",
+                        what ? what : "SFTP data", ssh_get_error(current_channel));
+                    return -1;
+                }
+                if (rc > 0) {
+                    offset += rc;
+                    continue;
+                }
+            }
+            if (ssh_channel_is_eof(current_channel) || !ssh_channel_is_open(current_channel)) {
+                return 1;
+            }
+
+            int wait_ms = -1;
+            if (timeout_ms > 0) {
+                int64 remaining = std::chrono::duration_cast<std::chrono::milliseconds>(
+                    deadline - std::chrono::steady_clock::now()).count();
+                if (remaining <= 0) {
+                    return 1;
+                }
+                wait_ms = static_cast<int>(remaining);
+            }
+            ssh_session current_session = ssh_channel_get_session(current_channel);
+            int rc = ssh_wait_readable(ssh_get_fd(current_session), wait_ms, "sftp protocol read", xsink);
+            if (rc == SSH_WAIT_CANCELLED) {
+                return -1;
+            }
+            if (rc < 0) {
+                xsink->raiseErrnoException("SFTPSESSION-PROTOCOL-ERROR", errno, "cannot wait for %s",
+                    what ? what : "SFTP data");
+                return -1;
+            }
+        }
+
+        return 0;
+#else
         size_t offset = 0;
         // C1: cap each libssh read wait at QORE_IO_POLL_INTERVAL_MS so an idle SFTP read
         // (the documented timeout_ms==0 "wait indefinitely" default of waitProtocolMessage()/
@@ -3769,6 +3832,7 @@ private:
         }
 
         return 0;
+#endif
     }
 
     int writeChannelAll(const std::string& packet, ExceptionSink* xsink, const char* what) const {

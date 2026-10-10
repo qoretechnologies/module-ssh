@@ -21,6 +21,39 @@
 
 #include "config.h"
 
+#include <poll.h>
+
+//! returned by ssh_poll() and ssh_wait_readable() when an exception has been raised (\c THREAD-CANCELLED or
+//! \c PROGRAM-INTERRUPTED)
+#define SSH_WAIT_CANCELLED -2
+
+//! Waits for events on descriptors like poll()
+/** With %Qore 3.0 and later, the wait ends as soon as the thread is cancelled or its Program is interrupted, and
+    \c EINTR is retried for the rest of the timeout; with an older %Qore library, it is a plain poll() and the caller
+    checks for cancellation in slices
+
+    @return the number of descriptors with events, 0 if the timeout expired, -1 if poll() failed (\c errno is set),
+    or @ref SSH_WAIT_CANCELLED if an exception was raised
+*/
+static inline int ssh_poll(struct pollfd* pfds, nfds_t nfds, int timeout_ms, const char* operation,
+        ExceptionSink* xsink) {
+#ifdef _QORE_HAS_CANCELLABLE_POLL
+    int rc = qore_cancellable_poll(pfds, static_cast<unsigned>(nfds), timeout_ms, xsink, operation);
+    return rc == QORE_POLL_CANCELLED ? SSH_WAIT_CANCELLED : rc;
+#else
+    return poll(pfds, nfds, timeout_ms);
+#endif
+}
+
+//! Waits until a descriptor is readable with ssh_poll()
+static inline int ssh_wait_readable(int fd, int timeout_ms, const char* operation, ExceptionSink* xsink) {
+    struct pollfd pfd;
+    pfd.fd = fd;
+    pfd.events = POLLIN;
+    pfd.revents = 0;
+    return ssh_poll(&pfd, 1, timeout_ms, operation, xsink);
+}
+
 //! libssh >= 0.11.0 adds ssh_file_format_e and *_format() export functions
 /** HAVE_SSH_FILE_FORMAT is probed at configure time via check_symbol_exists()
     and propagated through config.h.  If the configure-time probe is unavailable

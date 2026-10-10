@@ -627,6 +627,12 @@ class SshServerTest inherits QUnit::Test {
         addTestCase("server logger roundtrip", \testServerLogger());
         addTestCase("acceptSessionInfo rejects stopped server", \testAcceptStoppedServer());
         addTestCase("acceptSessionInfo times out with no client", \testAcceptTimeout());
+        addTestCase("a cancelled thread ends a wait for a session", \testAcceptCancel());
+        addTestCase("stop() ends a wait for a session", \testAcceptStopWakes());
+        addTestCase("an interrupted Program ends a wait for a session", \testAcceptInterrupt());
+        addTestCase("a cancelled thread ends a wait for a command session", \testWaitCommandSessionCancel());
+        addTestCase("a cancelled thread ends a wait for an SFTP request", \testSftpRequestCancel());
+        addTestCase("a cancelled thread ends a stalled key exchange", \testKeyExchangeCancel());
         addTestCase("acceptSessionInfo accepts real ssh client", \testAcceptSessionInfo());
         addTestCase("acceptSession rejects stopped server", \testAcceptSessionStoppedServer());
         addTestCase("acceptSession times out with no client", \testAcceptSessionTimeout());
@@ -1338,6 +1344,229 @@ class SshServerTest inherits QUnit::Test {
         server.start();
         assertEq(NOTHING, server.acceptSessionInfo(50));
         server.stop();
+    }
+
+    #! runs the given wait in a thread, cancels the thread, and returns the exception and the time to the end
+    private hash<auto> cancelWait(code wait) {
+        Queue started();
+        Queue done();
+        int tid = background sub () {
+            hash<auto> rv;
+            try {
+                started.push(True);
+                wait();
+                rv.err = "NONE";
+            } catch (hash<ExceptionInfo> ex) {
+                rv.err = ex.err;
+                rv.desc = ex.desc;
+            }
+            rv.end = clock_get_monotonic_us();
+            done.push(rv);
+        }();
+        started.get();
+        int start = clock_get_monotonic_us();
+        cancel_thread(tid, "ssh cancel test");
+        hash<auto> rv = done.get();
+        rv.us = rv.end - start;
+        return rv;
+    }
+
+    testAcceptCancel() {
+        Qore::Ssh::SshServer server(getTestConfig());
+        server.start();
+        on_exit server.stop();
+        hash<auto> rv = cancelWait(sub () { server.acceptSessionInfo(30000); });
+        assertEq("THREAD-CANCELLED", rv.err, rv.desc);
+        assertLt(2000000, rv.us, "the cancellation ends the wait at once");
+    }
+
+    testAcceptStopWakes() {
+        Qore::Ssh::SshServer server(getTestConfig());
+        server.start();
+        Queue started();
+        Queue done();
+        background sub () {
+            hash<auto> rv;
+            try {
+                started.push(True);
+                server.acceptSessionInfo(30000);
+                rv.err = "NONE";
+            } catch (hash<ExceptionInfo> ex) {
+                rv.err = ex.err;
+            }
+            rv.end = clock_get_monotonic_us();
+            done.push(rv);
+        }();
+        started.get();
+        int start = clock_get_monotonic_us();
+        server.stop();
+        hash<auto> rv = done.get();
+        assertEq("SSHSERVER-STATE-ERROR", rv.err, "the waiting thread reports that the server is stopped");
+        assertLt(2000000, rv.end - start, "stop() ends the wait at once");
+        # the server accepts sessions again after a restart
+        server.start();
+        assertEq(NOTHING, server.acceptSessionInfo(50));
+        server.stop();
+    }
+
+    testAcceptInterrupt() {
+        SandboxManager sm();
+        sm.setNetworkDefaultPolicy(True);
+        # the host key files of the test configuration are read
+        sm.setFilesystemDefaultPolicy(True);
+        Program p(PO_NEW_STYLE);
+        p.setSandboxManager(sm);
+        p.loadModule("ssh");
+        p.parse("sub run(hash<auto> config, Queue started) { "
+            "Qore::Ssh::SshServer server(cast<hash<SshServerConfig>>(config)); server.start(); "
+            "on_exit server.stop(); started.push(True); server.acceptSessionInfo(30000); }", "ssh-interrupt");
+        Queue started();
+        Queue done();
+        background sub () {
+            hash<auto> rv;
+            try {
+                p.callFunction("run", getTestConfig(), started);
+                rv.err = "NONE";
+            } catch (hash<ExceptionInfo> ex) {
+                rv.err = ex.err;
+                rv.desc = ex.desc;
+                # the wait was not reached if the call failed before it
+                started.push(False);
+            }
+            rv.end = clock_get_monotonic_us();
+            done.push(rv);
+        }();
+        if (!started.get()) {
+            hash<auto> rv = done.get();
+            assertTrue(False, sprintf("the sandboxed Program reaches the wait: %s: %s", rv.err, rv.desc));
+        }
+        int start = clock_get_monotonic_us();
+        sm.requestInterrupt();
+        hash<auto> rv = done.get();
+        assertEq("PROGRAM-INTERRUPTED", rv.err, rv.desc);
+        assertLt(2000000, rv.end - start, "the interrupt ends the wait at once");
+    }
+
+    #! an authenticated client that opens no channel (ssh -N): the server waits for a command session
+    testWaitCommandSessionCancel() {
+        string private_key_path = prepareClientPrivateKeyFile();
+        on_exit {
+            cleanupFile(private_key_path);
+        }
+        hash<SshServerConfig> config = getTestConfig();
+        config.listeners[0].enabled_auth_methods = ("publickey",);
+        config.auth_callback = hash<SshAuthDecision> sub(hash<SshAuthContextInfo> ctx) {
+            return <SshAuthDecision>{
+                "accepted": True,
+                "principal": sprintf("publickey:%s", ctx.username),
+                "command_policy": {"mode": "command-only"},
+                "sftp_policy": {"mode": "disabled"},
+            };
+        };
+        Qore::Ssh::SshServer server(config);
+        server.start();
+        on_exit server.stop();
+        int port = server.getStatus().listeners[0].bound_port;
+
+        Counter done(1);
+        string cmd = replace(makeSshPublickeyClientCommand(port, private_key_path, ""), " -i ", " -N -i ");
+        background sub() {
+            try {
+                system(cmd);
+            } catch () {
+            }
+            done.dec();
+        }();
+        Qore::Ssh::SshSession session = server.acceptSession(5000);
+        on_exit {
+            session.disconnect();
+            done.waitForZero(10s);
+        }
+        hash<SshAuthDecision> decision = server.authenticateSession(session, 5000);
+        assertTrue(decision.accepted);
+
+        hash<auto> rv = cancelWait(sub () { session.waitCommandSession(30000); });
+        assertEq("THREAD-CANCELLED", rv.err, rv.desc);
+        assertLt(2000000, rv.us, "the cancellation ends the wait at once");
+    }
+
+    #! an SFTP subsystem client whose input is a FIFO that the test keeps open and empty: the server waits for the
+    #! SFTP init request
+    testSftpRequestCancel() {
+        Qore::Ssh::SshServer server(getSftpEnabledConfig());
+        server.start();
+        on_exit server.stop();
+        int port = server.getStatus().listeners[0].bound_port;
+        string fifo_path = getTmpFile(".sftp-cancel.fifo");
+        string stdout_path = getTmpFile(".sftp-cancel.out");
+        string stderr_path = getTmpFile(".sftp-cancel.err");
+        on_exit {
+            # (cleanupFile() would open the FIFO, which waits for a writer)
+            unlink(fifo_path);
+            cleanupFile(stdout_path);
+            cleanupFile(stderr_path);
+        }
+        assertEq(0, system(sprintf("mkfifo %s", fifo_path)));
+
+        Counter done(1);
+        string cmd = makeSshSubsystemClientCommand(port, "sftp", stdout_path, stderr_path) + " <" + fifo_path;
+        background sub() {
+            try {
+                system(cmd);
+            } catch () {
+            }
+            done.dec();
+        }();
+        # opening the FIFO for writing waits until the client has opened it for reading
+        File input();
+        input.open2(fifo_path, O_WRONLY);
+        on_exit {
+            # end of input: the client ends
+            input.close();
+            done.waitForZero(10s);
+        }
+
+        Qore::Ssh::SshSession session = server.acceptSession(5000);
+        on_exit session.disconnect();
+        server.authenticateSession(session, 15000);
+        Qore::Ssh::SftpSession sftp = server.dispatchSftpSession(session, 15000);
+        # the SFTP session is closed before its SSH session is disconnected
+        on_exit sftp.close();
+        hash<auto> rv = cancelWait(sub () { sftp.processNextRequest(30000); });
+        assertEq("THREAD-CANCELLED", rv.err, rv.desc);
+        assertLt(2000000, rv.us, "the cancellation ends the wait at once");
+    }
+
+    #! a client that connects and sends nothing stalls the key exchange of the accepted session
+    testKeyExchangeCancel() {
+        Qore::Ssh::SshServer server(getTestConfig());
+        server.start();
+        on_exit server.stop();
+        int port = server.getStatus().listeners[0].bound_port;
+
+        Socket client();
+        client.connect(sprintf("127.0.0.1:%d", port));
+        on_exit client.close();
+        Queue done();
+        int tid = background sub () {
+            hash<auto> rv;
+            try {
+                server.acceptSessionInfo(30000);
+                rv.err = "NONE";
+            } catch (hash<ExceptionInfo> ex) {
+                rv.err = ex.err;
+                rv.desc = ex.desc;
+            }
+            rv.end = clock_get_monotonic_us();
+            done.push(rv);
+        }();
+        # the server sends its identification in the key exchange, which then waits for the client
+        assertRegex("^SSH-2\\.0-", client.recv(-1, 10s), "the server is in the key exchange");
+        int start = clock_get_monotonic_us();
+        cancel_thread(tid, "ssh cancel test");
+        hash<auto> rv = done.get();
+        assertEq("THREAD-CANCELLED", rv.err, rv.desc);
+        assertLt(2000000, rv.end - start, "the cancellation ends the key exchange at once");
     }
 
     testAcceptSessionInfo() {
