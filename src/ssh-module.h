@@ -431,14 +431,21 @@ DLLLOCAL extern qore_classid_t CID_SSHCOMMANDSESSION;
 DLLLOCAL extern QoreClass* QC_SSHCOMMANDSESSION;
 DLLLOCAL extern qore_classid_t CID_SFTPSESSION;
 DLLLOCAL extern QoreClass* QC_SFTPSESSION;
+//! creates an SshSession for an accepted libssh session
+/** takes ownership of the arguments except \a logger, which is borrowed (the object takes its own reference)
+*/
 DLLLOCAL QoreObject* ssh_new_session_object(QoreProgram* pgm, QoreHashNode* info, QoreHashNode* auth_info,
     const QoreObject* logger, ssh_session session, std::shared_ptr<std::atomic<int64>> active_session_counter,
     int enabled_auth_methods_mask, int64 keepalive_interval_seconds, int64 idle_timeout_seconds,
     ExceptionSink* xsink);
-//! creates an SshCommandSession for an accepted channel of the given session; takes ownership of the arguments
+//! creates an SshCommandSession for an accepted channel of the given session
+/** takes ownership of the arguments except \a logger, which is borrowed (the object takes its own reference)
+*/
 DLLLOCAL QoreObject* ssh_new_command_session_object(QoreProgram* pgm, QoreHashNode* request, const QoreObject* logger,
     std::shared_ptr<SshSessionHandle> session, ssh_channel channel, ssh_message request_msg, ExceptionSink* xsink);
-//! creates an SftpSession for an accepted channel of the given session; takes ownership of the arguments
+//! creates an SftpSession for an accepted channel of the given session
+/** takes ownership of the arguments except \a logger, which is borrowed (the object takes its own reference)
+*/
 DLLLOCAL QoreObject* ssh_new_sftp_session_object(QoreProgram* pgm, QoreHashNode* info, QoreHashNode* transfer_info,
     const QoreObject* logger, QoreObject* backend, std::shared_ptr<SshSessionHandle> session, ssh_channel channel,
     ExceptionSink* xsink);

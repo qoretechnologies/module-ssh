@@ -41,6 +41,21 @@
 class TestLogger inherits RecordingLoggerInterface {
 }
 
+#! a logger that reports its destruction
+class DestructionLogger inherits RecordingLoggerInterface {
+    private {
+        Counter destroyed;
+    }
+
+    constructor(Counter destroyed) {
+        self.destroyed = destroyed;
+    }
+
+    destructor() {
+        destroyed.dec();
+    }
+}
+
 class EventObserver inherits DataProvider::Observer {
     public {
         list<hash<auto>> events = ();
@@ -636,6 +651,8 @@ class SshServerTest inherits QUnit::Test {
         addTestCase("an SFTP session outlives the disconnection of its SSH session", \testSftpOutlivesDisconnect());
         addTestCase("disconnect() ends the wait of an SFTP session", \testDisconnectEndsSftpWait());
         addTestCase("close() ends the wait of an SFTP session in another thread", \testCloseEndsSftpWait());
+        addTestCase("the server logger is released with a command session", \testCommandSessionLoggerReleased());
+        addTestCase("the server logger is released with an SFTP session", \testSftpSessionLoggerReleased());
         addTestCase("a command session outlives the disconnection of its SSH session",
             \testCommandSessionOutlivesDisconnect());
         addTestCase("acceptSessionInfo accepts real ssh client", \testAcceptSessionInfo());
@@ -1597,6 +1614,71 @@ class SshServerTest inherits QUnit::Test {
         server.authenticateSession(session, 15000);
         Qore::Ssh::SftpSession sftp = server.dispatchSftpSession(session, 15000);
         return {"session": session, "sftp": sftp, "input": input, "done": done};
+    }
+
+    #! the server, its session and the command session release their references to the logger
+    testCommandSessionLoggerReleased() {
+        Counter destroyed(1);
+        {
+            hash<SshServerConfig> config = getAuthCallbackConfig();
+            config.logger = new DestructionLogger(destroyed);
+            Qore::Ssh::SshServer server(config);
+            server.start();
+            on_exit server.stop();
+            int port = server.getStatus().listeners[0].bound_port;
+            string stdout_path = getTmpFile(".logger-cmd.out");
+            string stderr_path = getTmpFile(".logger-cmd.err");
+            on_exit {
+                cleanupFile(stdout_path);
+                cleanupFile(stderr_path);
+            }
+
+            Counter done(1);
+            string cmd = makeSshExecClientCommand(port, "logger-command", stdout_path, stderr_path);
+            background sub() {
+                try {
+                    system(cmd);
+                } catch () {
+                }
+                done.dec();
+            }();
+            on_exit done.waitForZero(10s);
+
+            Qore::Ssh::SshSession session = server.acceptSession(5000);
+            on_exit session.disconnect();
+            assertTrue(server.authenticateSession(session, 15000).accepted);
+            # the command session is created and destroyed by the server
+            assertFalse(server.dispatchCommandSession(session, 15000).accepted);
+        }
+        assertEq(0, destroyed.getCount(), "the logger is destroyed with its last user");
+    }
+
+    #! the server, its session and the SFTP session release their references to the logger
+    testSftpSessionLoggerReleased() {
+        Counter destroyed(1);
+        {
+            hash<SshServerConfig> config = getSftpEnabledConfig();
+            config.logger = new DestructionLogger(destroyed);
+            Qore::Ssh::SshServer server(config);
+            server.start();
+            on_exit server.stop();
+            string fifo_path = getTmpFile(".logger-sftp.fifo");
+            string stdout_path = getTmpFile(".logger-sftp.out");
+            string stderr_path = getTmpFile(".logger-sftp.err");
+            on_exit {
+                unlink(fifo_path);
+                cleanupFile(stdout_path);
+                cleanupFile(stderr_path);
+            }
+            hash<auto> h = startIdleSftpSession(server, fifo_path, stdout_path, stderr_path);
+            on_exit {
+                h.session.disconnect();
+                h.input.close();
+                h.done.waitForZero(10s);
+            }
+            h.sftp.close();
+        }
+        assertEq(0, destroyed.getCount(), "the logger is destroyed with its last user");
     }
 
     #! a thread waiting for an SFTP request ends when the SFTP session is closed in another thread

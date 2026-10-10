@@ -1017,9 +1017,10 @@ public:
                 return nullptr;
             }
 
+            // the logger is borrowed: the command session takes its own reference
             ReferenceHolder<QoreObject> logger_holder(getLogger(), xsink);
-            QoreObject* rv = ssh_new_command_session_object(pgm, request.release(),
-                logger_holder ? logger_holder.release() : nullptr, getHandle(), accepted_channel, msg, xsink);
+            QoreObject* rv = ssh_new_command_session_object(pgm, request.release(), *logger_holder, getHandle(),
+                accepted_channel, msg, xsink);
             if (!*xsink && rv) {
                 logDebug("SshSession accepted command request");
             }
@@ -1232,9 +1233,10 @@ public:
                 return nullptr;
             }
 
+            // the logger is borrowed: the SFTP session takes its own reference
             ReferenceHolder<QoreObject> logger_holder(getLogger(), xsink);
-            QoreObject* rv = ssh_new_sftp_session_object(pgm, sftp_info.release(), nullptr,
-                logger_holder ? logger_holder.release() : nullptr, nullptr, getHandle(), accepted_channel, xsink);
+            QoreObject* rv = ssh_new_sftp_session_object(pgm, sftp_info.release(), nullptr, *logger_holder, nullptr,
+                getHandle(), accepted_channel, xsink);
             if (!*xsink && rv) {
                 logDebug("SshSession accepted SFTP subsystem request");
             }

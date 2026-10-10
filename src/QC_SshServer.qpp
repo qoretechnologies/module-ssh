@@ -2839,7 +2839,8 @@ printf("accepted %y:%d on %y\n", info.remote_address, info.remote_port, info.lis
         }
     }
     ReferenceHolder<QoreObject> logger(priv->getLogger(), xsink);
-    QoreObject* obj = ssh_new_session_object(getProgram(), info, nullptr, logger.release(), session,
+    // the logger is borrowed: the session takes its own reference
+    QoreObject* obj = ssh_new_session_object(getProgram(), info, nullptr, *logger, session,
         active_session_counter, enabled_auth_methods_mask, keepalive_interval, idle_timeout, xsink);
     if (*xsink && active_session_counter) {
         active_session_counter->fetch_sub(1);
