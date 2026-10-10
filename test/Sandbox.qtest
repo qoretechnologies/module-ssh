@@ -393,9 +393,11 @@ string sub startProviderServer(string mode, string value) {
         assertEq("ok", p.callFunction("startProviderServer", "text", key_text));
     }
 
-    # S6: an explicit denial must override an allowed loopback address, after the
-    # filesystem permits loading the host key. Default-deny alone must not make this
-    # test pass without exercising the denied IP range.
+    # S6: an explicit denial must override an allowed address, after the filesystem
+    # permits loading the host key. Default-deny alone must not make this test pass
+    # without exercising the denied IP range.  The listener binds all interfaces: since
+    # Qore a95c6190e, denied ranges do not apply to a bind to a loopback address, which
+    # can only be reached from the local host.
     testBindNetworkDenied() {
         Program p = makeChildProgram("%modern
 %requires ssh
@@ -405,7 +407,7 @@ string sub startServer(string hk) {
         \"listeners\": (
             <Qore::Ssh::SshListenerConfig>{
                 \"name\": \"main\",
-                \"bind_address\": \"127.0.0.1\",
+                \"bind_address\": \"0.0.0.0\",
                 \"port\": 0,
                 \"host_keys\": (hk,),
                 \"enabled_auth_methods\": (\"none\",),
@@ -419,10 +421,11 @@ string sub startServer(string hk) {
 }");
         SandboxManager sm();
         sm.setFilesystemDefaultPolicy(True);    # allow FS so the host key loads
-        sm.addNetworkAllowedIPRange("127.0.0.1/32");
-        sm.blockLocalhost();                    # adds 127.0.0.0/8 + ::1/128 to denied ranges
+        sm.addNetworkAllowedIPRange("0.0.0.0/32");
+        sm.addNetworkDeniedIPRange("0.0.0.0/32");   # the denial overrides the allowed address
         p.setSandboxManager(sm);
-        assertThrows("NETWORK-ACCESS-DENIED", sub() { p.callFunction("startServer", host_key); });
+        assertThrows("NETWORK-ACCESS-DENIED", "denied by security policy \\(private/blocked network\\)",
+            sub() { p.callFunction("startServer", host_key); });
     }
 
     # S6 positive control: explicitly allow the listener address. A denied IP range
