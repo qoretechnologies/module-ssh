@@ -67,7 +67,16 @@
     session object is not thread-safe, so concurrent @c waitAuthContext() /
     @c waitCommandSession() / @c waitSftpSession() calls on the same session are
     rejected with @c SSHSESSION-STATE-ERROR.  Use one driver thread per session
-    (distinct sessions may be driven concurrently).
+    (distinct sessions may be driven concurrently).  The
+    @ref Qore::Ssh::SftpSession "SftpSession" and
+    @ref Qore::Ssh::SshCommandSession "SshCommandSession" objects of a session
+    share its libssh session and are driven by the same rule; they remain valid
+    after the session is disconnected or destroyed, and then report the
+    disconnection with @c SFTPSESSION-STATE-ERROR or
+    @c SSHCOMMANDSESSION-STATE-ERROR.  @c SshSession::disconnect() and
+    @c SftpSession::close() may be called from another thread: they end a wait of
+    the session (or of the SFTP session) at once, and the waiting thread raises
+    @c SFTPSESSION-STATE-ERROR for an SFTP wait.
 
     @note Cancellation: the waits of all blocking operations (accept, key exchange,
     auth/command/SFTP waits, SFTP protocol reads) end as soon as the thread is

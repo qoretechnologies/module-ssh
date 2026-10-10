@@ -633,6 +633,11 @@ class SshServerTest inherits QUnit::Test {
         addTestCase("a cancelled thread ends a wait for a command session", \testWaitCommandSessionCancel());
         addTestCase("a cancelled thread ends a wait for an SFTP request", \testSftpRequestCancel());
         addTestCase("a cancelled thread ends a stalled key exchange", \testKeyExchangeCancel());
+        addTestCase("an SFTP session outlives the disconnection of its SSH session", \testSftpOutlivesDisconnect());
+        addTestCase("disconnect() ends the wait of an SFTP session", \testDisconnectEndsSftpWait());
+        addTestCase("close() ends the wait of an SFTP session in another thread", \testCloseEndsSftpWait());
+        addTestCase("a command session outlives the disconnection of its SSH session",
+            \testCommandSessionOutlivesDisconnect());
         addTestCase("acceptSessionInfo accepts real ssh client", \testAcceptSessionInfo());
         addTestCase("acceptSession rejects stopped server", \testAcceptSessionStoppedServer());
         addTestCase("acceptSession times out with no client", \testAcceptSessionTimeout());
@@ -1567,6 +1572,198 @@ class SshServerTest inherits QUnit::Test {
         hash<auto> rv = done.get();
         assertEq("THREAD-CANCELLED", rv.err, rv.desc);
         assertLt(2000000, rv.end - start, "the cancellation ends the key exchange at once");
+    }
+
+    #! starts an SFTP subsystem client fed by an empty FIFO and returns the server side of the session
+    /** @return a hash with the session, the SFTP session, the FIFO writer, and the client's Counter
+    */
+    private hash<auto> startIdleSftpSession(Qore::Ssh::SshServer server, string fifo_path, string stdout_path,
+            string stderr_path) {
+        int port = server.getStatus().listeners[0].bound_port;
+        assertEq(0, system(sprintf("mkfifo %s", fifo_path)));
+        Counter done(1);
+        string cmd = makeSshSubsystemClientCommand(port, "sftp", stdout_path, stderr_path) + " <" + fifo_path;
+        background sub() {
+            try {
+                system(cmd);
+            } catch () {
+            }
+            done.dec();
+        }();
+        # opening the FIFO for writing waits until the client has opened it for reading
+        File input();
+        input.open2(fifo_path, O_WRONLY);
+        Qore::Ssh::SshSession session = server.acceptSession(5000);
+        server.authenticateSession(session, 15000);
+        Qore::Ssh::SftpSession sftp = server.dispatchSftpSession(session, 15000);
+        return {"session": session, "sftp": sftp, "input": input, "done": done};
+    }
+
+    #! a thread waiting for an SFTP request ends when the SFTP session is closed in another thread
+    testCloseEndsSftpWait() {
+        Qore::Ssh::SshServer server(getSftpEnabledConfig());
+        server.start();
+        on_exit server.stop();
+        string fifo_path = getTmpFile(".sftp-close.fifo");
+        string stdout_path = getTmpFile(".sftp-close.out");
+        string stderr_path = getTmpFile(".sftp-close.err");
+        on_exit {
+            unlink(fifo_path);
+            cleanupFile(stdout_path);
+            cleanupFile(stderr_path);
+        }
+        hash<auto> h = startIdleSftpSession(server, fifo_path, stdout_path, stderr_path);
+        on_exit {
+            h.session.disconnect();
+            h.input.close();
+            h.done.waitForZero(10s);
+        }
+        Qore::Ssh::SftpSession sftp = h.sftp;
+        Queue started();
+        Queue done();
+        background sub () {
+            hash<auto> rv;
+            try {
+                started.push(True);
+                rv.msg = sftp.processNextRequest(30000);
+                rv.err = "NONE";
+            } catch (hash<ExceptionInfo> ex) {
+                rv.err = ex.err;
+            }
+            rv.end = clock_get_monotonic_us();
+            done.push(rv);
+        }();
+        started.get();
+        int start = clock_get_monotonic_us();
+        sftp.close();
+        hash<auto> rv = done.get();
+        # a wait in progress and a wait started after the close report it in the same way
+        assertEq("SFTPSESSION-STATE-ERROR", rv.err, "the waiting thread reports the close");
+        assertLt(2000000, rv.end - start, "close() ends the wait at once");
+        assertFalse(sftp.connected());
+        # the SSH session is still connected
+        assertTrue(h.session.connected());
+    }
+
+    #! the SSH session is disconnected before the result of its command session is applied
+    testCommandSessionOutlivesDisconnect() {
+        string private_key_path = prepareClientPrivateKeyFile();
+        on_exit {
+            cleanupFile(private_key_path);
+        }
+        hash<SshServerConfig> config = getTestConfig();
+        config.listeners[0].enabled_auth_methods = ("publickey",);
+        config.auth_callback = hash<SshAuthDecision> sub(hash<SshAuthContextInfo> ctx) {
+            return <SshAuthDecision>{
+                "accepted": True,
+                "principal": sprintf("publickey:%s", ctx.username),
+                "command_policy": {"mode": "command-only"},
+                "sftp_policy": {"mode": "disabled"},
+            };
+        };
+        Qore::Ssh::SshServer server(config);
+        server.start();
+        on_exit server.stop();
+        int port = server.getStatus().listeners[0].bound_port;
+
+        Counter done(1);
+        string cmd = makeSshPublickeyClientCommand(port, private_key_path, "outlives-command");
+        background sub() {
+            try {
+                system(cmd);
+            } catch () {
+            }
+            done.dec();
+        }();
+        on_exit done.waitForZero(10s);
+        Qore::Ssh::SshSession session = server.acceptSession(5000);
+        hash<SshAuthDecision> decision = server.authenticateSession(session, 15000);
+        assertTrue(decision.accepted);
+        Qore::Ssh::SshCommandSession command = session.waitCommandSession(15000);
+        assertEq("outlives-command", command.getCommand());
+
+        session.disconnect();
+        # the command session reports the disconnection, and can be destroyed after its SSH session
+        assertThrows("SSHCOMMANDSESSION-STATE-ERROR", "disconnected", \command.applyResult(),
+            <SshCommandResult>{"accepted": True, "exit_status": 0});
+        assertThrows("SSHCOMMANDSESSION-STATE-ERROR", "already been handled", \command.applyResult(),
+            <SshCommandResult>{"accepted": True, "exit_status": 0});
+        delete command;
+        delete session;
+    }
+
+    #! the SSH session is disconnected before its SFTP session is closed and destroyed
+    testSftpOutlivesDisconnect() {
+        Qore::Ssh::SshServer server(getSftpEnabledConfig());
+        server.start();
+        on_exit server.stop();
+        string fifo_path = getTmpFile(".sftp-outlives.fifo");
+        string stdout_path = getTmpFile(".sftp-outlives.out");
+        string stderr_path = getTmpFile(".sftp-outlives.err");
+        on_exit {
+            unlink(fifo_path);
+            cleanupFile(stdout_path);
+            cleanupFile(stderr_path);
+        }
+        hash<auto> h = startIdleSftpSession(server, fifo_path, stdout_path, stderr_path);
+        on_exit {
+            h.input.close();
+            h.done.waitForZero(10s);
+        }
+        assertTrue(h.sftp.connected());
+        h.session.disconnect();
+        assertFalse(h.session.connected());
+        # the SFTP session reports the disconnection, and can be closed and destroyed after its SSH session
+        assertFalse(h.sftp.connected());
+        assertThrows("SFTPSESSION-STATE-ERROR", "closed SFTP session", \h.sftp.processNextRequest(), 100);
+        h.sftp.close();
+        assertFalse(h.sftp.connected());
+        delete h.sftp;
+        delete h.session;
+    }
+
+    #! a thread waiting for an SFTP request ends when the SSH session is disconnected in another thread
+    testDisconnectEndsSftpWait() {
+        Qore::Ssh::SshServer server(getSftpEnabledConfig());
+        server.start();
+        on_exit server.stop();
+        string fifo_path = getTmpFile(".sftp-disconnect.fifo");
+        string stdout_path = getTmpFile(".sftp-disconnect.out");
+        string stderr_path = getTmpFile(".sftp-disconnect.err");
+        on_exit {
+            unlink(fifo_path);
+            cleanupFile(stdout_path);
+            cleanupFile(stderr_path);
+        }
+        hash<auto> h = startIdleSftpSession(server, fifo_path, stdout_path, stderr_path);
+        on_exit {
+            h.input.close();
+            h.done.waitForZero(10s);
+        }
+        Qore::Ssh::SftpSession sftp = h.sftp;
+        Queue started();
+        Queue done();
+        background sub () {
+            hash<auto> rv;
+            try {
+                started.push(True);
+                rv.msg = sftp.processNextRequest(30000);
+                rv.err = "NONE";
+            } catch (hash<ExceptionInfo> ex) {
+                rv.err = ex.err;
+            }
+            rv.end = clock_get_monotonic_us();
+            done.push(rv);
+        }();
+        started.get();
+        int start = clock_get_monotonic_us();
+        h.session.disconnect();
+        hash<auto> rv = done.get();
+        # a wait in progress and a wait started after the disconnection report it in the same way
+        assertEq("SFTPSESSION-STATE-ERROR", rv.err, "the waiting thread reports the disconnection");
+        assertLt(2000000, rv.end - start, "disconnect() ends the wait at once");
+        assertFalse(sftp.connected());
+        sftp.close();
     }
 
     testAcceptSessionInfo() {

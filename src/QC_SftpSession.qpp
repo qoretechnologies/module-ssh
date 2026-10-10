@@ -726,12 +726,13 @@ public:
 
     explicit SftpSessionPriv(const QoreHashNode* info)
             : info(info ? info->copy() : nullptr), transfer_info(nullptr), logger(nullptr), backend(nullptr),
-              channel(nullptr), next_dir_handle_id(1), next_file_handle_id(1) {
+              next_dir_handle_id(1), next_file_handle_id(1) {
     }
 
     SftpSessionPriv(QoreHashNode* info, QoreHashNode* transfer_info, QoreObject* logger, QoreObject* backend,
-            ssh_channel channel) : info(info), transfer_info(transfer_info), logger(logger), backend(backend),
-            channel(channel), next_dir_handle_id(1), next_file_handle_id(1) {
+            std::shared_ptr<SshSessionHandle> session, ssh_channel channel) : info(info),
+            transfer_info(transfer_info), logger(logger), backend(backend), channel(std::move(session), channel),
+            next_dir_handle_id(1), next_file_handle_id(1) {
     }
 
     ~SftpSessionPriv() {
@@ -835,40 +836,23 @@ public:
     }
 
     bool isConnected() const {
-        std::lock_guard<std::mutex> lock(m);
-        return channel != nullptr;
+        return channel.isOpen();
     }
 
     QoreHashNode* waitProtocolMessage(int timeout_ms, ExceptionSink* xsink) {
-        ssh_channel current_channel = nullptr;
+        std::string payload;
+        uint32_t packet_size;
         {
-            std::lock_guard<std::mutex> lock(m);
-            current_channel = channel;
-        }
-        if (!current_channel) {
-            xsink->raiseException("SFTPSESSION-STATE-ERROR", "cannot read protocol messages from a closed SFTP session");
-            return nullptr;
-        }
-
-        unsigned char header[4];
-        if (readChannelExact(current_channel, header, sizeof(header), timeout_ms, xsink, "SFTP packet header")) {
-            return nullptr;
-        }
-
-        uint32_t packet_size = ssh_sftp_read_u32_be(header);
-        if (!packet_size) {
-            xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR", "received an empty SFTP packet");
-            return nullptr;
-        }
-        if (packet_size > 16 * 1024 * 1024) {
-            xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR", "received an oversized SFTP packet of %u bytes",
-                packet_size);
-            return nullptr;
-        }
-
-        std::string payload(packet_size, '\0');
-        if (readChannelExact(current_channel, &payload[0], packet_size, timeout_ms, xsink, "SFTP packet payload")) {
-            return nullptr;
+            SshChildChannel::Io io(channel);
+            if (!io) {
+                xsink->raiseException("SFTPSESSION-STATE-ERROR",
+                    "cannot read protocol messages from a closed SFTP session");
+                return nullptr;
+            }
+            if (readPacket(io, timeout_ms, payload, xsink)) {
+                return nullptr;
+            }
+            packet_size = static_cast<uint32_t>(payload.size());
         }
 
         uint8_t type = static_cast<uint8_t>(payload[0]);
@@ -2978,16 +2962,14 @@ public:
 
         // Read-ahead: process additional requests while data is available on the channel
         while (true) {
-            ssh_channel current_channel = nullptr;
+            int avail;
             {
-                std::lock_guard<std::mutex> lock(m);
-                current_channel = channel;
+                SshChildChannel::Io io(channel);
+                if (!io) {
+                    break;
+                }
+                avail = ssh_channel_poll(io.get(), 0);
             }
-            if (!current_channel) {
-                break;
-            }
-
-            int avail = ssh_channel_poll(current_channel, 0);
             if (avail <= 0) {
                 break;
             }
@@ -3548,17 +3530,7 @@ public:
             }
         }
 
-        ssh_channel current_channel = nullptr;
-        {
-            std::lock_guard<std::mutex> lock(m);
-            current_channel = channel;
-            channel = nullptr;
-        }
-
-        if (current_channel) {
-            ssh_channel_send_eof(current_channel);
-            ssh_channel_close(current_channel);
-            ssh_channel_free(current_channel);
+        if (channel.close()) {
             logInfo("SftpSession closed");
         }
     }
@@ -3724,17 +3696,77 @@ public:
     }
 
 private:
-    int readChannelExact(ssh_channel current_channel, void* ptr, size_t size, int timeout_ms, ExceptionSink* xsink,
+    //! reads an SFTP packet in an I/O section of the channel
+    /** @return 0 (the packet without its length is in \a payload), 1 (EOF/closed/timeout) or -1 (exception raised)
+    */
+    int readPacket(SshChildChannel::Io& io, int timeout_ms, std::string& payload, ExceptionSink* xsink) const {
+        unsigned char header[4];
+        int rc = readChannelExact(io, header, sizeof(header), timeout_ms, xsink, "SFTP packet header");
+        if (rc) {
+            return rc;
+        }
+
+        uint32_t packet_size = ssh_sftp_read_u32_be(header);
+        if (!packet_size) {
+            xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR", "received an empty SFTP packet");
+            return -1;
+        }
+        if (packet_size > 16 * 1024 * 1024) {
+            xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR", "received an oversized SFTP packet of %u bytes",
+                packet_size);
+            return -1;
+        }
+
+        payload.assign(packet_size, '\0');
+        return readChannelExact(io, &payload[0], packet_size, timeout_ms, xsink, "SFTP packet payload");
+    }
+
+    //! raises an exception if the channel has been closed or its session disconnected in another thread
+    /** @return -1 if an exception was raised, 0 if not
+    */
+    static int readEnded(const SshChildChannel::Io& io, const char* what, ExceptionSink* xsink) {
+        if (io.closing()) {
+            xsink->raiseException("SFTPSESSION-STATE-ERROR", "the SFTP session was closed while reading %s",
+                what ? what : "SFTP data");
+            return -1;
+        }
+        if (io.disconnected()) {
+            xsink->raiseException("SFTPSESSION-STATE-ERROR", "the SSH session was disconnected while reading %s",
+                what ? what : "SFTP data");
+            return -1;
+        }
+        return 0;
+    }
+
+    //! reads data from the channel in an I/O section
+    /** the read ends with an exception when the channel is closed or its session disconnected in another thread,
+        which ends its wait at once (within ~500 ms with a %Qore library older than 3.0)
+
+        @return 0 (full read), 1 (EOF/closed by the peer/timeout) or -1 (exception raised)
+    */
+    int readChannelExact(SshChildChannel::Io& io, void* ptr, size_t size, int timeout_ms, ExceptionSink* xsink,
             const char* what) const {
+        ssh_channel current_channel = io.get();
+        assert(current_channel);
 #ifdef _QORE_HAS_CANCELLABLE_POLL
         // the data that libssh has already received is read without waiting; otherwise the session socket is waited
         // on until data arrives or the timeout expires (timeout_ms <= 0: no timeout), and the wait ends as soon as
-        // the thread is cancelled or its Program is interrupted; returns 0 (full read), 1 (EOF/closed/timeout) or
-        // -1 (error or cancel)
+        // the thread is cancelled or its Program is interrupted, or the channel is closed or the session disconnected
+        // in another thread
         size_t offset = 0;
         auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(timeout_ms > 0 ? timeout_ms : 0);
+        // ends the wait when the channel is closed in another thread
+        int close_wake_fd = io.getCloseWakeFd();
+        if (close_wake_fd < 0) {
+            xsink->raiseErrnoException("SFTPSESSION-PROTOCOL-ERROR", errno, "cannot create the wake pipe for %s",
+                what ? what : "SFTP data");
+            return -1;
+        }
         while (offset < size) {
             if (qore_check_cancel(xsink, "sftp protocol read")) {
+                return -1;
+            }
+            if (readEnded(io, what, xsink)) {
                 return -1;
             }
 
@@ -3774,8 +3806,14 @@ private:
                 }
                 wait_ms = static_cast<int>(remaining);
             }
-            ssh_session current_session = ssh_channel_get_session(current_channel);
-            int rc = ssh_wait_readable(ssh_get_fd(current_session), wait_ms, "sftp protocol read", xsink);
+            struct pollfd pfds[2];
+            pfds[0].fd = ssh_get_fd(io.getSession());
+            pfds[1].fd = close_wake_fd;
+            for (struct pollfd& pfd : pfds) {
+                pfd.events = POLLIN;
+                pfd.revents = 0;
+            }
+            int rc = ssh_poll(pfds, 2, wait_ms, "sftp protocol read", xsink);
             if (rc == SSH_WAIT_CANCELLED) {
                 return -1;
             }
@@ -3797,6 +3835,9 @@ private:
         int remaining_ms = timeout_ms;
         while (offset < size) {
             if (qore_check_cancel(xsink, "sftp protocol read")) {
+                return -1;
+            }
+            if (readEnded(io, what, xsink)) {
                 return -1;
             }
 
@@ -3835,17 +3876,14 @@ private:
 #endif
     }
 
-    int writeChannelAll(const std::string& packet, ExceptionSink* xsink, const char* what) const {
-        ssh_channel current_channel = nullptr;
-        {
-            std::lock_guard<std::mutex> lock(m);
-            current_channel = channel;
-        }
-        if (!current_channel) {
+    int writeChannelAll(const std::string& packet, ExceptionSink* xsink, const char* what) {
+        SshChildChannel::Io io(channel);
+        if (!io) {
             xsink->raiseException("SFTPSESSION-STATE-ERROR", "cannot write %s to a closed SFTP session",
                 what ? what : "SFTP data");
             return -1;
         }
+        ssh_channel current_channel = io.get();
 
         size_t offset = 0;
         while (offset < packet.size()) {
@@ -3910,7 +3948,8 @@ private:
     mutable std::mutex m;
     QoreObject* logger;
     QoreObject* backend;
-    ssh_channel channel;
+    //! the SFTP subsystem channel
+    SshChildChannel channel;
     std::map<std::string, std::unique_ptr<DirectoryHandleState>> dir_handles;
     std::map<std::string, std::unique_ptr<FileHandleState>> file_handles;
     uint64_t next_dir_handle_id;
@@ -4595,7 +4634,8 @@ nothing SftpSession::close() {
 }
 
 DLLLOCAL QoreObject* ssh_new_sftp_session_object(QoreProgram* pgm, QoreHashNode* info, QoreHashNode* transfer_info,
-        const QoreObject* logger, QoreObject* backend, ssh_channel channel, ExceptionSink* xsink) {
+        const QoreObject* logger, QoreObject* backend, std::shared_ptr<SshSessionHandle> session, ssh_channel channel,
+        ExceptionSink* xsink) {
     ReferenceHolder<QoreHashNode> info_holder(info, xsink);
     ReferenceHolder<QoreHashNode> transfer_info_holder(transfer_info, xsink);
     ReferenceHolder<QoreObject> logger_holder(logger ? logger->objectRefSelf() : nullptr, xsink);
@@ -4611,7 +4651,7 @@ DLLLOCAL QoreObject* ssh_new_sftp_session_object(QoreProgram* pgm, QoreHashNode*
     ReferenceHolder<QoreObject> obj(new QoreObject(QC_SFTPSESSION, pgm), xsink);
     obj->setPrivate(CID_SFTPSESSION,
         new SftpSessionPriv(info_holder.release(), transfer_info_holder.release(), logger_holder.release(),
-            backend_holder.release(), channel));
+            backend_holder.release(), std::move(session), channel));
     keep_resources = true;
     return obj.release();
 }

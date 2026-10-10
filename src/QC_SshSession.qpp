@@ -478,6 +478,7 @@ public:
             std::shared_ptr<std::atomic<int64>> active_session_counter, int enabled_auth_methods_mask,
             int64 keepalive_interval_seconds = -1, int64 idle_timeout_seconds = -1)
             : info(info), auth_info(auth_info), logger(logger), session(session),
+            handle(session ? std::make_shared<SshSessionHandle>(session) : nullptr),
             active_session_counter(active_session_counter), enabled_auth_methods_mask(enabled_auth_methods_mask),
             connected(session != nullptr), io_waiters(0),
             keepalive_interval_seconds(keepalive_interval_seconds), idle_timeout_seconds(idle_timeout_seconds),
@@ -1018,7 +1019,7 @@ public:
 
             ReferenceHolder<QoreObject> logger_holder(getLogger(), xsink);
             QoreObject* rv = ssh_new_command_session_object(pgm, request.release(),
-                logger_holder ? logger_holder.release() : nullptr, accepted_channel, msg, xsink);
+                logger_holder ? logger_holder.release() : nullptr, getHandle(), accepted_channel, msg, xsink);
             if (!*xsink && rv) {
                 logDebug("SshSession accepted command request");
             }
@@ -1233,7 +1234,7 @@ public:
 
             ReferenceHolder<QoreObject> logger_holder(getLogger(), xsink);
             QoreObject* rv = ssh_new_sftp_session_object(pgm, sftp_info.release(), nullptr,
-                logger_holder ? logger_holder.release() : nullptr, nullptr, accepted_channel, xsink);
+                logger_holder ? logger_holder.release() : nullptr, nullptr, getHandle(), accepted_channel, xsink);
             if (!*xsink && rv) {
                 logDebug("SshSession accepted SFTP subsystem request");
             }
@@ -1246,37 +1247,39 @@ public:
     }
 
     void disconnectIntern() {
-        ssh_session current_session = nullptr;
-        socket_t fd = SSH_INVALID_SOCKET;
+        std::shared_ptr<SshSessionHandle> current_handle;
         {
             std::lock_guard<std::mutex> lock(m);
             if (!connected) {
                 return;
             }
             connected = false;
-            current_session = session;
-            if (current_session) {
-                fd = ssh_get_fd(current_session);
-            }
+            current_handle = handle;
         }
 
-        if (fd != SSH_INVALID_SOCKET) {
-            shutdown(fd, SHUT_RDWR);
+        // wakes the waits on the session socket, of this session and of its child sessions
+        if (current_handle) {
+            current_handle->stop();
         }
 
-        std::shared_ptr<SshActiveSessionRegistry> reg;
-        std::string reg_id;
         {
             std::unique_lock<std::mutex> lock(m);
             cv.wait(lock, [this]() {
                 return !io_waiters;
             });
+        }
 
-            if (session) {
-                ssh_disconnect(session);
-                ssh_free(session);
-                session = nullptr;
-            }
+        // the libssh session is freed with the last reference to the handle; the child sessions keep it
+        if (current_handle) {
+            current_handle->disconnect();
+        }
+
+        std::shared_ptr<SshActiveSessionRegistry> reg;
+        std::string reg_id;
+        {
+            std::lock_guard<std::mutex> lock(m);
+            session = nullptr;
+            handle.reset();
             if (active_session_counter) {
                 active_session_counter->fetch_sub(1);
                 active_session_counter.reset();
@@ -1310,12 +1313,22 @@ public:
         return connected;
     }
 
+    //! returns the owner of the libssh session; set while a wait is in progress (io_waiters)
+    std::shared_ptr<SshSessionHandle> getHandle() const {
+        std::lock_guard<std::mutex> lock(m);
+        assert(handle && io_waiters);
+        return handle;
+    }
+
     QoreHashNode* info;
     QoreHashNode* auth_info;
     mutable std::mutex m;
     mutable std::condition_variable cv;
     QoreObject* logger;
+    //! the libssh session; valid while handle is set
     ssh_session session;
+    //! the owner of the libssh session, shared with the child sessions
+    std::shared_ptr<SshSessionHandle> handle;
     std::shared_ptr<std::atomic<int64>> active_session_counter;
     std::weak_ptr<SshActiveSessionRegistry> session_registry;
     std::string session_registry_id;
