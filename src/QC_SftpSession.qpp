@@ -3723,20 +3723,35 @@ private:
     }
 
     //! raises an exception if the channel has been closed or its session disconnected in another thread
-    /** @return -1 if an exception was raised, 0 if not
+    /** Called before each wait and also before an error or the end of the data is reported: closing the channel or
+        disconnecting the session in another thread shuts its socket down, so libssh then reports an error or the end
+        of the channel, which is the closure or disconnection rather than a protocol error
+
+        @param action "reading" or "writing"
+
+        @return -1 if an exception was raised, 0 if not
     */
-    static int readEnded(const SshChildChannel::Io& io, const char* what, ExceptionSink* xsink) {
+    static int ioEnded(const SshChildChannel::Io& io, const char* action, const char* what, ExceptionSink* xsink) {
         if (io.closing()) {
-            xsink->raiseException("SFTPSESSION-STATE-ERROR", "the SFTP session was closed while reading %s",
+            xsink->raiseException("SFTPSESSION-STATE-ERROR", "the SFTP session was closed while %s %s", action,
                 what ? what : "SFTP data");
             return -1;
         }
         if (io.disconnected()) {
-            xsink->raiseException("SFTPSESSION-STATE-ERROR", "the SSH session was disconnected while reading %s",
+            xsink->raiseException("SFTPSESSION-STATE-ERROR", "the SSH session was disconnected while %s %s", action,
                 what ? what : "SFTP data");
             return -1;
         }
         return 0;
+    }
+
+    //! raises an exception if the channel has been closed or its session disconnected in another thread
+    /** @return -1 if an exception was raised, 0 if not
+
+        @see ioEnded()
+    */
+    static int readEnded(const SshChildChannel::Io& io, const char* what, ExceptionSink* xsink) {
+        return ioEnded(io, "reading", what, xsink);
     }
 
     //! reads data from the channel in an I/O section
@@ -3774,17 +3789,23 @@ private:
             // processes the packets received without waiting, and returns the bytes available on the channel
             int avail = ssh_channel_poll(current_channel, 0);
             if (avail == SSH_ERROR) {
+                if (readEnded(io, what, xsink)) {
+                    return -1;
+                }
                 xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR", "cannot read %s: %s",
                     what ? what : "SFTP data", ssh_get_error(current_channel));
                 return -1;
             }
             if (avail == SSH_EOF) {
-                return 1;
+                return readEnded(io, what, xsink) ? -1 : 1;
             }
             if (avail > 0) {
                 int rc = ssh_channel_read_nonblocking(current_channel, reinterpret_cast<char*>(ptr) + offset,
                     size - offset, 0);
                 if (rc == SSH_ERROR) {
+                    if (readEnded(io, what, xsink)) {
+                        return -1;
+                    }
                     xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR", "cannot read %s: %s",
                         what ? what : "SFTP data", ssh_get_error(current_channel));
                     return -1;
@@ -3795,7 +3816,7 @@ private:
                 }
             }
             if (ssh_channel_is_eof(current_channel) || !ssh_channel_is_open(current_channel)) {
-                return 1;
+                return readEnded(io, what, xsink) ? -1 : 1;
             }
 
             int wait_ms = -1;
@@ -3819,7 +3840,11 @@ private:
                 return -1;
             }
             if (rc < 0) {
-                xsink->raiseErrnoException("SFTPSESSION-PROTOCOL-ERROR", errno, "cannot wait for %s",
+                int err = errno;
+                if (readEnded(io, what, xsink)) {
+                    return -1;
+                }
+                xsink->raiseErrnoException("SFTPSESSION-PROTOCOL-ERROR", err, "cannot wait for %s",
                     what ? what : "SFTP data");
                 return -1;
             }
@@ -3852,6 +3877,9 @@ private:
             int rc = ssh_channel_read_timeout(current_channel, reinterpret_cast<char*>(ptr) + offset,
                 size - offset, 0, chunk);
             if (rc == SSH_ERROR) {
+                if (readEnded(io, what, xsink)) {
+                    return -1;
+                }
                 xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR", "cannot read %s: %s",
                     what ? what : "SFTP data", ssh_get_error(current_channel));
                 return -1;
@@ -3860,7 +3888,7 @@ private:
                 // ssh_channel_read_timeout() returns 0 on EOF/closed *or* on a timeout slice;
                 // only treat genuine EOF/closed as end-of-stream, otherwise keep polling.
                 if (ssh_channel_is_eof(current_channel) || !ssh_channel_is_open(current_channel)) {
-                    return 1;
+                    return readEnded(io, what, xsink) ? -1 : 1;
                 }
                 if (timeout_ms > 0) {
                     remaining_ms -= chunk;
@@ -3894,6 +3922,9 @@ private:
 
             int rc = ssh_channel_write(current_channel, packet.data() + offset, packet.size() - offset);
             if (rc == SSH_ERROR) {
+                if (ioEnded(io, "writing", what, xsink)) {
+                    return -1;
+                }
                 xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR", "cannot write %s: %s",
                     what ? what : "SFTP data", ssh_get_error(current_channel));
                 return -1;

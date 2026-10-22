@@ -1834,16 +1834,15 @@ class SshServerTest inherits QUnit::Test {
             } catch (hash<ExceptionInfo> ex) {
                 rv.err = ex.err;
             }
-            rv.end = clock_get_monotonic_us();
             done.push(rv);
         }();
         started.get();
-        int start = clock_get_monotonic_us();
         h.session.disconnect();
         hash<auto> rv = done.get();
-        # a wait in progress and a wait started after the disconnection report it in the same way
+        # a wait in progress and a wait started after the disconnection report it in the same way, and so does a read
+        # that libssh fails because the disconnection shut the socket down; a wait that the disconnection did not end
+        # would end with its timeout, without an exception
         assertEq("SFTPSESSION-STATE-ERROR", rv.err, "the waiting thread reports the disconnection");
-        assertLt(2000000, rv.end - start, "disconnect() ends the wait at once");
         assertFalse(sftp.connected());
         sftp.close();
     }
