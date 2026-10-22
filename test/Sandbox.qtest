@@ -31,6 +31,45 @@
 
 %exec-class SshSandboxTest
 
+#! Trusted code that acts for sandboxed code within a policy barrier (SandboxManager::callWithSystemPolicy())
+/** An object of this class is passed to the sandboxed programs of the tests; its methods run in this (unsandboxed)
+    program, so within the barrier the sandbox of the calling program does not apply
+*/
+class TrustedSshHelper {
+    string readKey(string path) {
+        return SandboxManager::callWithSystemPolicy(string sub () {
+            return Qore::Ssh::SshKey::readPrivateKeyFile(path).isPrivate() ? "ok" : "bad";
+        });
+    }
+
+    string startServer(string host_key) {
+        return SandboxManager::callWithSystemPolicy(string sub () {
+            hash<Qore::Ssh::SshServerConfig> config = <Qore::Ssh::SshServerConfig>{
+                "name": "sandbox-barrier",
+                "listeners": (
+                    <Qore::Ssh::SshListenerConfig>{
+                        "name": "main",
+                        "bind_address": "127.0.0.1",
+                        "port": 0,
+                        "host_keys": (host_key,),
+                        "enabled_auth_methods": ("none",),
+                    },
+                ),
+            };
+            Qore::Ssh::SshServer server(config);
+            server.start();
+            server.stop();
+            return "ok";
+        });
+    }
+
+    string publish(Qore::Ssh::SftpSession session, string source) {
+        return SandboxManager::callWithSystemPolicy(string sub () {
+            return session.publishLocalFile(source, False, True).completed ? "ok" : "bad";
+        });
+    }
+}
+
 # Verifies that the ssh module honours the program filesystem sandbox for SSH key and
 # host-key file I/O (P1), and that blocking server waits are cooperatively interruptible
 # via the sandbox interrupt (P2).
@@ -57,6 +96,12 @@ class SshSandboxTest inherits QUnit::Test {
             \testBindNetworkAllowed());
         addTestCase("a blocking accept wait is interruptible via the sandbox interrupt",
             \testAcceptInterruptible());
+        addTestCase("an SSH key file is read for sandboxed code within a policy barrier", \testKeyPolicyBarrier());
+        addTestCase("a host key file is read for sandboxed code within a policy barrier",
+            \testHostKeyPolicyBarrier());
+        addTestCase("a listener is bound for sandboxed code within a policy barrier", \testBindPolicyBarrier());
+        addTestCase("an SFTP session file is published for sandboxed code within a policy barrier",
+            \testSftpPolicyBarrier());
         set_return_value(main());
     }
 
@@ -514,5 +559,134 @@ string sub acceptBlock(string hk) {
         assertEq(0, done.waitForZero(15s), "interrupted accept wait must return");
         assertEq("PROGRAM-INTERRUPTED", err,
             "a blocking accept wait must raise PROGRAM-INTERRUPTED when the sandbox is interrupted");
+    }
+
+    #! the code of the sandboxed programs of the policy barrier tests
+    private Program makeBarrierChildProgram() {
+        return makeChildProgram("%modern
+%requires ssh
+string sub readKey(string path) {
+    return Qore::Ssh::SshKey::readPrivateKeyFile(path).isPrivate() ? \"ok\" : \"bad\";
+}
+string sub readKeyTrusted(object trusted, string path) {
+    return trusted.readKey(path);
+}
+string sub startServer(string host_key) {
+    hash<Qore::Ssh::SshServerConfig> config = <Qore::Ssh::SshServerConfig>{
+        \"name\": \"sandbox-no-barrier\",
+        \"listeners\": (
+            <Qore::Ssh::SshListenerConfig>{
+                \"name\": \"main\",
+                \"bind_address\": \"127.0.0.1\",
+                \"port\": 0,
+                \"host_keys\": (host_key,),
+                \"enabled_auth_methods\": (\"none\",),
+            },
+        ),
+    };
+    Qore::Ssh::SshServer server(config);
+    server.start();
+    server.stop();
+    return \"ok\";
+}
+string sub startServerTrusted(object trusted, string host_key) {
+    return trusted.startServer(host_key);
+}
+string sub publish(Qore::Ssh::SftpSession session, string source) {
+    return session.publishLocalFile(source, False, True).completed ? \"ok\" : \"bad\";
+}
+string sub publishTrusted(object trusted, Qore::Ssh::SftpSession session, string source) {
+    return trusted.publish(session, source);
+}");
+    }
+
+    testKeyPolicyBarrier() {
+        Program p = makeBarrierChildProgram();
+        SandboxManager sm();
+        sm.setFilesystemDefaultPolicy(False);
+        p.setSandboxManager(sm);
+        assertThrows("FILESYSTEM-ACCESS-DENIED", \p.callFunction(), ("readKey", host_key));
+        assertEq("ok", p.callFunction("readKeyTrusted", new TrustedSshHelper(), host_key),
+            "trusted code reads the key file for the sandboxed code within its policy barrier");
+    }
+
+    testHostKeyPolicyBarrier() {
+        Program p = makeBarrierChildProgram();
+        SandboxManager sm();
+        sm.setFilesystemDefaultPolicy(False);
+        sm.setNetworkDefaultPolicy(True);
+        p.setSandboxManager(sm);
+        assertThrows("FILESYSTEM-ACCESS-DENIED", \p.callFunction(), ("startServer", host_key));
+        assertEq("ok", p.callFunction("startServerTrusted", new TrustedSshHelper(), host_key),
+            "trusted code reads the host key file for the sandboxed code within its policy barrier");
+    }
+
+    testBindPolicyBarrier() {
+        Program p = makeBarrierChildProgram();
+        SandboxManager sm();
+        sm.setFilesystemDefaultPolicy(True);
+        sm.setNetworkDefaultPolicy(False);
+        p.setSandboxManager(sm);
+        assertThrows("NETWORK-ACCESS-DENIED", \p.callFunction(), ("startServer", host_key));
+        assertEq("ok", p.callFunction("startServerTrusted", new TrustedSshHelper(), host_key),
+            "trusted code binds the listener for the sandboxed code within its policy barrier");
+    }
+
+    testSftpPolicyBarrier() {
+        string source = tmpPath(".source");
+        string final_path = tmpPath(".published");
+        on_exit {
+            if (is_file(source)) {
+                unlink(source);
+            }
+            if (is_file(final_path)) {
+                unlink(final_path);
+            }
+        }
+        {
+            File f();
+            f.open2(source, O_CREAT | O_EXCL | O_WRONLY, 0600);
+            f.write("BARRIER-DATA");
+        }
+
+        date ts = now();
+        Qore::Ssh::SftpSession session(<Qore::Ssh::SftpSessionInfo>{
+            "session_info": <Qore::Ssh::SshSessionInfo>{
+                "session_id": "sftp-barrier",
+                "server_name": "srv",
+                "listener_name": "lst",
+                "remote_address": "127.0.0.1",
+                "remote_port": 22,
+                "local_address": "127.0.0.1",
+                "local_port": 2222,
+                "username": "user",
+                "authenticated": True,
+                "auth_method": "none",
+                "principal": "principal:user",
+                "started": ts,
+                "last_activity": ts,
+            },
+            "principal": "principal:user",
+            "root_dir": "/tmp",
+            "read_only": False,
+        });
+        session.applyTransferInfo(<Qore::Ssh::SftpTransferInfo>{
+            "operation": "upload",
+            "path": "/published.dat",
+            "final_path": final_path,
+            "size": 12,
+            "atomic_publish": False,
+            "completed": False,
+        });
+
+        Program p = makeBarrierChildProgram();
+        SandboxManager sm();
+        sm.setFilesystemDefaultPolicy(False);
+        p.setSandboxManager(sm);
+        assertThrows("FILESYSTEM-ACCESS-DENIED", \p.callFunction(), ("publish", session, source));
+        assertFalse(is_file(final_path), "the denied publication does not create the file");
+        assertEq("ok", p.callFunction("publishTrusted", new TrustedSshHelper(), session, source),
+            "trusted code publishes the file for the sandboxed code within its policy barrier");
+        assertEq("BARRIER-DATA", ReadOnlyFile::readTextFile(final_path));
     }
 }

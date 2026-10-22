@@ -39,7 +39,8 @@ static int ssh_key_check_fs_access(const char* path, int mode, ExceptionSink* xs
     if (!path || !*path) {
         return 0;
     }
-    QoreSandboxManagerHelper smh;
+    // a policy check: a policy barrier (SandboxManager::callWithSystemPolicy()) is honored
+    QoreSandboxManagerHelper smh(QoreSandboxManagerHelper::Policy);
     if (smh && !smh->checkFilesystemAccess(path, mode, xsink)) {
         return -1;
     }

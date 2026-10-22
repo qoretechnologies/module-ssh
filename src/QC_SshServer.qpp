@@ -73,7 +73,8 @@ static int ssh_server_check_fs_access(const char* path, int mode, ExceptionSink*
             "reading SSH server host key file '%s' is not allowed when PO_NO_FILESYSTEM is set", path);
         return -1;
     }
-    QoreSandboxManagerHelper smh;
+    // a policy check: a policy barrier (SandboxManager::callWithSystemPolicy()) is honored
+    QoreSandboxManagerHelper smh(QoreSandboxManagerHelper::Policy);
     if (smh && !smh->checkFilesystemAccess(path, mode, xsink)) {
         return -1;
     }
@@ -88,7 +89,8 @@ static int ssh_server_check_fs_access(const char* path, int mode, ExceptionSink*
 // (fail closed).  SSH listeners are always TCP.
 static int ssh_server_check_bind_access(const std::string& bind_address, int port,
         ExceptionSink* xsink) {
-    QoreSandboxManagerHelper smh;
+    // a policy check: a policy barrier (SandboxManager::callWithSystemPolicy()) is honored
+    QoreSandboxManagerHelper smh(QoreSandboxManagerHelper::Policy);
     if (!smh) {
         return 0;
     }

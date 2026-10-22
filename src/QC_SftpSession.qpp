@@ -114,7 +114,8 @@ static int ssh_sftp_check_fs_access(const std::string& path, int mode, Exception
         return 0;
     }
 
-    QoreSandboxManagerHelper smh;
+    // a policy check: a policy barrier (SandboxManager::callWithSystemPolicy()) is honored
+    QoreSandboxManagerHelper smh(QoreSandboxManagerHelper::Policy);
     if (smh && !smh->checkFilesystemAccess(path.c_str(), mode, xsink)) {
         return -1;
     }
