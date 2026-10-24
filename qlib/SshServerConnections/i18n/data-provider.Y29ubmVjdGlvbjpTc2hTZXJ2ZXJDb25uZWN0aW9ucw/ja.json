@@ -1,0 +1,345 @@
+{
+  "schema_version": 1,
+  "locales": {
+    "ja": {
+      "messages": {
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.Y29tbWFuZF9iYWNrZW5k.desc": {
+          "source": "Optional generic virtual command backend object. When `command_callback` is not set, the connection synthesizes a typed callback that delegates to `command_backend.handle(hash<SshCommandRequest>)`.",
+          "message": "オプションの汎用仮想コマンドバックエンドオブジェクト。`command_callback` が設定されていない場合、接続は`command_backend.handle(hash<SshCommandRequest>)` に委任する型指定コールバックを合成します。"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.Y29tbWFuZF9iYWNrZW5k.display_name": {
+          "source": "Command Backend",
+          "message": "コマンドバックエンド"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.Y29tbWFuZF9iYWNrZW5k.short_desc": {
+          "source": "Virtual command backend shared by the server connection",
+          "message": "サーバ接続で共有される仮想コマンドバックエンド"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.Y29tbWFuZF9jYWxsYmFjaw.desc": {
+          "source": "Command callback passed to `Qore::Ssh::SshServerConfig.command_callback`.",
+          "message": "`Qore::Ssh::SshServerConfig.command_callback` に渡されるコマンドコールバック。"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.Y29tbWFuZF9jYWxsYmFjaw.display_name": {
+          "source": "Command Callback",
+          "message": "コマンドコールバック"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.Y29tbWFuZF9jYWxsYmFjaw.short_desc": {
+          "source": "Command callback for accepted command sessions",
+          "message": "受け入れられたコマンドセッション用のコマンドコールバック"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.Y29tbWFuZF9jb25maWc.desc": {
+          "source": "Free-form command callback configuration passed to `Qore::Ssh::SshServerConfig.command_config`.",
+          "message": "`Qore::Ssh::SshServerConfig.command_config` に渡される自由形式のコマンドコールバック設定。"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.Y29tbWFuZF9jb25maWc.display_name": {
+          "source": "Command Config",
+          "message": "コマンド設定"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.Y29tbWFuZF9jb25maWc.short_desc": {
+          "source": "Free-form command callback configuration",
+          "message": "自由形式のコマンドコールバック設定"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aA.desc": {
+          "source": "Grouped typed authentication configuration compatible with `SshServerAuthProvider::VirtualSshAuthProviderOptions`. When `auth_provider` is not set, the connection synthesizes a built-in `SshServerAuthProvider::VirtualSshAuthProvider` from this hash.",
+          "message": "`SshServerAuthProvider::VirtualSshAuthProviderOptions` と互換性のあるグループ化された型指定認証設定。`auth_provider` が設定されていない場合、このハッシュから接続が組み込みの `SshServerAuthProvider::VirtualSshAuthProvider` を合成する。"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aA.display_name": {
+          "source": "Auth Options",
+          "message": "認証オプション"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aA.short_desc": {
+          "source": "Grouped typed authentication configuration",
+          "message": "グループ化された型指定認証設定"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9iYW5uZXI.desc": {
+          "source": "Pre-authentication banner sent to the client via `SSH_MSG_USERAUTH_BANNER` before the auth exchange begins. Distinct from the SSH identification `banner` which is set during the initial handshake.",
+          "message": "認証交換開始前に `SSH_MSG_USERAUTH_BANNER` を通じてクライアントに送信される事前認証バナー。初期ハンドシェイク中に設定される SSH 識別子 `banner` とは異なる。"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9iYW5uZXI.display_name": {
+          "source": "Auth Banner",
+          "message": "認証バナー"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9iYW5uZXI.short_desc": {
+          "source": "RFC 4252 pre-authentication banner message",
+          "message": "RFC 4252 事前認証バナー メッセージ"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9jYWxsYmFjaw.desc": {
+          "source": "Authentication callback passed to `Qore::Ssh::SshServerConfig.auth_callback`.",
+          "message": "`Qore::Ssh::SshServerConfig.auth_callback` に渡される認証コールバック。"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9jYWxsYmFjaw.display_name": {
+          "source": "Auth Callback",
+          "message": "認証コールバック"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9jYWxsYmFjaw.short_desc": {
+          "source": "Authentication callback for accepted auth contexts",
+          "message": "認証コールバック：承認された認証コンテキスト用"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9jb25maWc.desc": {
+          "source": "Free-form auth callback configuration passed to `Qore::Ssh::SshServerConfig.auth_config`.",
+          "message": "`Qore::Ssh::SshServerConfig.auth_config` に渡される自由形式の認証コールバック設定。"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9jb25maWc.display_name": {
+          "source": "Auth Config",
+          "message": "認証設定"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9jb25maWc.short_desc": {
+          "source": "Free-form auth callback configuration",
+          "message": "自由形式の認証コールバック設定"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9wcm92aWRlcg.desc": {
+          "source": "Authentication provider object passed to `Qore::Ssh::SshServerConfig.auth_provider`. The object must implement `authenticate(hash<Qore::Ssh::SshAuthContextInfo>)` and return `hash<Qore::Ssh::SshAuthDecision>`.",
+          "message": "`Qore::Ssh::SshServerConfig.auth_provider` に渡される認証プロバイダーオブジェクト。このオブジェクトは `authenticate(hash<Qore::Ssh::SshAuthContextInfo>)` を実装し、`hash<Qore::Ssh::SshAuthDecision>` を返す必要がある。"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9wcm92aWRlcg.display_name": {
+          "source": "Auth Provider",
+          "message": "認証プロバイダー"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9wcm92aWRlcg.short_desc": {
+          "source": "Object-driven authentication provider",
+          "message": "オブジェクト駆動型認証プロバイダー"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXVkaXRfY29uZmln.desc": {
+          "source": "Free-form audit callback configuration passed to `Qore::Ssh::SshServerConfig.audit_config`.",
+          "message": "`Qore::Ssh::SshServerConfig.audit_config` に渡される自由形式の監査コールバック設定。"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXVkaXRfY29uZmln.display_name": {
+          "source": "Audit Config",
+          "message": "監査構成"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXVkaXRfY29uZmln.short_desc": {
+          "source": "Free-form audit callback configuration",
+          "message": "自由形式の監査コールバック設定"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXVkaXRfY2FsbGJhY2s.desc": {
+          "source": "Audit callback passed to `Qore::Ssh::SshServerConfig.audit_callback`.",
+          "message": "`Qore::Ssh::SshServerConfig.audit_callback` に渡される監査コールバック。"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXVkaXRfY2FsbGJhY2s.display_name": {
+          "source": "Audit Callback",
+          "message": "監査コールバック"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXVkaXRfY2FsbGJhY2s.short_desc": {
+          "source": "Audit callback for server-side events",
+          "message": "サーバーサイドイベント用の監査コールバック"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YmFubmVy.desc": {
+          "source": "Optional SSH server banner presented during handshake.",
+          "message": "ハンドシェイク中に表示されるオプションのSSHサーバーバナー。"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YmFubmVy.display_name": {
+          "source": "Banner",
+          "message": "バナー"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YmFubmVy.short_desc": {
+          "source": "SSH identification banner for the listener",
+          "message": "リスナー用のSSH識別バナー"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.ZGVmYXVsdF9jb21tYW5kX3RpbWVvdXRfbXM.desc": {
+          "source": "Default command timeout passed to `Qore::Ssh::SshServerConfig.default_command_timeout_ms`.",
+          "message": "`Qore::Ssh::SshServerConfig.default_command_timeout_ms` に渡されるデフォルトのコマンドタイムアウト"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.ZGVmYXVsdF9jb21tYW5kX3RpbWVvdXRfbXM.display_name": {
+          "source": "Default Command Timeout",
+          "message": "デフォルトのコマンドタイムアウト"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.ZGVmYXVsdF9jb21tYW5kX3RpbWVvdXRfbXM.short_desc": {
+          "source": "Default command timeout in milliseconds",
+          "message": "ミリ秒単位のデフォルトのコマンドタイムアウト"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.a2VlcGFsaXZlX2ludGVydmFsX3NlY29uZHM.desc": {
+          "source": "Interval in seconds between SSH keepalive probes sent by the server. Helps detect dead connections over unreliable networks. Defaults to `60` when unset; set to `0` or a negative value to disable keepalive probes.",
+          "message": "サーバーが不確実なネットワーク上で死んだ接続を検出するために送信するSSHキープアライブプローブ間の間隔（秒）。未設定の場合、`60` にデフォルト値が適用されます。キープアライブプローブを無効にするには、`0` または負の値を設定してください。"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.a2VlcGFsaXZlX2ludGVydmFsX3NlY29uZHM.display_name": {
+          "source": "Keepalive Interval",
+          "message": "キープアライブ間隔"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.a2VlcGFsaXZlX2ludGVydmFsX3NlY29uZHM.short_desc": {
+          "source": "Interval in seconds between server-side keepalive probes",
+          "message": "サーバーサイドのキープアライブプローブ間の間隔（秒）"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.aG9zdF9rZXlz.desc": {
+          "source": "List of SSH host key files to load for the listener. Each file must contain a host private key supported by libssh.",
+          "message": "リスナーに読み込むSSHホスト鍵ファイルのリスト。各ファイルには、libsshがサポートするホストの秘密鍵が含まれている必要があります。"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.aG9zdF9rZXlz.display_name": {
+          "source": "Host Keys",
+          "message": "ホスト鍵"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.aG9zdF9rZXlz.short_desc": {
+          "source": "List of host key files for the server listener",
+          "message": "サーバーリスナー用のホストキー ファイルのリスト"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.aWRsZV90aW1lb3V0X3NlY29uZHM.desc": {
+          "source": "Maximum idle time in seconds before the server disconnects the session. Measured from the last message received from the client.",
+          "message": "クライアントからの最後のメッセージ受信後、サーバーがセッションを切断するまでの最大アイドル時間（秒単位）。"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.aWRsZV90aW1lb3V0X3NlY29uZHM.display_name": {
+          "source": "Idle Timeout",
+          "message": "アイドル タイムアウト"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.aWRsZV90aW1lb3V0X3NlY29uZHM.short_desc": {
+          "source": "Maximum idle time in seconds before disconnecting a session",
+          "message": "セッションを切断するまでの最大アイドル時間（秒単位）"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bG9nX2F1dGhlbnRpY2F0ZWRfc2Vzc2lvbnM.desc": {
+          "source": "Controls `Qore::Ssh::SshServerConfig.log_authenticated_sessions`.",
+          "message": "`Qore::Ssh::SshServerConfig.log_authenticated_sessions` を制御します。"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bG9nX2F1dGhlbnRpY2F0ZWRfc2Vzc2lvbnM.display_name": {
+          "source": "Log Authenticated Sessions",
+          "message": "認証済みセッションのログ記録"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bG9nX2F1dGhlbnRpY2F0ZWRfc2Vzc2lvbnM.short_desc": {
+          "source": "Enable authenticated-session logging",
+          "message": "認証済みセッションのログ記録を有効にする"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bG9nX2ZpbGVfdHJhbnNmZXJz.desc": {
+          "source": "Controls `Qore::Ssh::SshServerConfig.log_file_transfers`.",
+          "message": "`Qore::Ssh::SshServerConfig.log_file_transfers` を制御します。"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bG9nX2ZpbGVfdHJhbnNmZXJz.display_name": {
+          "source": "Log File Transfers",
+          "message": "ファイル転送のログ"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bG9nX2ZpbGVfdHJhbnNmZXJz.short_desc": {
+          "source": "Enable file-transfer logging",
+          "message": "ファイル転送のログ記録を有効化"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object passed to `Qore::Ssh::SshServerConfig.logger`.",
+          "message": "`LoggerInterface` オブジェクトを `Qore::Ssh::SshServerConfig.logger` にオプションで渡す。"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "ロガー"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bG9nZ2Vy.short_desc": {
+          "source": "Logger for server and session events",
+          "message": "サーバーおよびセッションイベントのロガー"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bGltaXRz.desc": {
+          "source": "Grouped typed operational limits. Currently supports `max_sessions` for a deterministic cap on concurrently accepted sessions per listener.",
+          "message": "タイプ別にグループ化された操作制限。現在は、リスナーごとの同時接続セッション数の決定論的上限として `max_sessions` をサポートしています。"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bGltaXRz.display_name": {
+          "source": "Operational Limits",
+          "message": "操作制限"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bGltaXRz.short_desc": {
+          "source": "Grouped operational limits for the listener",
+          "message": "リスナー用のグループ化された操作制限"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bGlzdGVuZXJfbmFtZQ.desc": {
+          "source": "Logical listener name to place in listener status and accepted session metadata. Defaults to the connection name.",
+          "message": "リスナーのステータスおよび受け入れられたセッションメタデータに配置する論理的なリスナー名。接続名にデフォルトで設定されます。"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bGlzdGVuZXJfbmFtZQ.display_name": {
+          "source": "Listener Name",
+          "message": "リスナー名"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bGlzdGVuZXJfbmFtZQ.short_desc": {
+          "source": "Logical listener name reported in session metadata",
+          "message": "セッションメタデータに報告される論理的なリスナー名"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2VjdXJpdHk.desc": {
+          "source": "Grouped typed security options. Supports `allowed_ciphers`, `allowed_kex`, `allowed_macs`, `allowed_hostkey_algorithms` (comma-separated algorithm names), and `allowed_addresses` / `denied_addresses` (CIDR or bare IP lists).",
+          "message": "タイプ付きセキュリティオプションのグループ。`allowed_ciphers`、`allowed_kex`、`allowed_macs`、`allowed_hostkey_algorithms`（カンマ区切りのアルゴリズム名）および`allowed_addresses` / `denied_addresses`（CIDRまたは裸のIPアドレスリスト）をサポートします。"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2VjdXJpdHk.display_name": {
+          "source": "Security Options",
+          "message": "セキュリティオプション"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2VjdXJpdHk.short_desc": {
+          "source": "Grouped security options for ciphers, KEX, MACs, and IP filtering",
+          "message": "暗号、KEX、MAC、IPフィルタリング用のグループ化されたセキュリティオプション"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2VydmVyX29wdGlvbnM.desc": {
+          "source": "Free-form listener-level libssh server options passed through to `Qore::Ssh::SshListenerConfig.server_options`.",
+          "message": "`Qore::Ssh::SshListenerConfig.server_options` にそのまま渡されるリスナーレベルの自由形式のlibsshサーバーオプション。"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2VydmVyX29wdGlvbnM.display_name": {
+          "source": "Listener Server Options",
+          "message": "リスナーサーバーオプション"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2VydmVyX29wdGlvbnM.short_desc": {
+          "source": "Free-form listener-level libssh options",
+          "message": "リスナーレベルの自由形式のlibsshオプション"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2VydmljZXM.desc": {
+          "source": "Grouped typed service controls. Currently supports `enabled_auth_methods`, `allow_command_service`, and `allow_sftp_service`.",
+          "message": "グループ化された型指定サービス制御。現在は `enabled_auth_methods`、`allow_command_service`、および `allow_sftp_service` をサポートしています。"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2VydmljZXM.display_name": {
+          "source": "Service Controls",
+          "message": "サービス制御"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2VydmljZXM.short_desc": {
+          "source": "Grouped auth and service controls for the listener",
+          "message": "リスナー用のグループ化された認証およびサービス制御"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2Z0cF9jb25maWc.desc": {
+          "source": "Free-form SFTP callback and policy configuration passed to `Qore::Ssh::SshServerConfig.sftp_config`.",
+          "message": "`Qore::Ssh::SshServerConfig.sftp_config` に渡される自由形式のSFTPコールバックおよびポリシー設定。"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2Z0cF9jb25maWc.display_name": {
+          "source": "SFTP Config",
+          "message": "SFTP 設定"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2Z0cF9jb25maWc.short_desc": {
+          "source": "Free-form SFTP callback and policy configuration",
+          "message": "自由形式のSFTPコールバックおよびポリシー設定"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2Z0cF9mYWN0b3J5X2NhbGxiYWNr.desc": {
+          "source": "SFTP factory callback passed to `Qore::Ssh::SshServerConfig.sftp_factory_callback`.",
+          "message": "`Qore::Ssh::SshServerConfig.sftp_factory_callback` に渡されるSFTPファクトリコールバック。"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2Z0cF9mYWN0b3J5X2NhbGxiYWNr.display_name": {
+          "source": "SFTP Factory Callback",
+          "message": "SFTP ファクトリコールバック"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2Z0cF9mYWN0b3J5X2NhbGxiYWNr.short_desc": {
+          "source": "Factory callback for accepted SFTP sessions",
+          "message": "受信したSFTPセッション用のファクトリコールバック"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U2Z0cFNlcnZlckNvbm5lY3Rpb24.desc": {
+          "source": "A managed local SFTP server connection definition for SFTP-oriented server listeners. The connection returns a live `Qore::Ssh::SshServer` object and also exposes the generic `SftpServerExchange` data-provider bridge.",
+          "message": "SFTP向けサーバリスナー用の管理されたローカルSFTPサーバ接続定義。接続は有効な`Qore::Ssh::SshServer`オブジェクトを返し、汎用の`SftpServerExchange`データプロバイダブリッジも公開します。"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U2Z0cFNlcnZlckNvbm5lY3Rpb24.display_name": {
+          "source": "SFTP Server Connection",
+          "message": "SFTPサーバ接続"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U2Z0cFNlcnZlckNvbm5lY3Rpb24.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object. When set, the connection uses it both for accepted SFTP sessions and for the generic `SftpServerExchange` data-provider bridge.",
+          "message": "任意の既存の`VirtualSftpExchangeRecordStore`または`VirtualSftpExchange`オブジェクト。設定されている場合、接続は受信したSFTPセッションおよび汎用の`SftpServerExchange`データプロバイダブリッジの両方でこれを使用します。"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U2Z0cFNlcnZlckNvbm5lY3Rpb24.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "仮想エクスチェンジバックエンド"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U2Z0cFNlcnZlckNvbm5lY3Rpb24.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange backend shared by the server and data provider",
+          "message": "サーバとデータプロバイダで共有される既存の仮想交換バックエンド"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U2Z0cFNlcnZlckNvbm5lY3Rpb24.short_desc": {
+          "source": "A managed local SFTP server connection definition",
+          "message": "管理されたローカルSFTPサーバ接続定義"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U3NoQ29tbWFuZFNlcnZlckNvbm5lY3Rpb24.desc": {
+          "source": "A managed local SSH server connection definition for command-oriented server listeners. The connection returns a live `Qore::Ssh::SshServer` object.",
+          "message": "コマンド指向のサーバリスナー用の管理されたローカルSSHサーバ接続定義。接続は有効な`Qore::Ssh::SshServer`オブジェクトを返します。"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U3NoQ29tbWFuZFNlcnZlckNvbm5lY3Rpb24.display_name": {
+          "source": "SSH Server Connection",
+          "message": "SSHサーバ接続"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U3NoQ29tbWFuZFNlcnZlckNvbm5lY3Rpb24.short_desc": {
+          "source": "A managed local SSH server connection definition",
+          "message": "管理されたローカルSSHサーバー接続の定義"
+        }
+      }
+    }
+  }
+}

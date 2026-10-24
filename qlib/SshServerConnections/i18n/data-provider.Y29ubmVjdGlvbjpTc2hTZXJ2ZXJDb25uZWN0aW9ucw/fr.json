@@ -1,0 +1,345 @@
+{
+  "schema_version": 1,
+  "locales": {
+    "fr": {
+      "messages": {
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.Y29tbWFuZF9iYWNrZW5k.desc": {
+          "source": "Optional generic virtual command backend object. When `command_callback` is not set, the connection synthesizes a typed callback that delegates to `command_backend.handle(hash<SshCommandRequest>)`.",
+          "message": "Objet backend de commande virtuel générique facultatif. Lorsque `command_callback` n'est pas défini, la connexion génère un rappel typé qui délègue à `command_backend.handle(hash<SshCommandRequest>)`."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.Y29tbWFuZF9iYWNrZW5k.display_name": {
+          "source": "Command Backend",
+          "message": "Backend de commande"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.Y29tbWFuZF9iYWNrZW5k.short_desc": {
+          "source": "Virtual command backend shared by the server connection",
+          "message": "Backend de commande virtuel partagé par la connexion serveur"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.Y29tbWFuZF9jYWxsYmFjaw.desc": {
+          "source": "Command callback passed to `Qore::Ssh::SshServerConfig.command_callback`.",
+          "message": "Rappel de commande passé à `Qore::Ssh::SshServerConfig.command_callback`."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.Y29tbWFuZF9jYWxsYmFjaw.display_name": {
+          "source": "Command Callback",
+          "message": "Appel de commande"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.Y29tbWFuZF9jYWxsYmFjaw.short_desc": {
+          "source": "Command callback for accepted command sessions",
+          "message": "Appel de commande pour les sessions de commandes acceptées"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.Y29tbWFuZF9jb25maWc.desc": {
+          "source": "Free-form command callback configuration passed to `Qore::Ssh::SshServerConfig.command_config`.",
+          "message": "Configuration de rappel de commande librement formulée transmise à `Qore::Ssh::SshServerConfig.command_config`."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.Y29tbWFuZF9jb25maWc.display_name": {
+          "source": "Command Config",
+          "message": "Configuration de commande"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.Y29tbWFuZF9jb25maWc.short_desc": {
+          "source": "Free-form command callback configuration",
+          "message": "Configuration de rappel de commande librement formulée"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aA.desc": {
+          "source": "Grouped typed authentication configuration compatible with `SshServerAuthProvider::VirtualSshAuthProviderOptions`. When `auth_provider` is not set, the connection synthesizes a built-in `SshServerAuthProvider::VirtualSshAuthProvider` from this hash.",
+          "message": "Configuration d'authentification typée regroupée compatible avec `SshServerAuthProvider::VirtualSshAuthProviderOptions`. Lorsque `auth_provider` n'est pas défini, la connexion génère un `SshServerAuthProvider::VirtualSshAuthProvider` intégré à partir de cette hachage."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aA.display_name": {
+          "source": "Auth Options",
+          "message": "Options d'authentification"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aA.short_desc": {
+          "source": "Grouped typed authentication configuration",
+          "message": "Configuration d'authentification typée regroupée"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9iYW5uZXI.desc": {
+          "source": "Pre-authentication banner sent to the client via `SSH_MSG_USERAUTH_BANNER` before the auth exchange begins. Distinct from the SSH identification `banner` which is set during the initial handshake.",
+          "message": "Bannière pré-authentification envoyée au client via `SSH_MSG_USERAUTH_BANNER` avant le début de l'échange d'authentification. Différente de l'identification SSH `banner` qui est définie pendant la poignée de main initiale."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9iYW5uZXI.display_name": {
+          "source": "Auth Banner",
+          "message": "Bannière d'authentification"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9iYW5uZXI.short_desc": {
+          "source": "RFC 4252 pre-authentication banner message",
+          "message": "Message de bannière pré-authentification selon la RFC 4252"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9jYWxsYmFjaw.desc": {
+          "source": "Authentication callback passed to `Qore::Ssh::SshServerConfig.auth_callback`.",
+          "message": "Appel de rappel d'authentification transmis à `Qore::Ssh::SshServerConfig.auth_callback`."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9jYWxsYmFjaw.display_name": {
+          "source": "Auth Callback",
+          "message": "Appel de rappel d'authentification"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9jYWxsYmFjaw.short_desc": {
+          "source": "Authentication callback for accepted auth contexts",
+          "message": "Appel de rappel d'authentification pour les contextes acceptés"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9jb25maWc.desc": {
+          "source": "Free-form auth callback configuration passed to `Qore::Ssh::SshServerConfig.auth_config`.",
+          "message": "Configuration libre d'appel de rappel d'authentification transmise à `Qore::Ssh::SshServerConfig.auth_config`."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9jb25maWc.display_name": {
+          "source": "Auth Config",
+          "message": "Configuration d'authentification"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9jb25maWc.short_desc": {
+          "source": "Free-form auth callback configuration",
+          "message": "Configuration de rappel d'authentification libre"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9wcm92aWRlcg.desc": {
+          "source": "Authentication provider object passed to `Qore::Ssh::SshServerConfig.auth_provider`. The object must implement `authenticate(hash<Qore::Ssh::SshAuthContextInfo>)` and return `hash<Qore::Ssh::SshAuthDecision>`.",
+          "message": "Objet fournisseur d'authentification passé à `Qore::Ssh::SshServerConfig.auth_provider`. Cet objet doit implémenter `authenticate(hash<Qore::Ssh::SshAuthContextInfo>)` et retourner `hash<Qore::Ssh::SshAuthDecision>`."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9wcm92aWRlcg.display_name": {
+          "source": "Auth Provider",
+          "message": "Fournisseur d'authentification"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9wcm92aWRlcg.short_desc": {
+          "source": "Object-driven authentication provider",
+          "message": "Fournisseur d'authentification basé sur un objet"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXVkaXRfY29uZmln.desc": {
+          "source": "Free-form audit callback configuration passed to `Qore::Ssh::SshServerConfig.audit_config`.",
+          "message": "Configuration de rappel d'audit libre passée à `Qore::Ssh::SshServerConfig.audit_config`."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXVkaXRfY29uZmln.display_name": {
+          "source": "Audit Config",
+          "message": "Configuration d'audit"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXVkaXRfY29uZmln.short_desc": {
+          "source": "Free-form audit callback configuration",
+          "message": "Configuration de rappel d'audit libre"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXVkaXRfY2FsbGJhY2s.desc": {
+          "source": "Audit callback passed to `Qore::Ssh::SshServerConfig.audit_callback`.",
+          "message": "Rappel d'audit passé à `Qore::Ssh::SshServerConfig.audit_callback`."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXVkaXRfY2FsbGJhY2s.display_name": {
+          "source": "Audit Callback",
+          "message": "Appel de rappel d'audit"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXVkaXRfY2FsbGJhY2s.short_desc": {
+          "source": "Audit callback for server-side events",
+          "message": "Rappel d'audit pour les événements côté serveur"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YmFubmVy.desc": {
+          "source": "Optional SSH server banner presented during handshake.",
+          "message": "Bannière SSH facultative présentée pendant l'établissement de la connexion."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YmFubmVy.display_name": {
+          "source": "Banner",
+          "message": "Bannière"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YmFubmVy.short_desc": {
+          "source": "SSH identification banner for the listener",
+          "message": "Bannière d'identification SSH pour l'écouteur"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.ZGVmYXVsdF9jb21tYW5kX3RpbWVvdXRfbXM.desc": {
+          "source": "Default command timeout passed to `Qore::Ssh::SshServerConfig.default_command_timeout_ms`.",
+          "message": "Délai d'attente par défaut pour la commande transmis à `Qore::Ssh::SshServerConfig.default_command_timeout_ms`."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.ZGVmYXVsdF9jb21tYW5kX3RpbWVvdXRfbXM.display_name": {
+          "source": "Default Command Timeout",
+          "message": "Délai d'attente par défaut pour la commande"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.ZGVmYXVsdF9jb21tYW5kX3RpbWVvdXRfbXM.short_desc": {
+          "source": "Default command timeout in milliseconds",
+          "message": "Délai d'attente par défaut pour la commande en millisecondes"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.a2VlcGFsaXZlX2ludGVydmFsX3NlY29uZHM.desc": {
+          "source": "Interval in seconds between SSH keepalive probes sent by the server. Helps detect dead connections over unreliable networks. Defaults to `60` when unset; set to `0` or a negative value to disable keepalive probes.",
+          "message": "Intervalle en secondes entre les sondes de maintien de connexion SSH envoyées par le serveur. Aide à détecter les connexions mortes sur des réseaux instables. Valeur par défaut : `60` si non définie ; définir à `0` ou à une valeur négative pour désactiver les sondes de maintien de connexion."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.a2VlcGFsaXZlX2ludGVydmFsX3NlY29uZHM.display_name": {
+          "source": "Keepalive Interval",
+          "message": "Intervalle de maintien de connexion"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.a2VlcGFsaXZlX2ludGVydmFsX3NlY29uZHM.short_desc": {
+          "source": "Interval in seconds between server-side keepalive probes",
+          "message": "Intervalle en secondes entre les sondes de maintien de connexion côté serveur"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.aG9zdF9rZXlz.desc": {
+          "source": "List of SSH host key files to load for the listener. Each file must contain a host private key supported by libssh.",
+          "message": "Liste des fichiers de clés hôte SSH à charger pour l'écouteur. Chaque fichier doit contenir une clé privée hôte prise en charge par libssh."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.aG9zdF9rZXlz.display_name": {
+          "source": "Host Keys",
+          "message": "Clés hôte"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.aG9zdF9rZXlz.short_desc": {
+          "source": "List of host key files for the server listener",
+          "message": "Liste des fichiers de clés hôte pour l'écouteur serveur"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.aWRsZV90aW1lb3V0X3NlY29uZHM.desc": {
+          "source": "Maximum idle time in seconds before the server disconnects the session. Measured from the last message received from the client.",
+          "message": "Temps maximal d'inactivité en secondes avant que le serveur ne se déconnecte la session. Mesuré à partir du dernier message reçu du client."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.aWRsZV90aW1lb3V0X3NlY29uZHM.display_name": {
+          "source": "Idle Timeout",
+          "message": "Délai d'inactivité"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.aWRsZV90aW1lb3V0X3NlY29uZHM.short_desc": {
+          "source": "Maximum idle time in seconds before disconnecting a session",
+          "message": "Durée maximale d'inactivité en secondes avant la déconnexion d'une session"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bG9nX2F1dGhlbnRpY2F0ZWRfc2Vzc2lvbnM.desc": {
+          "source": "Controls `Qore::Ssh::SshServerConfig.log_authenticated_sessions`.",
+          "message": "Contrôle `Qore::Ssh::SshServerConfig.log_authenticated_sessions`."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bG9nX2F1dGhlbnRpY2F0ZWRfc2Vzc2lvbnM.display_name": {
+          "source": "Log Authenticated Sessions",
+          "message": "Journaliser les sessions authentifiées"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bG9nX2F1dGhlbnRpY2F0ZWRfc2Vzc2lvbnM.short_desc": {
+          "source": "Enable authenticated-session logging",
+          "message": "Activer la journalisation des sessions authentifiées"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bG9nX2ZpbGVfdHJhbnNmZXJz.desc": {
+          "source": "Controls `Qore::Ssh::SshServerConfig.log_file_transfers`.",
+          "message": "Contrôle `Qore::Ssh::SshServerConfig.log_file_transfers`."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bG9nX2ZpbGVfdHJhbnNmZXJz.display_name": {
+          "source": "Log File Transfers",
+          "message": "Journaliser les transferts de fichiers"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bG9nX2ZpbGVfdHJhbnNmZXJz.short_desc": {
+          "source": "Enable file-transfer logging",
+          "message": "Activer la journalisation des transferts de fichiers"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object passed to `Qore::Ssh::SshServerConfig.logger`.",
+          "message": "Objet `LoggerInterface` facultatif passé à `Qore::Ssh::SshServerConfig.logger`."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "Journaliseur"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bG9nZ2Vy.short_desc": {
+          "source": "Logger for server and session events",
+          "message": "Journal des événements du serveur et des sessions"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bGltaXRz.desc": {
+          "source": "Grouped typed operational limits. Currently supports `max_sessions` for a deterministic cap on concurrently accepted sessions per listener.",
+          "message": "Limites opérationnelles typées regroupées. Actuellement, prend en charge `max_sessions` pour une limite déterministe du nombre de sessions acceptées simultanément par écouteur."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bGltaXRz.display_name": {
+          "source": "Operational Limits",
+          "message": "Limites opérationnelles"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bGltaXRz.short_desc": {
+          "source": "Grouped operational limits for the listener",
+          "message": "Limites opérationnelles regroupées pour l'écouteur"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bGlzdGVuZXJfbmFtZQ.desc": {
+          "source": "Logical listener name to place in listener status and accepted session metadata. Defaults to the connection name.",
+          "message": "Nom logique de l'écouteur à inclure dans l'état de l'écouteur et les métadonnées des sessions acceptées. Par défaut, le nom de la connexion."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bGlzdGVuZXJfbmFtZQ.display_name": {
+          "source": "Listener Name",
+          "message": "Nom de l'écouteur"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bGlzdGVuZXJfbmFtZQ.short_desc": {
+          "source": "Logical listener name reported in session metadata",
+          "message": "Nom logique de l'écouteur indiqué dans les métadonnées de session"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2VjdXJpdHk.desc": {
+          "source": "Grouped typed security options. Supports `allowed_ciphers`, `allowed_kex`, `allowed_macs`, `allowed_hostkey_algorithms` (comma-separated algorithm names), and `allowed_addresses` / `denied_addresses` (CIDR or bare IP lists).",
+          "message": "Options de sécurité typées regroupées. Prend en charge `allowed_ciphers`, `allowed_kex`, `allowed_macs`, `allowed_hostkey_algorithms` (noms d'algorithmes séparés par des virgules) et `allowed_addresses` / `denied_addresses` (listes CIDR ou adresses IP simples)."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2VjdXJpdHk.display_name": {
+          "source": "Security Options",
+          "message": "Options de sécurité"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2VjdXJpdHk.short_desc": {
+          "source": "Grouped security options for ciphers, KEX, MACs, and IP filtering",
+          "message": "Options de sécurité : chiffrements, KEX, MACs, filtrage IP"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2VydmVyX29wdGlvbnM.desc": {
+          "source": "Free-form listener-level libssh server options passed through to `Qore::Ssh::SshListenerConfig.server_options`.",
+          "message": "Options serveur libssh au niveau de l'écouteur, au format libre, transmises telles quelles à `Qore::Ssh::SshListenerConfig.server_options`."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2VydmVyX29wdGlvbnM.display_name": {
+          "source": "Listener Server Options",
+          "message": "Options serveur d'écouteur"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2VydmVyX29wdGlvbnM.short_desc": {
+          "source": "Free-form listener-level libssh options",
+          "message": "Options libssh au niveau de l'écouteur, au format libre"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2VydmljZXM.desc": {
+          "source": "Grouped typed service controls. Currently supports `enabled_auth_methods`, `allow_command_service`, and `allow_sftp_service`.",
+          "message": "Contrôles de service typés regroupés. Prend actuellement en charge `enabled_auth_methods`, `allow_command_service` et `allow_sftp_service`."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2VydmljZXM.display_name": {
+          "source": "Service Controls",
+          "message": "Contrôles de service"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2VydmljZXM.short_desc": {
+          "source": "Grouped auth and service controls for the listener",
+          "message": "Contrôles regroupés d'authentification et de service pour l'écouteur"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2Z0cF9jb25maWc.desc": {
+          "source": "Free-form SFTP callback and policy configuration passed to `Qore::Ssh::SshServerConfig.sftp_config`.",
+          "message": "Configuration libre de rappel SFTP et de stratégie transmise à `Qore::Ssh::SshServerConfig.sftp_config`."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2Z0cF9jb25maWc.display_name": {
+          "source": "SFTP Config",
+          "message": "Configuration SFTP"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2Z0cF9jb25maWc.short_desc": {
+          "source": "Free-form SFTP callback and policy configuration",
+          "message": "Configuration libre de rappel SFTP et de stratégie"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2Z0cF9mYWN0b3J5X2NhbGxiYWNr.desc": {
+          "source": "SFTP factory callback passed to `Qore::Ssh::SshServerConfig.sftp_factory_callback`.",
+          "message": "Rappel de fabrique SFTP transmis à `Qore::Ssh::SshServerConfig.sftp_factory_callback`."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2Z0cF9mYWN0b3J5X2NhbGxiYWNr.display_name": {
+          "source": "SFTP Factory Callback",
+          "message": "Rappel de fabrique SFTP"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2Z0cF9mYWN0b3J5X2NhbGxiYWNr.short_desc": {
+          "source": "Factory callback for accepted SFTP sessions",
+          "message": "Rappel de fabrique pour les sessions SFTP acceptées"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U2Z0cFNlcnZlckNvbm5lY3Rpb24.desc": {
+          "source": "A managed local SFTP server connection definition for SFTP-oriented server listeners. The connection returns a live `Qore::Ssh::SshServer` object and also exposes the generic `SftpServerExchange` data-provider bridge.",
+          "message": "Définition de connexion SFTP locale gérée pour les écouteurs de serveur orientés SFTP. La connexion retourne un objet `Qore::Ssh::SshServer` actif et expose également le pont de fournisseur de données générique `SftpServerExchange`."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U2Z0cFNlcnZlckNvbm5lY3Rpb24.display_name": {
+          "source": "SFTP Server Connection",
+          "message": "Connexion serveur SFTP"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U2Z0cFNlcnZlckNvbm5lY3Rpb24.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object. When set, the connection uses it both for accepted SFTP sessions and for the generic `SftpServerExchange` data-provider bridge.",
+          "message": "Objet `VirtualSftpExchangeRecordStore` ou `VirtualSftpExchange` facultatif existant. Lorsqu'il est défini, la connexion l'utilise à la fois pour les sessions SFTP acceptées et pour le pont de fournisseur de données `SftpServerExchange` générique."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U2Z0cFNlcnZlckNvbm5lY3Rpb24.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "Backend d'échange virtuel"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U2Z0cFNlcnZlckNvbm5lY3Rpb24.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange backend shared by the server and data provider",
+          "message": "Backend virtuel existant partagé par le serveur et le fournisseur de données"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U2Z0cFNlcnZlckNvbm5lY3Rpb24.short_desc": {
+          "source": "A managed local SFTP server connection definition",
+          "message": "Définition d'une connexion SFTP locale gérée"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U3NoQ29tbWFuZFNlcnZlckNvbm5lY3Rpb24.desc": {
+          "source": "A managed local SSH server connection definition for command-oriented server listeners. The connection returns a live `Qore::Ssh::SshServer` object.",
+          "message": "Définition de connexion SSH locale gérée pour les écouteurs de serveur orientés commande. La connexion retourne un objet `Qore::Ssh::SshServer` actif."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U3NoQ29tbWFuZFNlcnZlckNvbm5lY3Rpb24.display_name": {
+          "source": "SSH Server Connection",
+          "message": "Connexion au serveur SSH"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U3NoQ29tbWFuZFNlcnZlckNvbm5lY3Rpb24.short_desc": {
+          "source": "A managed local SSH server connection definition",
+          "message": "Définition de connexion SSH locale gérée"
+        }
+      }
+    }
+  }
+}

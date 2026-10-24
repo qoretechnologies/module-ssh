@@ -138,4 +138,7 @@ module SshServerConnections {
     - @ref SshServerConnections::AbstractSshServerConnection
     - @ref SshServerConnections::SshCommandServerConnection
     - @ref SshServerConnections::SftpServerConnection
+    @section sshserverconnectionsrelnotes Release Notes
+    @subsection sshserverconnections_0_2 SshServerConnections 0.2
+    - added source-owned SSH and SFTP connection presentation catalogs in all twelve standard locales
 */

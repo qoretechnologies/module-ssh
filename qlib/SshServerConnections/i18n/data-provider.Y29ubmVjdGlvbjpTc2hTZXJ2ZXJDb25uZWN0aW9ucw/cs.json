@@ -1,0 +1,345 @@
+{
+  "schema_version": 1,
+  "locales": {
+    "cs": {
+      "messages": {
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.Y29tbWFuZF9iYWNrZW5k.desc": {
+          "source": "Optional generic virtual command backend object. When `command_callback` is not set, the connection synthesizes a typed callback that delegates to `command_backend.handle(hash<SshCommandRequest>)`.",
+          "message": "Volitelný obecný objekt virtuálního příkazového backendu. Když není nastaveno `command_callback`, připojení vytvoří typovaný zpětný volání, které deleguje na `command_backend.handle(hash<SshCommandRequest>)`."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.Y29tbWFuZF9iYWNrZW5k.display_name": {
+          "source": "Command Backend",
+          "message": "Příkazový backend"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.Y29tbWFuZF9iYWNrZW5k.short_desc": {
+          "source": "Virtual command backend shared by the server connection",
+          "message": "Virtuální příkazový backend sdílený serverovým připojením"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.Y29tbWFuZF9jYWxsYmFjaw.desc": {
+          "source": "Command callback passed to `Qore::Ssh::SshServerConfig.command_callback`.",
+          "message": "Zpětné volání příkazu předané `Qore::Ssh::SshServerConfig.command_callback`."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.Y29tbWFuZF9jYWxsYmFjaw.display_name": {
+          "source": "Command Callback",
+          "message": "Zpětné volání příkazu"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.Y29tbWFuZF9jYWxsYmFjaw.short_desc": {
+          "source": "Command callback for accepted command sessions",
+          "message": "Způsob volání příkazu pro přijaté relace příkazů"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.Y29tbWFuZF9jb25maWc.desc": {
+          "source": "Free-form command callback configuration passed to `Qore::Ssh::SshServerConfig.command_config`.",
+          "message": "Volně formulovaná konfigurace zpětného volání příkazu předaná prostřednictvím `Qore::Ssh::SshServerConfig.command_config`."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.Y29tbWFuZF9jb25maWc.display_name": {
+          "source": "Command Config",
+          "message": "Nastavení příkazu"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.Y29tbWFuZF9jb25maWc.short_desc": {
+          "source": "Free-form command callback configuration",
+          "message": "Volně formulovaná konfigurace zpětného volání příkazu"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aA.desc": {
+          "source": "Grouped typed authentication configuration compatible with `SshServerAuthProvider::VirtualSshAuthProviderOptions`. When `auth_provider` is not set, the connection synthesizes a built-in `SshServerAuthProvider::VirtualSshAuthProvider` from this hash.",
+          "message": "Skupinová konfigurace ověřování s typy kompatibilní s `SshServerAuthProvider::VirtualSshAuthProviderOptions`. Pokud není nastaveno `auth_provider`, spojení vytvoří vestavěný `SshServerAuthProvider::VirtualSshAuthProvider` z tohoto hashu."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aA.display_name": {
+          "source": "Auth Options",
+          "message": "Možnosti ověření"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aA.short_desc": {
+          "source": "Grouped typed authentication configuration",
+          "message": "Skupinová konfigurace ověřování s typy"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9iYW5uZXI.desc": {
+          "source": "Pre-authentication banner sent to the client via `SSH_MSG_USERAUTH_BANNER` before the auth exchange begins. Distinct from the SSH identification `banner` which is set during the initial handshake.",
+          "message": "Banner před ověřením odeslaný klientovi prostřednictvím `SSH_MSG_USERAUTH_BANNER` před začátkem výměny ověřování. Odlišný od identifikačního SSH `banner`, který je nastaven během počátečního handshake."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9iYW5uZXI.display_name": {
+          "source": "Auth Banner",
+          "message": "Přihlašovací banner"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9iYW5uZXI.short_desc": {
+          "source": "RFC 4252 pre-authentication banner message",
+          "message": "Zpráva přihlašovacího banneru podle RFC 4252 před ověřením"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9jYWxsYmFjaw.desc": {
+          "source": "Authentication callback passed to `Qore::Ssh::SshServerConfig.auth_callback`.",
+          "message": "Zpětné volání ověření předané `Qore::Ssh::SshServerConfig.auth_callback`."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9jYWxsYmFjaw.display_name": {
+          "source": "Auth Callback",
+          "message": "Zpětné volání ověření"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9jYWxsYmFjaw.short_desc": {
+          "source": "Authentication callback for accepted auth contexts",
+          "message": "Zpětné volání ověření pro přijaté kontexty ověření"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9jb25maWc.desc": {
+          "source": "Free-form auth callback configuration passed to `Qore::Ssh::SshServerConfig.auth_config`.",
+          "message": "Volně formulovaná konfigurace zpětného volání ověření předaná `Qore::Ssh::SshServerConfig.auth_config`."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9jb25maWc.display_name": {
+          "source": "Auth Config",
+          "message": "Konfigurace ověření"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9jb25maWc.short_desc": {
+          "source": "Free-form auth callback configuration",
+          "message": "Volně formulovaná konfigurace zpětného volání ověření"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9wcm92aWRlcg.desc": {
+          "source": "Authentication provider object passed to `Qore::Ssh::SshServerConfig.auth_provider`. The object must implement `authenticate(hash<Qore::Ssh::SshAuthContextInfo>)` and return `hash<Qore::Ssh::SshAuthDecision>`.",
+          "message": "Objekt poskytovatele ověřování předaný do `Qore::Ssh::SshServerConfig.auth_provider`. Objekt musí implementovat `authenticate(hash<Qore::Ssh::SshAuthContextInfo>)` a vrátit `hash<Qore::Ssh::SshAuthDecision>`."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9wcm92aWRlcg.display_name": {
+          "source": "Auth Provider",
+          "message": "Poskytovatel ověřování"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9wcm92aWRlcg.short_desc": {
+          "source": "Object-driven authentication provider",
+          "message": "Poskytovatel ověřování řízený objektem"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXVkaXRfY29uZmln.desc": {
+          "source": "Free-form audit callback configuration passed to `Qore::Ssh::SshServerConfig.audit_config`.",
+          "message": "Volně formátovaná konfigurace auditního zpětného volání předaná do `Qore::Ssh::SshServerConfig.audit_config`."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXVkaXRfY29uZmln.display_name": {
+          "source": "Audit Config",
+          "message": "Konfigurace auditu"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXVkaXRfY29uZmln.short_desc": {
+          "source": "Free-form audit callback configuration",
+          "message": "Volně formátovaná konfigurace auditního zpětného volání"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXVkaXRfY2FsbGJhY2s.desc": {
+          "source": "Audit callback passed to `Qore::Ssh::SshServerConfig.audit_callback`.",
+          "message": "Auditní zpětné volání předané do `Qore::Ssh::SshServerConfig.audit_callback`."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXVkaXRfY2FsbGJhY2s.display_name": {
+          "source": "Audit Callback",
+          "message": "Auditní zpětné volání"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXVkaXRfY2FsbGJhY2s.short_desc": {
+          "source": "Audit callback for server-side events",
+          "message": "Auditní zpětná vazba pro události na straně serveru"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YmFubmVy.desc": {
+          "source": "Optional SSH server banner presented during handshake.",
+          "message": "Volitelná zpráva SSH serveru zobrazená během handshake."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YmFubmVy.display_name": {
+          "source": "Banner",
+          "message": "Banner"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YmFubmVy.short_desc": {
+          "source": "SSH identification banner for the listener",
+          "message": "SSH identifikační banner pro naslouchací proces"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.ZGVmYXVsdF9jb21tYW5kX3RpbWVvdXRfbXM.desc": {
+          "source": "Default command timeout passed to `Qore::Ssh::SshServerConfig.default_command_timeout_ms`.",
+          "message": "Výchozí časový limit příkazu předaný `Qore::Ssh::SshServerConfig.default_command_timeout_ms`."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.ZGVmYXVsdF9jb21tYW5kX3RpbWVvdXRfbXM.display_name": {
+          "source": "Default Command Timeout",
+          "message": "Výchozí časový limit příkazu"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.ZGVmYXVsdF9jb21tYW5kX3RpbWVvdXRfbXM.short_desc": {
+          "source": "Default command timeout in milliseconds",
+          "message": "Výchozí časový limit příkazu v milisekundách"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.a2VlcGFsaXZlX2ludGVydmFsX3NlY29uZHM.desc": {
+          "source": "Interval in seconds between SSH keepalive probes sent by the server. Helps detect dead connections over unreliable networks. Defaults to `60` when unset; set to `0` or a negative value to disable keepalive probes.",
+          "message": "Interval v sekundách mezi SSH keepalive zprávami odesílanými serverem. Pomáhá detekovat neaktivní spojení přes nestabilní sítě. Výchozí hodnota je `60` při nezadání; nastavte na `0` nebo zápornou hodnotu pro vypnutí keepalive zpráv."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.a2VlcGFsaXZlX2ludGVydmFsX3NlY29uZHM.display_name": {
+          "source": "Keepalive Interval",
+          "message": "Interval mezi udržovacími zprávami"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.a2VlcGFsaXZlX2ludGVydmFsX3NlY29uZHM.short_desc": {
+          "source": "Interval in seconds between server-side keepalive probes",
+          "message": "Interval v sekundách mezi udržovacími zprávami ze strany serveru"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.aG9zdF9rZXlz.desc": {
+          "source": "List of SSH host key files to load for the listener. Each file must contain a host private key supported by libssh.",
+          "message": "Seznam souborů SSH klíčů, které se mají načíst pro naslouchací proces. Každý soubor musí obsahovat privátní klíč hostitele podporovaný knihovnou libssh."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.aG9zdF9rZXlz.display_name": {
+          "source": "Host Keys",
+          "message": "Klíče hostitele"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.aG9zdF9rZXlz.short_desc": {
+          "source": "List of host key files for the server listener",
+          "message": "Seznam souborů klíčů hostitele pro naslouchací proces serveru"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.aWRsZV90aW1lb3V0X3NlY29uZHM.desc": {
+          "source": "Maximum idle time in seconds before the server disconnects the session. Measured from the last message received from the client.",
+          "message": "Maximální doba nečinnosti v sekundách před odpojením relace serverem. Měřeno od poslední zprávy přijaté od klienta."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.aWRsZV90aW1lb3V0X3NlY29uZHM.display_name": {
+          "source": "Idle Timeout",
+          "message": "Časový limit nečinnosti"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.aWRsZV90aW1lb3V0X3NlY29uZHM.short_desc": {
+          "source": "Maximum idle time in seconds before disconnecting a session",
+          "message": "Maximální doba nečinnosti v sekundách před odpojením relace"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bG9nX2F1dGhlbnRpY2F0ZWRfc2Vzc2lvbnM.desc": {
+          "source": "Controls `Qore::Ssh::SshServerConfig.log_authenticated_sessions`.",
+          "message": "Řídí `Qore::Ssh::SshServerConfig.log_authenticated_sessions`."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bG9nX2F1dGhlbnRpY2F0ZWRfc2Vzc2lvbnM.display_name": {
+          "source": "Log Authenticated Sessions",
+          "message": "Protokolovat ověřené relace"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bG9nX2F1dGhlbnRpY2F0ZWRfc2Vzc2lvbnM.short_desc": {
+          "source": "Enable authenticated-session logging",
+          "message": "Povolit protokolování ověřených relací"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bG9nX2ZpbGVfdHJhbnNmZXJz.desc": {
+          "source": "Controls `Qore::Ssh::SshServerConfig.log_file_transfers`.",
+          "message": "Řídí `Qore::Ssh::SshServerConfig.log_file_transfers`."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bG9nX2ZpbGVfdHJhbnNmZXJz.display_name": {
+          "source": "Log File Transfers",
+          "message": "Protokolovat přenosy souborů"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bG9nX2ZpbGVfdHJhbnNmZXJz.short_desc": {
+          "source": "Enable file-transfer logging",
+          "message": "Povolit protokolování přenosů souborů"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object passed to `Qore::Ssh::SshServerConfig.logger`.",
+          "message": "Volitelný objekt `LoggerInterface` předaný do `Qore::Ssh::SshServerConfig.logger`."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "Logger"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bG9nZ2Vy.short_desc": {
+          "source": "Logger for server and session events",
+          "message": "Protokolování událostí serveru a relací"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bGltaXRz.desc": {
+          "source": "Grouped typed operational limits. Currently supports `max_sessions` for a deterministic cap on concurrently accepted sessions per listener.",
+          "message": "Skupiněná omezení provozních parametrů. V současné době podporuje `max_sessions` pro určitý limit současně přijímaných relací na každém naslouchacím rozhraní."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bGltaXRz.display_name": {
+          "source": "Operational Limits",
+          "message": "Prováděcí omezení"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bGltaXRz.short_desc": {
+          "source": "Grouped operational limits for the listener",
+          "message": "Skupiněná omezení provozních parametrů pro naslouchací rozhraní"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bGlzdGVuZXJfbmFtZQ.desc": {
+          "source": "Logical listener name to place in listener status and accepted session metadata. Defaults to the connection name.",
+          "message": "Logické jméno naslouchacího rozhraní pro zobrazení v stavu naslouchacího rozhraní a metadatech přijatých relací. Výchozí hodnota je název připojení."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bGlzdGVuZXJfbmFtZQ.display_name": {
+          "source": "Listener Name",
+          "message": "Název naslouchacího rozhraní"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bGlzdGVuZXJfbmFtZQ.short_desc": {
+          "source": "Logical listener name reported in session metadata",
+          "message": "Logické jméno naslouchacího rozhraní uvedené v metadatech relace"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2VjdXJpdHk.desc": {
+          "source": "Grouped typed security options. Supports `allowed_ciphers`, `allowed_kex`, `allowed_macs`, `allowed_hostkey_algorithms` (comma-separated algorithm names), and `allowed_addresses` / `denied_addresses` (CIDR or bare IP lists).",
+          "message": "Skupiněná nastavení zabezpečení. Podporuje `allowed_ciphers`, `allowed_kex`, `allowed_macs`, `allowed_hostkey_algorithms` (názvy algoritmů oddělené čárkami) a `allowed_addresses` / `denied_addresses` (seznamy CIDR nebo IP adres)."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2VjdXJpdHk.display_name": {
+          "source": "Security Options",
+          "message": "Nastavení zabezpečení"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2VjdXJpdHk.short_desc": {
+          "source": "Grouped security options for ciphers, KEX, MACs, and IP filtering",
+          "message": "Skupině možnosti zabezpečení pro šifry, KEX, MAC a filtrování IP"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2VydmVyX29wdGlvbnM.desc": {
+          "source": "Free-form listener-level libssh server options passed through to `Qore::Ssh::SshListenerConfig.server_options`.",
+          "message": "Volně formulované nastavení serveru libssh na úrovni příjmu, předávané dále jako `Qore::Ssh::SshListenerConfig.server_options`."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2VydmVyX29wdGlvbnM.display_name": {
+          "source": "Listener Server Options",
+          "message": "Nastavení příjmu serveru"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2VydmVyX29wdGlvbnM.short_desc": {
+          "source": "Free-form listener-level libssh options",
+          "message": "Volně formulovaná nastavení libssh na úrovni příjmu"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2VydmljZXM.desc": {
+          "source": "Grouped typed service controls. Currently supports `enabled_auth_methods`, `allow_command_service`, and `allow_sftp_service`.",
+          "message": "Skupině řízení typů služeb. V současnosti podporuje `enabled_auth_methods`, `allow_command_service` a `allow_sftp_service`."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2VydmljZXM.display_name": {
+          "source": "Service Controls",
+          "message": "Řízení služeb"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2VydmljZXM.short_desc": {
+          "source": "Grouped auth and service controls for the listener",
+          "message": "Skupině ovládacích prvků pro ověření a služby příjmu"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2Z0cF9jb25maWc.desc": {
+          "source": "Free-form SFTP callback and policy configuration passed to `Qore::Ssh::SshServerConfig.sftp_config`.",
+          "message": "Volně formulovaná konfigurace zpětného volání a politiky SFTP předávaná jako `Qore::Ssh::SshServerConfig.sftp_config`."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2Z0cF9jb25maWc.display_name": {
+          "source": "SFTP Config",
+          "message": "Nastavení SFTP"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2Z0cF9jb25maWc.short_desc": {
+          "source": "Free-form SFTP callback and policy configuration",
+          "message": "Volně formátované nastavení SFTP zpětného volání a politiky"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2Z0cF9mYWN0b3J5X2NhbGxiYWNr.desc": {
+          "source": "SFTP factory callback passed to `Qore::Ssh::SshServerConfig.sftp_factory_callback`.",
+          "message": "Zpětné volání továrny SFTP předané `Qore::Ssh::SshServerConfig.sftp_factory_callback`."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2Z0cF9mYWN0b3J5X2NhbGxiYWNr.display_name": {
+          "source": "SFTP Factory Callback",
+          "message": "Zpětné volání továrny SFTP"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2Z0cF9mYWN0b3J5X2NhbGxiYWNr.short_desc": {
+          "source": "Factory callback for accepted SFTP sessions",
+          "message": "Zpětné volání továrny pro přijaté relace SFTP"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U2Z0cFNlcnZlckNvbm5lY3Rpb24.desc": {
+          "source": "A managed local SFTP server connection definition for SFTP-oriented server listeners. The connection returns a live `Qore::Ssh::SshServer` object and also exposes the generic `SftpServerExchange` data-provider bridge.",
+          "message": "Spravovaná definice místního připojení SFTP serveru pro serverové naslouchací procesy zaměřené na SFTP. Připojení vrací aktivní objekt `Qore::Ssh::SshServer` a zároveň zpřístupňuje obecný most pro poskytování dat `SftpServerExchange`."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U2Z0cFNlcnZlckNvbm5lY3Rpb24.display_name": {
+          "source": "SFTP Server Connection",
+          "message": "Připojení SFTP serveru"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U2Z0cFNlcnZlckNvbm5lY3Rpb24.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object. When set, the connection uses it both for accepted SFTP sessions and for the generic `SftpServerExchange` data-provider bridge.",
+          "message": "Volitelný existující objekt `VirtualSftpExchangeRecordStore` nebo `VirtualSftpExchange`. Pokud je nastaven, připojení jej používá jak pro přijaté relace SFTP, tak pro obecný most pro poskytování dat `SftpServerExchange`."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U2Z0cFNlcnZlckNvbm5lY3Rpb24.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "Backend virtuální výměny"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U2Z0cFNlcnZlckNvbm5lY3Rpb24.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange backend shared by the server and data provider",
+          "message": "Stávající virtuální backend sdílený mezi serverem a poskytovatelem dat"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U2Z0cFNlcnZlckNvbm5lY3Rpb24.short_desc": {
+          "source": "A managed local SFTP server connection definition",
+          "message": "Definice spravované lokální připojení SFTP serveru"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U3NoQ29tbWFuZFNlcnZlckNvbm5lY3Rpb24.desc": {
+          "source": "A managed local SSH server connection definition for command-oriented server listeners. The connection returns a live `Qore::Ssh::SshServer` object.",
+          "message": "Definice spravovaného lokálního připojení SSH serveru pro příkazové serverové naslouchací procesy. Připojení vrací živý objekt `Qore::Ssh::SshServer`."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U3NoQ29tbWFuZFNlcnZlckNvbm5lY3Rpb24.display_name": {
+          "source": "SSH Server Connection",
+          "message": "Připojení SSH serveru"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U3NoQ29tbWFuZFNlcnZlckNvbm5lY3Rpb24.short_desc": {
+          "source": "A managed local SSH server connection definition",
+          "message": "Definice spravovaného lokálního připojení SSH serveru"
+        }
+      }
+    }
+  }
+}

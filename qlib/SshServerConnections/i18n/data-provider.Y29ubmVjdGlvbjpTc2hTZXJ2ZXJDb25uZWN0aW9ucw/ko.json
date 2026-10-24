@@ -1,0 +1,345 @@
+{
+  "schema_version": 1,
+  "locales": {
+    "ko": {
+      "messages": {
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.Y29tbWFuZF9iYWNrZW5k.desc": {
+          "source": "Optional generic virtual command backend object. When `command_callback` is not set, the connection synthesizes a typed callback that delegates to `command_backend.handle(hash<SshCommandRequest>)`.",
+          "message": "선택적 일반 가상 명령 백엔드 객체입니다. `command_callback`이 설정되지 않으면 연결은 `command_backend.handle(hash<SshCommandRequest>)`에 위임하는 타입화된 콜백을 생성합니다."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.Y29tbWFuZF9iYWNrZW5k.display_name": {
+          "source": "Command Backend",
+          "message": "명령 백엔드"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.Y29tbWFuZF9iYWNrZW5k.short_desc": {
+          "source": "Virtual command backend shared by the server connection",
+          "message": "서버 연결에서 공유하는 가상 명령 백엔드"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.Y29tbWFuZF9jYWxsYmFjaw.desc": {
+          "source": "Command callback passed to `Qore::Ssh::SshServerConfig.command_callback`.",
+          "message": "`Qore::Ssh::SshServerConfig.command_callback`에 전달된 명령 콜백입니다."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.Y29tbWFuZF9jYWxsYmFjaw.display_name": {
+          "source": "Command Callback",
+          "message": "명령 콜백"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.Y29tbWFuZF9jYWxsYmFjaw.short_desc": {
+          "source": "Command callback for accepted command sessions",
+          "message": "수락된 명령 세션용 명령 콜백"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.Y29tbWFuZF9jb25maWc.desc": {
+          "source": "Free-form command callback configuration passed to `Qore::Ssh::SshServerConfig.command_config`.",
+          "message": "`Qore::Ssh::SshServerConfig.command_config`에 전달되는 자유형 명령 콜백 구성입니다."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.Y29tbWFuZF9jb25maWc.display_name": {
+          "source": "Command Config",
+          "message": "명령 구성"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.Y29tbWFuZF9jb25maWc.short_desc": {
+          "source": "Free-form command callback configuration",
+          "message": "자유 형식의 명령 콜백 구성"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aA.desc": {
+          "source": "Grouped typed authentication configuration compatible with `SshServerAuthProvider::VirtualSshAuthProviderOptions`. When `auth_provider` is not set, the connection synthesizes a built-in `SshServerAuthProvider::VirtualSshAuthProvider` from this hash.",
+          "message": "`SshServerAuthProvider::VirtualSshAuthProviderOptions`와 호환되는 그룹화된 유형 기반 인증 구성. `auth_provider`이 설정되지 않으면 연결은 이 해시에서 내장된 `SshServerAuthProvider::VirtualSshAuthProvider`를 생성합니다."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aA.display_name": {
+          "source": "Auth Options",
+          "message": "인증 옵션"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aA.short_desc": {
+          "source": "Grouped typed authentication configuration",
+          "message": "그룹화된 유형 기반 인증 구성"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9iYW5uZXI.desc": {
+          "source": "Pre-authentication banner sent to the client via `SSH_MSG_USERAUTH_BANNER` before the auth exchange begins. Distinct from the SSH identification `banner` which is set during the initial handshake.",
+          "message": "인증 교환 시작 전에 클라이언트에게 `SSH_MSG_USERAUTH_BANNER`를 통해 전송되는 사전 인증 배너. 초기 핸드셰이크 중에 설정되는 SSH 식별자 `banner`와 다릅니다."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9iYW5uZXI.display_name": {
+          "source": "Auth Banner",
+          "message": "인증 배너"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9iYW5uZXI.short_desc": {
+          "source": "RFC 4252 pre-authentication banner message",
+          "message": "RFC 4252 사전 인증 배너 메시지"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9jYWxsYmFjaw.desc": {
+          "source": "Authentication callback passed to `Qore::Ssh::SshServerConfig.auth_callback`.",
+          "message": "`Qore::Ssh::SshServerConfig.auth_callback`에 전달되는 인증 콜백."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9jYWxsYmFjaw.display_name": {
+          "source": "Auth Callback",
+          "message": "인증 콜백"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9jYWxsYmFjaw.short_desc": {
+          "source": "Authentication callback for accepted auth contexts",
+          "message": "수락된 인증 컨텍스트용 인증 콜백"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9jb25maWc.desc": {
+          "source": "Free-form auth callback configuration passed to `Qore::Ssh::SshServerConfig.auth_config`.",
+          "message": "`Qore::Ssh::SshServerConfig.auth_config`에 전달되는 자유형 인증 콜백 구성"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9jb25maWc.display_name": {
+          "source": "Auth Config",
+          "message": "인증 구성"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9jb25maWc.short_desc": {
+          "source": "Free-form auth callback configuration",
+          "message": "자유형 인증 콜백 구성"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9wcm92aWRlcg.desc": {
+          "source": "Authentication provider object passed to `Qore::Ssh::SshServerConfig.auth_provider`. The object must implement `authenticate(hash<Qore::Ssh::SshAuthContextInfo>)` and return `hash<Qore::Ssh::SshAuthDecision>`.",
+          "message": "`Qore::Ssh::SshServerConfig.auth_provider`에 전달되는 인증 공급자 객체. 이 객체는 `authenticate(hash<Qore::Ssh::SshAuthContextInfo>)`을 구현하고 `hash<Qore::Ssh::SshAuthDecision>`를 반환해야 합니다."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9wcm92aWRlcg.display_name": {
+          "source": "Auth Provider",
+          "message": "인증 공급자"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXV0aF9wcm92aWRlcg.short_desc": {
+          "source": "Object-driven authentication provider",
+          "message": "객체 기반 인증 공급자"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXVkaXRfY29uZmln.desc": {
+          "source": "Free-form audit callback configuration passed to `Qore::Ssh::SshServerConfig.audit_config`.",
+          "message": "`Qore::Ssh::SshServerConfig.audit_config`에 전달되는 자유형 감사 콜백 구성."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXVkaXRfY29uZmln.display_name": {
+          "source": "Audit Config",
+          "message": "감사 구성"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXVkaXRfY29uZmln.short_desc": {
+          "source": "Free-form audit callback configuration",
+          "message": "자유형 감사 콜백 구성"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXVkaXRfY2FsbGJhY2s.desc": {
+          "source": "Audit callback passed to `Qore::Ssh::SshServerConfig.audit_callback`.",
+          "message": "`Qore::Ssh::SshServerConfig.audit_callback`에 전달되는 감사 콜백."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXVkaXRfY2FsbGJhY2s.display_name": {
+          "source": "Audit Callback",
+          "message": "감사 콜백"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YXVkaXRfY2FsbGJhY2s.short_desc": {
+          "source": "Audit callback for server-side events",
+          "message": "서버 측 이벤트용 감사 콜백"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YmFubmVy.desc": {
+          "source": "Optional SSH server banner presented during handshake.",
+          "message": "핸드셰이크 중에 표시되는 선택적 SSH 서버 배너."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YmFubmVy.display_name": {
+          "source": "Banner",
+          "message": "배너"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.YmFubmVy.short_desc": {
+          "source": "SSH identification banner for the listener",
+          "message": "리스너용 SSH 식별 배너"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.ZGVmYXVsdF9jb21tYW5kX3RpbWVvdXRfbXM.desc": {
+          "source": "Default command timeout passed to `Qore::Ssh::SshServerConfig.default_command_timeout_ms`.",
+          "message": "`Qore::Ssh::SshServerConfig.default_command_timeout_ms`에 전달되는 기본 명령 타임아웃"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.ZGVmYXVsdF9jb21tYW5kX3RpbWVvdXRfbXM.display_name": {
+          "source": "Default Command Timeout",
+          "message": "기본 명령 타임아웃"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.ZGVmYXVsdF9jb21tYW5kX3RpbWVvdXRfbXM.short_desc": {
+          "source": "Default command timeout in milliseconds",
+          "message": "밀리초 단위의 기본 명령 타임아웃"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.a2VlcGFsaXZlX2ludGVydmFsX3NlY29uZHM.desc": {
+          "source": "Interval in seconds between SSH keepalive probes sent by the server. Helps detect dead connections over unreliable networks. Defaults to `60` when unset; set to `0` or a negative value to disable keepalive probes.",
+          "message": "서버가 불안정한 네트워크를 통해 죽은 연결을 감지하기 위해 보낼 SSH keepalive 프로브 간의 간격(초). 설정하지 않으면 `60`으로 기본값이 설정되며, `0` 또는 음수 값으로 설정하면 keepalive 프로브를 비활성화합니다."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.a2VlcGFsaXZlX2ludGVydmFsX3NlY29uZHM.display_name": {
+          "source": "Keepalive Interval",
+          "message": "Keepalive 간격"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.a2VlcGFsaXZlX2ludGVydmFsX3NlY29uZHM.short_desc": {
+          "source": "Interval in seconds between server-side keepalive probes",
+          "message": "서버 측 keepalive 프로브 간의 간격(초)"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.aG9zdF9rZXlz.desc": {
+          "source": "List of SSH host key files to load for the listener. Each file must contain a host private key supported by libssh.",
+          "message": "리스너용 로드할 SSH 호스트 키 파일 목록. 각 파일은 libssh에서 지원하는 호스트 개인 키를 포함해야 합니다."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.aG9zdF9rZXlz.display_name": {
+          "source": "Host Keys",
+          "message": "호스트 키"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.aG9zdF9rZXlz.short_desc": {
+          "source": "List of host key files for the server listener",
+          "message": "서버 리스너용 호스트 키 파일 목록"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.aWRsZV90aW1lb3V0X3NlY29uZHM.desc": {
+          "source": "Maximum idle time in seconds before the server disconnects the session. Measured from the last message received from the client.",
+          "message": "클라이언트로부터 마지막 메시지를 수신한 후 서버가 세션을 끊기 전까지의 최대 대기 시간(초 단위)."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.aWRsZV90aW1lb3V0X3NlY29uZHM.display_name": {
+          "source": "Idle Timeout",
+          "message": "대기 시간 초과"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.aWRsZV90aW1lb3V0X3NlY29uZHM.short_desc": {
+          "source": "Maximum idle time in seconds before disconnecting a session",
+          "message": "세션을 끊기 전까지의 최대 대기 시간(초 단위)"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bG9nX2F1dGhlbnRpY2F0ZWRfc2Vzc2lvbnM.desc": {
+          "source": "Controls `Qore::Ssh::SshServerConfig.log_authenticated_sessions`.",
+          "message": "`Qore::Ssh::SshServerConfig.log_authenticated_sessions`를 제어합니다."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bG9nX2F1dGhlbnRpY2F0ZWRfc2Vzc2lvbnM.display_name": {
+          "source": "Log Authenticated Sessions",
+          "message": "인증된 세션 기록"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bG9nX2F1dGhlbnRpY2F0ZWRfc2Vzc2lvbnM.short_desc": {
+          "source": "Enable authenticated-session logging",
+          "message": "인증된 세션 기록을 활성화합니다."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bG9nX2ZpbGVfdHJhbnNmZXJz.desc": {
+          "source": "Controls `Qore::Ssh::SshServerConfig.log_file_transfers`.",
+          "message": "`Qore::Ssh::SshServerConfig.log_file_transfers`를 제어합니다."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bG9nX2ZpbGVfdHJhbnNmZXJz.display_name": {
+          "source": "Log File Transfers",
+          "message": "파일 전송 기록"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bG9nX2ZpbGVfdHJhbnNmZXJz.short_desc": {
+          "source": "Enable file-transfer logging",
+          "message": "파일 전송 기록을 활성화합니다."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bG9nZ2Vy.desc": {
+          "source": "Optional `LoggerInterface` object passed to `Qore::Ssh::SshServerConfig.logger`.",
+          "message": "`Qore::Ssh::SshServerConfig.logger`에 전달되는 선택적 `LoggerInterface` 개체입니다."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bG9nZ2Vy.display_name": {
+          "source": "Logger",
+          "message": "로거"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bG9nZ2Vy.short_desc": {
+          "source": "Logger for server and session events",
+          "message": "서버 및 세션 이벤트용 로거"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bGltaXRz.desc": {
+          "source": "Grouped typed operational limits. Currently supports `max_sessions` for a deterministic cap on concurrently accepted sessions per listener.",
+          "message": "그룹화된 유형의 운영 제한입니다. 현재 리스너당 동시에 수락할 수 있는 세션 수에 대한 결정론적 제한을 위해 `max_sessions`을 지원합니다."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bGltaXRz.display_name": {
+          "source": "Operational Limits",
+          "message": "운영 제한"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bGltaXRz.short_desc": {
+          "source": "Grouped operational limits for the listener",
+          "message": "리스너용 그룹화된 운영 제한"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bGlzdGVuZXJfbmFtZQ.desc": {
+          "source": "Logical listener name to place in listener status and accepted session metadata. Defaults to the connection name.",
+          "message": "리스너 상태 및 수락된 세션 메타데이터에 포함할 논리적 리스너 이름입니다. 연결 이름으로 기본 설정됩니다."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bGlzdGVuZXJfbmFtZQ.display_name": {
+          "source": "Listener Name",
+          "message": "리스너 이름"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.bGlzdGVuZXJfbmFtZQ.short_desc": {
+          "source": "Logical listener name reported in session metadata",
+          "message": "세션 메타데이터에 보고되는 논리적 리스너 이름"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2VjdXJpdHk.desc": {
+          "source": "Grouped typed security options. Supports `allowed_ciphers`, `allowed_kex`, `allowed_macs`, `allowed_hostkey_algorithms` (comma-separated algorithm names), and `allowed_addresses` / `denied_addresses` (CIDR or bare IP lists).",
+          "message": "형식화된 보안 옵션 그룹입니다. `allowed_ciphers`, `allowed_kex`, `allowed_macs`, `allowed_hostkey_algorithms` (콤마로 구분된 알고리즘 이름), 그리고 `allowed_addresses` / `denied_addresses` (CIDR 또는 순수 IP 목록)을 지원합니다."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2VjdXJpdHk.display_name": {
+          "source": "Security Options",
+          "message": "보안 옵션"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2VjdXJpdHk.short_desc": {
+          "source": "Grouped security options for ciphers, KEX, MACs, and IP filtering",
+          "message": "암호화, KEX, MAC 및 IP 필터링을 위한 보안 옵션 그룹"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2VydmVyX29wdGlvbnM.desc": {
+          "source": "Free-form listener-level libssh server options passed through to `Qore::Ssh::SshListenerConfig.server_options`.",
+          "message": "libssh 서버 옵션을 자유 형식으로 리스너 레벨에서 `Qore::Ssh::SshListenerConfig.server_options`에 직접 전달합니다."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2VydmVyX29wdGlvbnM.display_name": {
+          "source": "Listener Server Options",
+          "message": "리스너 서버 옵션"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2VydmVyX29wdGlvbnM.short_desc": {
+          "source": "Free-form listener-level libssh options",
+          "message": "자유 형식의 리스너 레벨 libssh 옵션"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2VydmljZXM.desc": {
+          "source": "Grouped typed service controls. Currently supports `enabled_auth_methods`, `allow_command_service`, and `allow_sftp_service`.",
+          "message": "그룹화된 유형 서비스 제어. 현재는 `enabled_auth_methods`, `allow_command_service`, 및 `allow_sftp_service`를 지원합니다."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2VydmljZXM.display_name": {
+          "source": "Service Controls",
+          "message": "서비스 제어"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2VydmljZXM.short_desc": {
+          "source": "Grouped auth and service controls for the listener",
+          "message": "리스너용 그룹화된 인증 및 서비스 제어"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2Z0cF9jb25maWc.desc": {
+          "source": "Free-form SFTP callback and policy configuration passed to `Qore::Ssh::SshServerConfig.sftp_config`.",
+          "message": "`Qore::Ssh::SshServerConfig.sftp_config`에 전달되는 자유 형식의 SFTP 콜백 및 정책 구성"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2Z0cF9jb25maWc.display_name": {
+          "source": "SFTP Config",
+          "message": "SFTP 구성"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2Z0cF9jb25maWc.short_desc": {
+          "source": "Free-form SFTP callback and policy configuration",
+          "message": "자유 형식의 SFTP 콜백 및 정책 구성"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2Z0cF9mYWN0b3J5X2NhbGxiYWNr.desc": {
+          "source": "SFTP factory callback passed to `Qore::Ssh::SshServerConfig.sftp_factory_callback`.",
+          "message": "`Qore::Ssh::SshServerConfig.sftp_factory_callback`에 전달되는 SFTP 팩토리 콜백."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2Z0cF9mYWN0b3J5X2NhbGxiYWNr.display_name": {
+          "source": "SFTP Factory Callback",
+          "message": "SFTP 팩토리 콜백"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.QWJzdHJhY3RTc2hTZXJ2ZXJDb25uZWN0aW9u.option.c2Z0cF9mYWN0b3J5X2NhbGxiYWNr.short_desc": {
+          "source": "Factory callback for accepted SFTP sessions",
+          "message": "수락된 SFTP 세션에 대한 팩토리 콜백"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U2Z0cFNlcnZlckNvbm5lY3Rpb24.desc": {
+          "source": "A managed local SFTP server connection definition for SFTP-oriented server listeners. The connection returns a live `Qore::Ssh::SshServer` object and also exposes the generic `SftpServerExchange` data-provider bridge.",
+          "message": "SFTP 기반 서버 리스너용 관리되는 로컬 SFTP 서버 연결 정의. 연결은 활성 `Qore::Ssh::SshServer` 객체를 반환하며, 일반적인 `SftpServerExchange` 데이터 제공자 브리지도 노출합니다."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U2Z0cFNlcnZlckNvbm5lY3Rpb24.display_name": {
+          "source": "SFTP Server Connection",
+          "message": "SFTP 서버 연결"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U2Z0cFNlcnZlckNvbm5lY3Rpb24.option.YmFja2VuZA.desc": {
+          "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object. When set, the connection uses it both for accepted SFTP sessions and for the generic `SftpServerExchange` data-provider bridge.",
+          "message": "선택적 기존 `VirtualSftpExchangeRecordStore` 또는 `VirtualSftpExchange` 객체. 설정 시 연결은 수락된 SFTP 세션과 일반적인 `SftpServerExchange` 데이터 제공자 브리지 모두에 이를 사용합니다."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U2Z0cFNlcnZlckNvbm5lY3Rpb24.option.YmFja2VuZA.display_name": {
+          "source": "Virtual Exchange Backend",
+          "message": "가상 교환 백엔드"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U2Z0cFNlcnZlckNvbm5lY3Rpb24.option.YmFja2VuZA.short_desc": {
+          "source": "Existing virtual exchange backend shared by the server and data provider",
+          "message": "서버와 데이터 제공자 간에 공유되는 기존 가상 교환 백엔드"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U2Z0cFNlcnZlckNvbm5lY3Rpb24.short_desc": {
+          "source": "A managed local SFTP server connection definition",
+          "message": "관리되는 로컬 SFTP 서버 연결 정의"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U3NoQ29tbWFuZFNlcnZlckNvbm5lY3Rpb24.desc": {
+          "source": "A managed local SSH server connection definition for command-oriented server listeners. The connection returns a live `Qore::Ssh::SshServer` object.",
+          "message": "명령 기반 서버 리스너용 관리되는 로컬 SSH 서버 연결 정의. 연결은 활성 `Qore::Ssh::SshServer` 객체를 반환합니다."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U3NoQ29tbWFuZFNlcnZlckNvbm5lY3Rpb24.display_name": {
+          "source": "SSH Server Connection",
+          "message": "SSH 서버 연결"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U3NoQ29tbWFuZFNlcnZlckNvbm5lY3Rpb24.short_desc": {
+          "source": "A managed local SSH server connection definition",
+          "message": "관리되는 로컬 SSH 서버 연결 정의"
+        }
+      }
+    }
+  }
+}

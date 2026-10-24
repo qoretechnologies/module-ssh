@@ -60,7 +60,8 @@ public class SftpServerConnection inherits AbstractSshServerConnection {
             },
         };
 
-        const ConnectionScheme = <ConnectionSchemeInfo>{
+        const ConnectionScheme = ConnectionProvider::connection_scheme_presentation("SshServerConnections",
+            "SftpServerConnection", "en", <ConnectionSchemeInfo>{
             "display_name": "SFTP Server Connection",
             "short_desc": "A managed local SFTP server connection definition",
             "desc": "A managed local SFTP server connection definition for SFTP-oriented server listeners. "
@@ -82,7 +83,7 @@ public class SftpServerConnection inherits AbstractSshServerConnection {
                 "sftpsrv": True,
                 "sftpserver": True,
             },
-        };
+        });
     }
 
     constructor(string name, string description, string url, hash<auto> attributes = {}, hash<auto> options = {},

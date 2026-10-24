@@ -2,7 +2,8 @@ public namespace SshServerConnections {
 #! connection for managed local SSH command server instances
 public class SshCommandServerConnection inherits AbstractSshServerConnection {
     public {
-        const ConnectionScheme = <ConnectionSchemeInfo>{
+        const ConnectionScheme = ConnectionProvider::connection_scheme_presentation("SshServerConnections",
+            "SshCommandServerConnection", "en", <ConnectionSchemeInfo>{
             "display_name": "SSH Server Connection",
             "short_desc": "A managed local SSH server connection definition",
             "desc": "A managed local SSH server connection definition for command-oriented server listeners. "
@@ -14,7 +15,7 @@ public class SshCommandServerConnection inherits AbstractSshServerConnection {
                 "sshsrv": True,
                 "sshserver": True,
             },
-        };
+        });
     }
 
     constructor(string name, string description, string url, hash<auto> attributes = {}, hash<auto> options = {},

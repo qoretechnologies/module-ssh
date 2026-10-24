@@ -30,7 +30,8 @@ public hashdecl SshServerConnectionSecurity {
 */
 public class AbstractSshServerConnection inherits ConnectionProvider::AbstractConnectionWithInfo {
     public {
-        const SharedOptions = {
+        const SharedOptions = DataProvider::ConnectionPresentation::prepareScheme(
+            "SshServerConnections", "AbstractSshServerConnection", "en", {"options": {
             "host_keys": <ConnectionOptionInfo>{
                 "display_name": "Host Keys",
                 "short_desc": "List of host key files for the server listener",
@@ -212,7 +213,7 @@ public class AbstractSshServerConnection inherits ConnectionProvider::AbstractCo
                     "`allowed_macs`, `allowed_hostkey_algorithms` (comma-separated algorithm names), "
                     "and `allowed_addresses` / `denied_addresses` (CIDR or bare IP lists).",
             },
-        };
+        }}).options;
     }
 
     constructor(string name, string description, string url, hash<auto> attributes = {}, hash<auto> options = {},
