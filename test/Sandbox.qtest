@@ -33,17 +33,17 @@
 
 #! Trusted code that acts for sandboxed code within a policy barrier (SandboxManager::callWithSystemPolicy())
 /** An object of this class is passed to the sandboxed programs of the tests; its methods run in this (unsandboxed)
-    program, so within the barrier the sandbox of the calling program does not apply
+    program.  The barrier masks the policy of the sandboxed caller, but not the sandbox in which an object or a
+    closure was created (see Qore's design/sandbox-provenance.md), so the code that the barrier runs is created
+    when the helper is, before the sandboxed code runs, and not while serving the sandboxed call.
 */
 class TrustedSshHelper {
-    string readKey(string path) {
-        return SandboxManager::callWithSystemPolicy(string sub () {
+    private {
+        code read_key = string sub (string path) {
             return Qore::Ssh::SshKey::readPrivateKeyFile(path).isPrivate() ? "ok" : "bad";
-        });
-    }
+        };
 
-    string startServer(string host_key) {
-        return SandboxManager::callWithSystemPolicy(string sub () {
+        code start_server = string sub (string host_key) {
             hash<Qore::Ssh::SshServerConfig> config = <Qore::Ssh::SshServerConfig>{
                 "name": "sandbox-barrier",
                 "listeners": (
@@ -60,13 +60,28 @@ class TrustedSshHelper {
             server.start();
             server.stop();
             return "ok";
-        });
+        };
+
+        code publish_file = string sub (Qore::Ssh::SftpSession session, string source) {
+            return session.publishLocalFile(source, False, True).completed ? "ok" : "bad";
+        };
+    }
+
+    string readKey(string path) {
+        return SandboxManager::callWithSystemPolicy(read_key, path);
+    }
+
+    string startServer(string host_key) {
+        return SandboxManager::callWithSystemPolicy(start_server, host_key);
     }
 
     string publish(Qore::Ssh::SftpSession session, string source) {
-        return SandboxManager::callWithSystemPolicy(string sub () {
-            return session.publishLocalFile(source, False, True).completed ? "ok" : "bad";
-        });
+        return SandboxManager::callWithSystemPolicy(publish_file, (session, source));
+    }
+
+    #! runs code supplied by the caller within the barrier: a closure created by sandboxed code keeps its sandbox
+    auto run(code c) {
+        return SandboxManager::callWithSystemPolicy(c);
     }
 }
 
@@ -597,6 +612,11 @@ string sub publish(Qore::Ssh::SftpSession session, string source) {
 }
 string sub publishTrusted(object trusted, Qore::Ssh::SftpSession session, string source) {
     return trusted.publish(session, source);
+}
+string sub readKeyOwnClosure(object trusted, string path) {
+    return trusted.run(string sub () {
+        return Qore::Ssh::SshKey::readPrivateKeyFile(path).isPrivate() ? \"ok\" : \"bad\";
+    });
 }");
     }
 
@@ -608,6 +628,9 @@ string sub publishTrusted(object trusted, Qore::Ssh::SftpSession session, string
         assertThrows("FILESYSTEM-ACCESS-DENIED", \p.callFunction(), ("readKey", host_key));
         assertEq("ok", p.callFunction("readKeyTrusted", new TrustedSshHelper(), host_key),
             "trusted code reads the key file for the sandboxed code within its policy barrier");
+        # the barrier does not remove the sandbox of the code that created the closure it runs
+        assertThrows("FILESYSTEM-ACCESS-DENIED", \p.callFunction(), ("readKeyOwnClosure", new TrustedSshHelper(),
+            host_key));
     }
 
     testHostKeyPolicyBarrier() {
