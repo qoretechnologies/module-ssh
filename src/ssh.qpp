@@ -943,6 +943,10 @@ extern "C" DLLEXPORT void ssh_qore_module_desc(QoreModuleInfo& mod_info) {
     mod_info.init = ssh_module_init;
     mod_info.ns_init = ssh_module_ns_init;
     mod_info.del = ssh_module_delete;
+#ifdef QORE_HAS_MODULE_NS_PURGE
+    // the namespace is purged when the module is deleted, before the types are freed (see QoreModuleInfo::ns)
+    mod_info.ns = &SshNS;
+#endif
     mod_info.license = QL_LGPL;
     mod_info.license_str = "LGPL 2.1";
     mod_info.dependencies.push_back("sshutil");
