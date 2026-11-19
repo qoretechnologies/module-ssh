@@ -328,7 +328,7 @@ public namespace SftpServerDataProvider {
             }
             on_exit {
                 if (upload_handle) {
-                    releaseInboundUpload(upload_handle, resolved.path);
+                    releaseInboundUpload(upload_handle);
                 }
             }
             hash<Qore::Ssh::SftpOpenResult> result = vfs.openWrite(cast<hash<Qore::Ssh::SftpOpenRequest>>(resolved));
@@ -342,6 +342,12 @@ public namespace SftpServerDataProvider {
             return result;
         }
 
+        #! Discards a live upload reservation without accepting any bytes.
+        hash<Qore::Ssh::SftpOperationResult> abortWrite(hash<Qore::Ssh::SftpCloseRequest> req) {
+            releaseInboundUpload(req.backend_handle);
+            return <Qore::Ssh::SftpOperationResult>{"completed": True};
+        }
+
         hash<Qore::Ssh::SftpOperationResult> closeWrite(hash<Qore::Ssh::SftpCloseRequest> req) {
             # M-7: serialize inbound validate->commit (see submit()); declared first so it is
             # released last (after releaseInboundUpload and the vfs commit)
@@ -350,6 +356,7 @@ public namespace SftpServerDataProvider {
             hash<auto> resolved = copyHash(req);
             *hash<Qore::Ssh::SftpSessionInfo> session_info = getRequestSessionInfo(resolved);
             *string upload_handle = resolved.backend_handle;
+            on_exit releaseInboundUpload(upload_handle);
             if (*string req_path = resolved.path) {
                 string path = normalizeAbsolutePath(req_path, "closeWrite");
                 if (isInboundPath(path)) {
@@ -359,11 +366,6 @@ public namespace SftpServerDataProvider {
                         "closeWrite", EventSourceSftp, resolved.metadata, session_info, resolved.data, policy_context,
                         NOTHING);
                     resolved.path = routed_path;
-                }
-            }
-            on_exit {
-                if (resolved.path && isInboundPath(resolved.path)) {
-                    releaseInboundUpload(upload_handle, resolved.path);
                 }
             }
             hash<auto> result = vfs.closeWrite(cast<hash<Qore::Ssh::SftpCloseRequest>>(resolved));
@@ -1377,22 +1379,11 @@ public namespace SftpServerDataProvider {
             return upload_id;
         }
 
-        private nothing releaseInboundUpload(*string upload_id, *string path) {
-            upload_lock.lock();
-            on_exit upload_lock.unlock();
-            if (upload_id && exists active_inbound_uploads{upload_id}) {
-                delete active_inbound_uploads{upload_id};
-                return;
-            }
-            if (!path) {
-                return;
-            }
-            foreach string current_upload_id in (keys(active_inbound_uploads)) {
-                *hash<auto> upload = active_inbound_uploads{current_upload_id};
-                if (upload && upload.path == path) {
-                    delete active_inbound_uploads{current_upload_id};
-                    return;
-                }
+        private nothing releaseInboundUpload(*string upload_id) {
+            if (upload_id) {
+                upload_lock.lock();
+                on_exit upload_lock.unlock();
+                remove active_inbound_uploads{upload_id};
             }
         }
 

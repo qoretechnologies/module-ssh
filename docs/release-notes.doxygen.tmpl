@@ -1,5 +1,12 @@
 /** @page sshreleasenotes Release Notes
 
+    @section sshnext Next release
+    - SFTP server connections support an opt-in SQLite publication database. A successful rename publishes
+      an immutable file and replayable receipt for the authenticated principal. See @ref sshstagedexchange
+      and run <tt>examples/StagedSftpExchange.qr</tt> for a producer and consumer example.
+    - Interrupted uploads discard their open handles. Resource-owning backends can implement <tt>abortWrite()</tt>.
+    - Atomic local copies require a fresh temporary sibling. Atomic moves rename directly on the same filesystem.
+
     @section sshv100 Ssh Module Version 1.0.0
     - initial release
 */

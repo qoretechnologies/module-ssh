@@ -1064,6 +1064,20 @@ class SftpServerDataProviderTest inherits QUnit::Test {
         });
         assertTrue(second_close.completed);
         assertEq("second\n", exchange.getFilesystem().getFileText("/inbound/second.dat"));
+
+        hash<Qore::Ssh::SftpOpenRequest> req = <Qore::Ssh::SftpOpenRequest>{
+            "path": "/inbound/retry.dat", "session_info": getSftpInfo(),
+        };
+        hash<Qore::Ssh::SftpCloseRequest> abandoned = <Qore::Ssh::SftpCloseRequest>{
+            "path": req.path, "backend_handle": exchange.openWrite(req).backend_handle,
+        };
+        assertTrue(exchange.abortWrite(abandoned).completed);
+        hash<Qore::Ssh::SftpOpenResult> retry = exchange.openWrite(req);
+        assertNeq(abandoned.backend_handle, retry.backend_handle);
+        exchange.abortWrite(abandoned);
+        assertThrows("VIRTUAL-SFTP-EXCHANGE-ERROR", sub() { exchange.openWrite(req); });
+        exchange.abortWrite(<Qore::Ssh::SftpCloseRequest>{"path": req.path, "backend_handle": retry.backend_handle});
+        assertFalse(exchange.getFilesystem().exists(req.path));
     }
 
     testVirtualExchangeRetentionCleanup() {

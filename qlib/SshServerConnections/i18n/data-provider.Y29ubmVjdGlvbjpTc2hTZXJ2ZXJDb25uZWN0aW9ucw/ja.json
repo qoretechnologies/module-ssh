@@ -323,6 +323,18 @@
           "source": "Existing virtual exchange backend shared by the server and data provider",
           "message": "サーバとデータプロバイダで共有される既存の仮想交換バックエンド"
         },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U2Z0cFNlcnZlckNvbm5lY3Rpb24.option.cHVibGljYXRpb25fZGF0YWJhc2U.desc": {
+          "source": "Absolute path to a dedicated SQLite database. Enables private `/staging` uploads, no-replace rename to `/inbound`, and replay through `list-publications`.",
+          "message": "専用 SQLite データベースの絶対パス。`/staging` への非公開アップロード、上書きしない `/inbound` への名前変更、`list-publications` による再取得が可能になります。"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U2Z0cFNlcnZlckNvbm5lY3Rpb24.option.cHVibGljYXRpb25fZGF0YWJhc2U.display_name": {
+          "source": "Publication Database",
+          "message": "公開データベース"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U2Z0cFNlcnZlckNvbm5lY3Rpb24.option.cHVibGljYXRpb25fZGF0YWJhc2U.short_desc": {
+          "source": "SQLite file for immutable staged publication",
+          "message": "段階的に公開したファイルを変更不可で保存する SQLite ファイル"
+        },
         "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U2Z0cFNlcnZlckNvbm5lY3Rpb24.short_desc": {
           "source": "A managed local SFTP server connection definition",
           "message": "管理されたローカルSFTPサーバ接続定義"

@@ -696,3 +696,23 @@ test/preflight.sh
 
 This rebuilds the module, runs the core qtest sweep, runs the live examples,
 and rebuilds the HTML docs.
+
+
+Staged SFTP publication
+-----------------------
+
+Set the SFTP server connection option publication_database to the absolute path
+of a dedicated SQLite file in a private directory. The Qore sqlite3 driver is
+required for this option. Producers write and close /staging/NAME, then rename
+it to /inbound/FINAL. The exchange atomically creates one immutable file per
+principal and final name. Consumers use the list-publications provider action
+to read metadata and resume after a committed version. A closed staging file
+survives a client disconnect. Only committed publications survive a server
+restart.
+
+Run the loopback producer/consumer example from the checkout:
+
+    QORE_MODULE_DIR="$PWD/build:$PWD/qlib" qore --enable-debug examples/StagedSftpExchange.qr
+
+See the SFTP Backend Guide for the capability table, receipt fields, and
+reconciliation after a lost rename reply.

@@ -1,0 +1,281 @@
+#!/usr/bin/env qore
+# Copyright 2026 Qore Technologies, s.r.o.
+%modern
+%prepend-module-path "${SCRIPT_DIR}/../qlib"
+%requires SftpServerDataProvider
+%requires SshServerConnections
+%requires SshServerAuthProvider
+%requires FsUtil
+%requires QUnit
+%try-module sqlite3
+%define NO_SQLITE3
+%endtry
+%exec-class StagedSftpExchangeTest
+
+class StagedSftpExchangeTest inherits QUnit::Test {
+    private {
+        TmpDir workdir("module-ssh-staged-test-");
+    }
+
+    constructor() : Test("StagedSftpExchangeTest", "1.0", \ARGV) {
+        addTestCase("closed stage, observer failure and restart reconciliation", \testPublication());
+        addTestCase("failed commit rolls back every byte and keeps the stage retryable", \testRollback());
+        addTestCase("failed and stale writes cannot publish", \testHandles());
+        addTestCase("concurrent publication has exactly one winner", \testCollision());
+        addTestCase("OpenSSH subsystem and connection receipt replay", \testWire());
+        addTestCase("receipts and payload survive producer process exit", \testProcessRestart());
+        set_return_value(main());
+    }
+
+    private string database() {
+%ifdef NO_SQLITE3
+        testSkip("SQLite driver unavailable");
+%endif
+        return workdir.path + "/publication.sqlite";
+    }
+
+    private hash<Qore::Ssh::SftpSessionInfo> session(string principal) {
+        return <Qore::Ssh::SftpSessionInfo>{"principal": principal};
+    }
+
+    private hash<Qore::Ssh::SftpCloseRequest> openStage(StagedSftpExchange exchange, string name, string principal) {
+        hash<Qore::Ssh::SftpOpenRequest> req = <Qore::Ssh::SftpOpenRequest>{
+            "path": "/staging/" + name, "session_info": session(principal),
+        };
+        return <Qore::Ssh::SftpCloseRequest>{"path": req.path, "session_info": req.session_info,
+            "backend_handle": exchange.openWrite(req).backend_handle};
+    }
+
+    private nothing chunk(StagedSftpExchange exchange, hash<Qore::Ssh::SftpCloseRequest> handle, int pos, binary data) {
+        exchange.write(<Qore::Ssh::SftpWriteRequest>{"path": handle.path, "session_info": handle.session_info,
+            "backend_handle": handle.backend_handle, "offset": pos, "data": data});
+    }
+
+    testPublication() {
+        string db = database();
+        on_exit unlink(db);
+        list<string> events = ();
+        StagedSftpExchange exchange(db, sub(hash<SftpUploadEvent> event) {
+            events += event.kind;
+            if (event.publication) {
+                throw "OBSERVER-ERROR", "capture replay requirement";
+            }
+        });
+        hash<Qore::Ssh::SftpCloseRequest> handle = openStage(exchange, "transfer", "alice");
+        chunk(exchange, handle, 0, <0001>);
+        assertThrows("SFTP-PUBLICATION-ERROR", sub() { exchange.commitPublication("alice", "transfer", "order"); });
+        chunk(exchange, handle, 2, <feff>);
+        exchange.closeWrite(handle);
+        assertEq((), exchange.listPublications("alice"));
+        assertEq(("rejected", "staged"), events);
+        assertThrows("SFTP-PUBLICATION-ERROR", sub() { exchange.commitPublication("bob", "transfer", "order"); });
+        hash<SftpPublicationInfo> receipt = exchange.commitPublication("alice", "transfer", "order");
+        assertEq("published", events[-1]);
+        assertEq(4, receipt.byte_count);
+        assertEq("order", receipt.final_name);
+        assertEq("alice", receipt.principal);
+        assertTrue(receipt.committed_at > 0);
+        assertTrue(receipt.publication_id.size() > 0);
+        delete exchange;
+        StagedSftpExchange restarted(db);
+        assertEq((receipt,), restarted.listPublications("alice"));
+        assertEq((), restarted.listPublications("alice", receipt.version));
+        assertEq((), restarted.listPublications("bob"));
+        assertEq(<01>, restarted.readPublication("alice", receipt.publication_id, 1, 16));
+        assertEq(<feff>, restarted.readPublication("alice", receipt.publication_id, 2, 16));
+        assertEq(binary(), restarted.readPublication("alice", receipt.publication_id, 4, 16));
+        assertThrows("SFTP-PUBLICATION-DENIED", sub() { restarted.readPublication("bob", receipt.publication_id, 0, 8); });
+        hash<Qore::Ssh::SftpCloseRequest> other = openStage(restarted, "transfer", "bob");
+        restarted.closeWrite(other);
+        hash<SftpPublicationInfo> empty = restarted.commitPublication("bob", "transfer", "order");
+        assertEq(0, empty.byte_count);
+        assertNeq(receipt.publication_id, empty.publication_id);
+        assertEq(binary(), restarted.readPublication("bob", empty.publication_id, 0, 8));
+    }
+
+    testRollback() {
+        string db = database();
+        on_exit unlink(db);
+        StagedSftpExchange exchange(db);
+        auto handle = openStage(exchange, "multipart", "alice");
+        binary first = binary(strmul("A", 1048576));
+        chunk(exchange, handle, 0, first);
+        chunk(exchange, handle, first.size(), <00ff>);
+        exchange.closeWrite(handle);
+        Datasource maintenance("sqlite3", NOTHING, NOTHING, db);
+        maintenance.exec("create trigger reject_chunk before insert on publication_chunks when new.pos > 0 "
+            "begin select raise(abort, 'test storage failure'); end");
+        maintenance.commit();
+        *string failure;
+        try {
+            exchange.commitPublication("alice", "multipart", "large");
+        } catch (hash<ExceptionInfo> ex) {
+            failure = ex.desc;
+        }
+        assertTrue(failure != NOTHING && failure.find("test storage failure") >= 0);
+        assertEq((), exchange.listPublications("alice"));
+        assertEq(0, maintenance.selectRow("select count(*) as n from publication_chunks").n);
+        maintenance.exec("drop trigger reject_chunk");
+        maintenance.commit();
+        auto receipt = exchange.commitPublication("alice", "multipart", "large");
+        assertEq(first.size() + 2, receipt.byte_count);
+        assertEq(65536, exchange.readPublication("alice", receipt.publication_id, 0, first.size()).size());
+        assertEq(<00ff>, exchange.readPublication("alice", receipt.publication_id, first.size(), 2));
+    }
+
+    testHandles() {
+        string db = database();
+        on_exit unlink(db);
+        StagedSftpExchange exchange(db);
+        hash<Qore::Ssh::SftpOpenRequest> req = <Qore::Ssh::SftpOpenRequest>{
+            "path": "/staging/a", "session_info": session("alice"),
+        };
+        foreach int flags in ((0, 2, 8, 11, 14)) {
+            req.pflags = flags;
+            assertThrows("SFTP-PUBLICATION-DENIED", sub() { exchange.openWrite(req); });
+        }
+        auto buffered = openStage(exchange, "a", "alice");
+        buffered.data = <ff>;
+        assertThrows("SFTP-PUBLICATION-ERROR", sub() { exchange.closeWrite(buffered); });
+        assertThrows("SFTP-PUBLICATION-ERROR", sub() { exchange.commitPublication("alice", "a", "member"); });
+        hash<Qore::Ssh::SftpCloseRequest> first = openStage(exchange, "a", "alice");
+        chunk(exchange, first, 0, <42>);
+        assertThrows("SFTP-PUBLICATION-ERROR", sub() { chunk(exchange, first, 2, <fe>); });
+        assertThrows("SFTP-PUBLICATION-ERROR", sub() { exchange.closeWrite(first); });
+        hash<Qore::Ssh::SftpCloseRequest> second = openStage(exchange, "a", "alice");
+        exchange.abortWrite(first);
+        assertThrows("SFTP-PUBLICATION-ERROR", sub() { chunk(exchange, first, 0, <ff>); });
+        chunk(exchange, second, 0, <41>);
+        exchange.closeWrite(second);
+        assertThrows("SFTP-PUBLICATION-ERROR", sub() { chunk(exchange, second, 1, <42>); });
+        assertEq(1, exchange.commitPublication("alice", "a", "member").byte_count);
+        assertThrows("SFTP-PUBLICATION-DENIED", sub() { openStage(exchange, "../inbound/member", "alice"); });
+        assertThrows("SFTP-PUBLICATION-DENIED", sub() { openStage(exchange, "a", ""); });
+    }
+
+    testCollision() {
+        string db = database();
+        on_exit unlink(db);
+        StagedSftpExchange exchange(db);
+        foreach string name in (("one", "two")) {
+            auto handle = openStage(exchange, name, "alice");
+            chunk(exchange, handle, 0, binary(name));
+            exchange.closeWrite(handle);
+        }
+        Counter ready(2);
+        Counter start(1);
+        Counter done(2);
+        Queue results();
+        foreach string name in (("one", "two")) {
+            background sub(string source) {
+                on_exit done.dec();
+                ready.dec();
+                start.waitForZero();
+                try {
+                    results.push(exchange.commitPublication("alice", source, "order").publication_id);
+                } catch (hash<ExceptionInfo> ex) {
+                    results.push(ex.err);
+                }
+            }(name);
+        }
+        ready.waitForZero();
+        start.dec();
+        done.waitForZero();
+        list<hash<SftpPublicationInfo>> receipts = exchange.listPublications("alice");
+        assertEq(1, receipts.size());
+        assertEq(sort(("SFTP-PUBLICATION-ERROR", receipts[0].publication_id)), sort((results.get(), results.get())));
+        assertEq(binary(receipts[0].staging_name), exchange.readPublication("alice", receipts[0].publication_id, 0, 8));
+    }
+
+    private static string shellQuote(string path) {
+        return "'" + replace(path, "'", "'\"'\"'") + "'";
+    }
+
+    testProcessRestart() {
+        string db = database();
+        on_exit unlink(db);
+        string example = get_script_dir() + "/../examples/StagedSftpExchange.qr";
+        int rc = system(sprintf("qore --enable-debug %s %s", shellQuote(example), shellQuote(db)));
+        assertEq(0, rc);
+        StagedSftpExchange recovered(db);
+        list<hash<SftpPublicationInfo>> receipts = recovered.listPublications("partner");
+        assertEq(1, receipts.size());
+        assertEq("order-42.txt", receipts[0].final_name);
+        assertEq(binary("order 42\n"), recovered.readPublication("partner", receipts[0].publication_id, 0, 100));
+    }
+
+    testWire() {
+        string db = database();
+        on_exit unlink(db);
+        SshServerConnections::SftpServerConnection conn({
+            "name": "publication-test", "url": "sftpserver://127.0.0.1:0",
+            "opts": {
+                "publication_database": db,
+                "host_keys": (get_script_dir() + "/data/ssh_host_ed25519_key",),
+                "services": {"enabled_auth_methods": ("none",)},
+                "auth": <SshServerAuthProvider::VirtualSshAuthProviderOptions>{"methods": ("none",),
+                    "none": <SshServerAuthProvider::VirtualSshStaticAuthMethodOptions>{"allowed_usernames": ("alice", "bob"),
+                    "success_decision": <SshServerAuthProvider::VirtualSshAuthDecisionTemplate>{"sftp_policy": {"mode": "enabled"},
+                        "command_policy": {"mode": "subsystem-only", "allowed_subsystems": ("sftp",)}}}},
+            },
+        });
+        AbstractDataProvider root = conn.getDataProvider();
+        assertEq(("list-publications",), root.getChildProviderNames());
+        hash<SftpPublicationCapabilities> caps =
+            cast<SftpServerDataProvider::SftpServerDataProviderBase>(root).getPublicationCapabilities();
+        assertEq("no-replace", caps.collision_policy);
+        assertTrue(caps.durable_publications);
+        assertFalse(caps.durable_staging);
+        AbstractDataProvider receipts = root.getChildProviderEx("list-publications");
+        Qore::Ssh::SshServer server(conn.getServerConfig());
+        server.start();
+        on_exit server.stop();
+        int port = server.getStatus().listeners[0].bound_port;
+        string script = get_script_dir() + "/data/staged_sftp_client.py";
+        Counter done(1);
+        int rc = -1;
+        background sub() {
+            on_exit done.dec();
+            rc = system(sprintf("python3 %s %d", shellQuote(script), port));
+        }();
+        Counter sessions();
+        for (int i = 0; i < 9; ++i) {
+            *Qore::Ssh::SshSession transport = server.acceptSession(15000);
+            assertTrue(transport != NOTHING, sprintf("accepted client %d", i + 1));
+            server.authenticateSession(transport, 15000);
+            Qore::Ssh::SftpSession sftp = server.dispatchSftpSession(transport, 15000);
+            sessions.inc();
+            Counter wrote(1);
+            int dispatcher = background sub(Qore::Ssh::SshSession peer, Qore::Ssh::SftpSession channel, bool cancel_case) {
+                on_exit sessions.dec();
+                on_exit peer.disconnect();
+                on_exit channel.close();
+                try {
+                    while (*hash<Qore::Ssh::SftpProtocolMessage> msg = channel.processNextRequest(15000)) {
+                        if (cancel_case && msg.type == 6) {
+                            wrote.dec();
+                        }
+                    }
+                } catch (hash<ExceptionInfo> ex) {
+                    if (!cancel_case || ex.err != "THREAD-CANCELLED") {
+                        rethrow;
+                    }
+                }
+            }(transport, sftp, i == 7);
+            if (i == 7) {
+                assertEq(0, wrote.waitForZero(15s));
+                assertTrue(cancel_thread(dispatcher));
+            }
+        }
+        sessions.waitForZero();
+        done.waitForZero();
+        assertEq(0, rc);
+        list<hash<auto>> rows = receipts.doRequest({"principal": "alice"}).publications;
+        assertEq(("order", "empty", "race"), map $1.final_name, rows);
+        assertEq((), receipts.doRequest({"principal": "bob"}).publications);
+        assertEq(0, rows[1].byte_count);
+        StagedSftpExchange reopened(db);
+        assertEq(rows[0].publication_id, reopened.listPublications("alice", 0, 1)[0].publication_id);
+        assertEq(binary("complete\0member"), reopened.readPublication("alice", rows[0].publication_id, 0, 100));
+    }
+}

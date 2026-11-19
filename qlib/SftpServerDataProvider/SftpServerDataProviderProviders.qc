@@ -74,7 +74,7 @@ public namespace SftpServerDataProvider {
             "display_name": "Virtual Exchange Backend",
             "short_desc": "Existing virtual exchange or record-store backend object",
             "type": AbstractDataProviderTypeMap."any",
-            "desc": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object to use as "
+            "desc": "Optional `StagedSftpExchange`, `VirtualSftpExchangeRecordStore`, or `VirtualSftpExchange` object to use as "
                 "the provider backend.",
         },
         "inbound_dir": <DataProviderOptionInfo>{
@@ -314,9 +314,17 @@ public namespace SftpServerDataProvider {
             VirtualSftpExchangeRecordStore store;
         }
 
-        constructor(*hash<auto> options) {
+        private {
+            *StagedSftpExchange staged_exchange;
+        }
+
+        constructor(*hash<auto> options, bool allow_staged = False) {
             checkOptions("CONSTRUCTOR-ERROR", ConstructorOptions, options);
-            store = createRecordStore(options);
+            if (allow_staged && options.backend instanceof StagedSftpExchange) {
+                staged_exchange = options.backend;
+            } else {
+                store = createRecordStore(options);
+            }
         }
 
         constructor(VirtualSftpExchangeRecordStore store) {
@@ -327,12 +335,20 @@ public namespace SftpServerDataProvider {
             store = new VirtualSftpExchangeRecordStore(exchange);
         }
 
+        #! Returns the active staged publication contract for this provider, when configured.
+        *hash<SftpPublicationCapabilities> getPublicationCapabilities() {
+            return staged_exchange ? staged_exchange.getPublicationCapabilities() : NOTHING;
+        }
+
         VirtualSftpExchangeRecordStore getRecordStore() {
+            if (staged_exchange) {
+                throw "DATA-PROVIDER-ERROR", "the staged exchange exposes publication receipts";
+            }
             return store;
         }
 
         VirtualSftpExchange getExchange() {
-            return store.getExchange();
+            return getRecordStore().getExchange();
         }
 
         private static VirtualSftpExchangeRecordStore createRecordStore(*hash<auto> options) {
@@ -415,7 +431,7 @@ public namespace SftpServerDataProvider {
             };
         }
 
-        constructor(*hash<auto> options) : SftpServerDataProviderBase(options) {
+        constructor(*hash<auto> options) : SftpServerDataProviderBase(options, True) {
         }
 
         constructor(VirtualSftpExchangeRecordStore store) : SftpServerDataProviderBase(store) {
@@ -430,10 +446,13 @@ public namespace SftpServerDataProvider {
         }
 
         private *list<string> getChildProviderNamesImpl() {
-            return keys ChildMap;
+            return staged_exchange ? ("list-publications",) : keys ChildMap;
         }
 
         private *AbstractDataProvider getChildProviderImpl(string name) {
+            if (staged_exchange) {
+                return name == "list-publications" ? new SftpPublicationListDataProvider(staged_exchange) : NOTHING;
+            }
             *Class cls = ChildMap{name};
             if (!cls) {
                 return NOTHING;
@@ -443,6 +462,38 @@ public namespace SftpServerDataProvider {
 
         private hash<DataProviderInfo> getStaticInfoImpl() {
             return ProviderInfo;
+        }
+    }
+
+    #! Reads a page of immutable receipts without loading payloads.
+    public class SftpPublicationListDataProvider inherits AbstractDataProvider {
+        private {
+            StagedSftpExchange exchange;
+        }
+
+        constructor(StagedSftpExchange exchange) {
+            self.exchange = exchange;
+        }
+
+        string getName() {
+            return "list-publications";
+        }
+
+        private hash<DataProviderInfo> getStaticInfoImpl() {
+            return <DataProviderInfo>{"name": "list-publications", "type": "SftpPublicationListDataProvider",
+                "desc": "Replay committed SFTP publication receipts.", "supports_request": True};
+        }
+
+        private *AbstractDataProviderType getRequestTypeImpl() {
+            return SftpPublicationQueryDataType;
+        }
+
+        private *AbstractDataProviderType getResponseTypeImpl() {
+            return SftpPublicationPageDataType;
+        }
+
+        private auto doRequestImpl(auto req, *hash<auto> request_options) {
+            return {"publications": exchange.listPublications(req.principal, req.after_version ?? 0, req.limit ?? 100)};
         }
     }
 

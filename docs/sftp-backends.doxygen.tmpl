@@ -36,6 +36,7 @@
     |\c openWrite()|@ref Qore::Ssh::SftpOpenRequest "SftpOpenRequest"|Open a file for writing
     |\c write()|@ref Qore::Ssh::SftpWriteRequest "SftpWriteRequest"|Streamed write chunk
     |\c closeWrite()|@ref Qore::Ssh::SftpCloseRequest "SftpCloseRequest"|Finalize a write
+    |\c abortWrite()|@ref Qore::Ssh::SftpCloseRequest "SftpCloseRequest"|Release an abandoned upload by its original handle
     |\c removePath()|@ref Qore::Ssh::SftpPathRequest "SftpPathRequest"|Remove a file or symlink
     |\c rename()|@ref Qore::Ssh::SftpRenameRequest "SftpRenameRequest"|Rename or move a path
     |\c mkdir()|@ref Qore::Ssh::SftpPathRequest "SftpPathRequest"|Create a directory
@@ -44,6 +45,81 @@
     |\c readlink()|@ref Qore::Ssh::SftpPathRequest "SftpPathRequest"|Read a symbolic link target
     |\c setstat()|@ref Qore::Ssh::SftpSetstatRequest "SftpSetstatRequest"|Set file attributes
     |\c statvfs()|@ref Qore::Ssh::SftpPathRequest "SftpPathRequest"|Filesystem statistics (\c statvfs\@openssh.com)
+
+    An explicit successful file close calls \c closeWrite(). A failed write, channel closure,
+    cancellation or session destruction discards buffered bytes. Backends owning reservations or
+    external streams should implement idempotent \c abortWrite(req) and return a
+    \c SftpOperationResult. The request carries the original handle and the operation
+    <tt>abort-write</tt>. Old backends still receive successful closes. A backend that
+    exposes bytes during streaming must supply its own private staging for strict publication.
+    Keep abort callbacks bounded to local cleanup, including observers they invoke. Queue longer
+    observer work for a separate consumer.
+
+    @section sshstagedexchange Staged inbound publications
+
+    Set <tt>publication_database</tt> on an SFTP server connection to an absolute filename in
+    a private, operator-controlled directory. Install the Qore SQLite driver on this host.
+    The connection shares one StagedSftpExchange between sessions and its data provider.
+    A custom server factory can also return an explicitly constructed StagedSftpExchange.
+    Configure authentication to supply a stable, nonempty principal.
+
+    |!Backend or operation|!Completion boundary|!Collision and recovery guarantees
+    |StagedSftpExchange|SFTP v3 RENAME from /staging/name to /inbound/name|Atomic no-replace per principal, immutable ID and content, persistent receipt enumeration
+    |VirtualSftpExchange and its record store|Successful explicit CLOSE or direct submission of complete data|Existing acceptance policy and observer delivery. The legacy callbacks and filesystem snapshots do not implement receipt replay
+    |Rooted session without a backend|Rooted metadata operations|No staged upload or publication contract
+    |Custom streamed backend|Defined by its own close, abort and rename implementations|Select strict mode only by agreement with a backend that enforces the requested guarantees
+    |SftpSession::publishLocalFile with atomic_publish|Local filesystem rename|Replaces a regular destination on a suitable filesystem. Provides filesystem visibility without an exchange receipt
+
+    For a local atomic copy, supply a fresh temporary sibling in a trusted directory.
+    The helper reserves it as a private directory, so another local publication cannot
+    replace the payload while it is being copied. A failed copy releases its reservation.
+
+    A producer creates a unique filename under <tt>/staging</tt>, writes consecutively from
+    offset zero and closes it. Before rename, verify successful writes and close and compare
+    the staged size with the intended length when available. The filename must be one path component. An open stage rejects rename.
+    The staging area is private to the authenticated principal. Completed stages survive client
+    disconnect and can be renamed from another session of the same principal. Restarting the
+    backend discards unpublished stages. A producer can remove an unused closed stage over SFTP.
+
+    An ordinary SFTP v3 rename commits the bytes and receipt in one SQLite transaction. A second
+    writer using the same principal and final name receives a failure. A different principal can
+    publish the same name in its own namespace. Published files can be read through SFTP.
+    Their content and names are immutable through the exchange. Select a new final name for an
+    intentional new version. The server does not advertise an overwriting rename extension.
+    The endpoint agreement can be inspected with <tt>getPublicationCapabilities()</tt>.
+
+    The optional StagedSftpExchange observer receives metadata with kind <tt>staged</tt>,
+    <tt>rejected</tt>, <tt>abandoned</tt>, or <tt>published</tt>. Only the last kind carries a
+    receipt. A callback is a notification after a state change. Use <tt>list-publications</tt> to
+    recover missed publications, including after an observer throws or the process restarts.
+    Each receipt contains a stable publication_id, a database-wide increasing version, principal,
+    staging_name, final_name, observed byte_count and committed_at in Unix seconds. The digest
+    field is optional and this backend leaves it unset. Use the publication ID to deduplicate.
+    Retain the last processed version per database and principal, and advance it after processing.
+    After a lost rename reply, match the principal, unique staging name and final name against
+    the committed receipts before retrying. Outbound pickup events, business acknowledgments
+    and multi-file decisions have separate lifecycles.
+
+    @par Producer and consumer
+    The executable example <tt>examples/StagedSftpExchange.qr</tt> starts an isolated loopback
+    listener, runs these OpenSSH batch operations, and reads the receipt through the same connection.
+    Optionally pass an absolute SQLite filename to keep the database after the example exits.
+    @code
+    put order.txt /staging/upload-42
+    rename /staging/upload-42 /inbound/order-42.txt
+    @endcode
+    @code{.py}
+    AbstractDataProvider consumer = conn.getDataProvider().getChildProviderEx("list-publications");
+    hash<auto> page = consumer.doRequest({"principal": "partner", "after_version": 0, "limit": 100});
+    foreach hash<auto> receipt in (page.publications) {
+        printf("%s %s %d bytes\n", receipt.publication_id, receipt.final_name, receipt.byte_count);
+    }
+    @endcode
+    Application calls to <tt>listPublications()</tt>, <tt>commitPublication()</tt> and
+    <tt>readPublication()</tt> are trusted server-side operations. The application supplies
+    the authorized principal. Wire operations derive it from the authenticated session.
+    <tt>readPublication()</tt> returns at most 64 KiB and can return a short chunk before EOF.
+    Continue at the next byte offset until the observed byte count is reached.
 
     @section sshsftpbackendstreaming Streamed vs Buffered Dispatch
 

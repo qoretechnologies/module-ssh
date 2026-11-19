@@ -69,6 +69,13 @@ public class SftpServerConnection inherits AbstractSshServerConnection {
                 "`SftpServerExchange` data-provider bridge.",
             "cls": Class::forName("SftpServerConnection"),
             "options": SharedOptions + {
+                "publication_database": <ConnectionOptionInfo>{
+                    "display_name": "Publication Database",
+                    "short_desc": "SQLite file for immutable staged publication",
+                    "type": "string",
+                    "desc": "Absolute path to a dedicated SQLite database. Enables private `/staging` uploads, "
+                        "no-replace rename to `/inbound`, and replay through `list-publications`.",
+                },
                 "backend": <ConnectionOptionInfo>{
                     "display_name": "Virtual Exchange Backend",
                     "short_desc": "Existing virtual exchange backend shared by the server and data provider",
@@ -92,6 +99,33 @@ public class SftpServerConnection inherits AbstractSshServerConnection {
     }
 
     constructor(hash<auto> config, *hash<auto> attr) : AbstractSshServerConnection(config, attr) {
+    }
+
+    private {
+        *object publication_backend;
+    }
+
+    private synchronized object getPublicationBackend() {
+        if (opts.backend || opts.sftp_factory_callback) {
+            throw "CONNECTION-OPTION-ERROR", "publication_database supplies its own SFTP backend and factory";
+        }
+        if (!publication_backend) {
+            load_module("SftpServerDataProvider");
+            publication_backend = create_object("SftpServerDataProvider::StagedSftpExchange", opts.publication_database);
+        }
+        return publication_backend;
+    }
+
+    #! Shares the staged exchange between every authenticated session and the receipt provider.
+    hash<Qore::Ssh::SshServerConfig> getServerConfig() {
+        hash<Qore::Ssh::SshServerConfig> config = AbstractSshServerConnection::getServerConfig();
+        if (opts.publication_database != NOTHING) {
+            object backend = getPublicationBackend();
+            config.sftp_factory_callback = hash<auto> sub(hash<Qore::Ssh::SftpSessionInfo> info) {
+                return {"backend": backend};
+            };
+        }
+        return config;
     }
 
     string getType() {
@@ -118,7 +152,9 @@ public class SftpServerConnection inherits AbstractSshServerConnection {
 
         load_module("SftpServerDataProvider");
         hash<auto> options = constructor_options ?? {};
-        if (!exists options.backend && opts.backend) {
+        if (opts.publication_database != NOTHING) {
+            options.backend = getPublicationBackend();
+        } else if (!exists options.backend && opts.backend) {
             options.backend = opts.backend;
         }
         return create_object("SftpServerDataProvider", options);

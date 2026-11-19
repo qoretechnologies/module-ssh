@@ -338,6 +338,18 @@
         "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U2Z0cFNlcnZlckNvbm5lY3Rpb24.option.YmFja2VuZA.desc": {
           "source": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object. When set, the connection uses it both for accepted SFTP sessions and for the generic `SftpServerExchange` data-provider bridge.",
           "message": "Optional existing `VirtualSftpExchangeRecordStore` or `VirtualSftpExchange` object. When set, the connection uses it both for accepted SFTP sessions and for the generic `SftpServerExchange` data-provider bridge."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U2Z0cFNlcnZlckNvbm5lY3Rpb24.option.cHVibGljYXRpb25fZGF0YWJhc2U.display_name": {
+          "source": "Publication Database",
+          "message": "Publication Database"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U2Z0cFNlcnZlckNvbm5lY3Rpb24.option.cHVibGljYXRpb25fZGF0YWJhc2U.short_desc": {
+          "source": "SQLite file for immutable staged publication",
+          "message": "SQLite file for immutable staged publication"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U2Z0cFNlcnZlckNvbm5lY3Rpb24.option.cHVibGljYXRpb25fZGF0YWJhc2U.desc": {
+          "source": "Absolute path to a dedicated SQLite database. Enables private `/staging` uploads, no-replace rename to `/inbound`, and replay through `list-publications`.",
+          "message": "Absolute path to a dedicated SQLite database. Enables private `/staging` uploads, no-replace rename to `/inbound`, and replay through `list-publications`."
         }
       }
     }

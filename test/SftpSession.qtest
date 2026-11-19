@@ -28,6 +28,7 @@
 
 %requires ssh
 %requires QUnit
+%requires FsUtil
 %requires TestLoggerInterface
 
 %exec-class SftpSessionTest
@@ -487,6 +488,8 @@ class SftpSessionTest inherits QUnit::Test {
         addTestCase("sendStatus rejects disconnected sessions", \testSendStatusDisconnected());
         addTestCase("publishLocalFile copies staged file", \testPublishLocalFileCopy());
         addTestCase("publishLocalFile renames staged file atomically", \testPublishLocalFileMoveAtomic());
+        addTestCase("cross-filesystem atomic move preserves both files", \testCrossFilesystemMove());
+        addTestCase("atomic copy requires fresh private sibling staging", \testAtomicCopyStaging());
         addTestCase("publishLocalFile rejects missing transfer info", \testPublishLocalFileMissingTransferInfo());
         addTestCase("retrieveLocalFile copies planned file", \testRetrieveLocalFileCopy());
         addTestCase("retrieveLocalFile renames planned file", \testRetrieveLocalFileMove());
@@ -703,6 +706,75 @@ class SftpSessionTest inherits QUnit::Test {
             }
         }
         assertTrue(saw_publish_log);
+    }
+
+    testCrossFilesystemMove() {
+        if (!is_dir("/dev/shm") || !is_writable("/dev/shm") || hstat("/dev/shm").dev == hstat("/tmp").dev) {
+            testSkip("requires two writable filesystems");
+        }
+        string src = getTmpPath(".cross-source");
+        TmpDir dest_dir("module-ssh-move-", NOTHING, "/dev/shm");
+        string dest = dest_dir.path + "/target";
+        on_exit {
+            unlink(src);
+            unlink(dest);
+        }
+        writeTestFile(src, "source bytes");
+        writeTestFile(dest, "existing target");
+        Qore::Ssh::SftpSession s(getSftpInfo());
+        s.applyTransferInfo(<Qore::Ssh::SftpTransferInfo>{
+            "operation": "upload", "path": "/final", "final_path": dest, "atomic_publish": True, "completed": False,
+        });
+        assertThrows("SFTP-ATOMIC-PUBLISH-ERROR", sub() { s.publishLocalFile(src, True); });
+        assertEq("source bytes", ReadOnlyFile::readTextFile(src));
+        assertEq("existing target", ReadOnlyFile::readTextFile(dest));
+        assertFalse(s.getTransferInfo().completed);
+    }
+
+    testAtomicCopyStaging() {
+        string source = getTmpPath(".source");
+        string dest = source + ".final";
+        string stage = source + ".part";
+        on_exit {
+            foreach string path in ((source, dest, stage)) {
+                if (is_file(path)) {
+                    unlink(path);
+                }
+            }
+        }
+        writeTestFile(source, "new bytes");
+        writeTestFile(dest, "previous");
+        writeTestFile(stage, "reserved");
+        Qore::Ssh::SftpSession s(getSftpInfo());
+        hash<Qore::Ssh::SftpTransferInfo> info = <Qore::Ssh::SftpTransferInfo>{
+            "operation": "upload", "path": "/final", "final_path": dest, "atomic_publish": True, "completed": False,
+        };
+        foreach *string path in ((NOTHING, dest, stage)) {
+            info.temporary_path = path;
+            s.applyTransferInfo(info);
+            assertThrows("SFTP-ATOMIC-PUBLISH-ERROR", sub() { s.publishLocalFile(source); });
+            assertEq("previous", ReadOnlyFile::readTextFile(dest));
+            assertEq("reserved", ReadOnlyFile::readTextFile(stage));
+            assertFalse(s.getTransferInfo().completed);
+        }
+        unlink(stage);
+        mkdir(stage, 0700);
+        writeTestFile(stage + "/payload", "other transfer");
+        assertThrows("SFTP-ATOMIC-PUBLISH-ERROR", sub() { s.publishLocalFile(source); });
+        assertEq("other transfer", ReadOnlyFile::readTextFile(stage + "/payload"));
+        unlink(stage + "/payload");
+        rmdir(stage);
+        assertThrows("SFTPSESSION-FILESYSTEM-ERROR", sub() { s.publishLocalFile(source + ".missing"); });
+        assertFalse(is_dir(stage));
+        assertEq("previous", ReadOnlyFile::readTextFile(dest));
+        assertTrue(s.publishLocalFile(source).completed);
+        assertFalse(is_dir(stage));
+        assertEq("new bytes", ReadOnlyFile::readTextFile(dest));
+        assertFalse(is_file(stage));
+        info.final_path = source;
+        s.applyTransferInfo(info);
+        assertThrows("SFTP-ATOMIC-PUBLISH-ERROR", sub() { s.publishLocalFile(source, True); });
+        assertEq("new bytes", ReadOnlyFile::readTextFile(source));
     }
 
     testPublishLocalFileMissingTransferInfo() {

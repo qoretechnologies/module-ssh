@@ -69,6 +69,21 @@ module SftpServerDataProvider {
 
         DataProviderActionCatalog::registerAction(<DataProviderActionInfo>{
             "app": SftpServerDataProvider::AppName,
+            "path": "/list-publications",
+            "action": "list-publications",
+            "display_name": "List Published Files",
+            "short_desc": "Replay committed SFTP publication receipts",
+            "desc": "Reconcile a staged exchange after a restart or a lost rename reply. Select a `principal` "
+                "and resume after the last processed `version`. Receipts contain metadata only.",
+            "action_code": DPAT_API,
+            "output_type": SftpPublicationPageDataType,
+            "options": DataProviderActionCatalog::getActionOptionFromFields(SftpPublicationQueryDataType::Fields{"principal",},
+                {"preselected": True, "required": True}) +
+                DataProviderActionCatalog::getActionOptionFromFields(SftpPublicationQueryDataType::Fields - "principal"),
+        });
+
+        DataProviderActionCatalog::registerAction(<DataProviderActionInfo>{
+            "app": SftpServerDataProvider::AppName,
             "path": "/submit-inbound",
             "action": "submit-inbound",
             "display_name": "Submit Inbound File",

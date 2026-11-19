@@ -2123,6 +2123,54 @@
           "source": "List available outbound files in a virtual SFTP exchange",
           "message": "Отримати список доступних вихідних файлів у віртуальному обміні SFTP"
         },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.desc": {
+          "source": "Reconcile a staged exchange after a restart or a lost rename reply. Select a `principal` and resume after the last processed `version`. Receipts contain metadata only.",
+          "message": "Звірте стан після перезапуску або втрати відповіді на перейменування. Виберіть `principal` і продовжте після останньої обробленої `version`. Квитанції містять лише метадані."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.display_name": {
+          "source": "List Published Files",
+          "message": "Показати опубліковані файли"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.option.YWZ0ZXJfdmVyc2lvbg.desc": {
+          "source": "Return receipts newer than this exclusive cursor.",
+          "message": "Повернути квитанції, новіші за значення цього курсора."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.option.YWZ0ZXJfdmVyc2lvbg.display_name": {
+          "source": "After Version",
+          "message": "Після версії"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.option.YWZ0ZXJfdmVyc2lvbg.short_desc": {
+          "source": "Return receipts newer than this exclusive cursor",
+          "message": "Повернути квитанції, новіші за значення цього курсора"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.option.bGltaXQ.desc": {
+          "source": "Maximum receipts in one page, from 1 through 1000.",
+          "message": "Максимальна кількість квитанцій на сторінці від 1 до 1000."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.option.bGltaXQ.display_name": {
+          "source": "Page Size",
+          "message": "Розмір сторінки"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.option.bGltaXQ.short_desc": {
+          "source": "Maximum receipts in one page, from 1 through 1000",
+          "message": "Максимальна кількість квитанцій на сторінці від 1 до 1000"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.option.cHJpbmNpcGFs.desc": {
+          "source": "Authenticated owner whose receipts should be replayed.",
+          "message": "Автентифікований власник, квитанції якого потрібно прочитати."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.option.cHJpbmNpcGFs.display_name": {
+          "source": "Principal",
+          "message": "Принципал"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.option.cHJpbmNpcGFs.short_desc": {
+          "source": "Authenticated owner whose receipts should be replayed",
+          "message": "Автентифікований власник, квитанції якого потрібно прочитати"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.short_desc": {
+          "source": "Replay committed SFTP publication receipts",
+          "message": "Повторно прочитати квитанції підтверджених публікацій SFTP"
+        },
         "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.desc": {
           "source": "Submits an inbound file into the configured virtual SFTP exchange backend.",
           "message": "Подає вхідний файл до налаштованого бекенду віртуального обміну SFTP."

@@ -27,6 +27,7 @@ BuildRequires: qore-rpm-macros >= 3.0.0~
 BuildRequires: python3
 %if %{with tests}
 BuildRequires: openssh-clients
+BuildRequires: qore-sqlite3-module
 BuildRequires: qore-misc-tools >= 3.0.0~
 %endif
 %if %{with docs}

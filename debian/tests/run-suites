@@ -12,8 +12,10 @@ run_qore() {
         -l "$QORE_SSH_TEST_QMOD_DIR/SshServerCommandProvider/SshServerCommandProvider.qmod" "$@"
 }
 for suite in test/*.qtest; do
-    # This suite checks repository files/design documents, not installed behavior.
-    if [ "$mode" != build ] && [ "$suite" = test/Scaffold.qtest ]; then continue; fi
+    # Both suites read the repository tree. The build runs them in the checkout.
+    if [ "$mode" != build ]; then
+        case "$suite" in test/Scaffold.qtest|test/RestrictedProgramLoad.qtest) continue ;; esac
+    fi
     run_qore "$suite" -v
 done
 for example in examples/*.qtest examples/*.qr; do

@@ -58,14 +58,14 @@ def run(build=None, compiler=False):
     for module in modules:
         qore += ['-l', str(module)]
     suites = sorted((source / 'test').glob('*.qtest'))
-    if len(suites) != 15:
+    if len(suites) != 18:
         raise RuntimeError('Review the SSH suite inventory before qualification')
     with tempfile.TemporaryDirectory(prefix='qore-ssh-rpm-') as directory:
         root = Path(directory)
         copy_fixtures(source, root)
         env['QORE_MODULE_DIR'] += ':' + str(root / 'test')
         for suite in suites:
-            if suite.name == 'Scaffold.qtest':
+            if suite.name in ('Scaffold.qtest', 'RestrictedProgramLoad.qtest'):
                 if not build:
                     continue
                 path = suite
@@ -74,7 +74,7 @@ def run(build=None, compiler=False):
             print('=== ' + suite.name + ' ===', flush=True)
             subprocess.run([*qore, str(path), '-v'], env=env, cwd=root, check=True, timeout=240)
         examples = sorted(path for path in (root / 'examples').iterdir() if path.suffix in ('.qr', '.qtest'))
-        if len(examples) != 6:
+        if len(examples) != 7:
             raise RuntimeError('Review the SSH example inventory before qualification')
         for example in examples:
             print('=== ' + example.name + ' ===', flush=True)
