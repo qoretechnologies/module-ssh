@@ -119,6 +119,14 @@ module SshServerAuthProvider {
     For the full authentication guide including advanced multi-factor
     scenarios, custom validators, and session policy configuration, see
     @ref sshauthguide.
+
+    @subpage sshserverauthproviderreleasenotes
+*/
+
+/** @page sshserverauthproviderreleasenotes SshServerAuthProvider Release Notes
+
+    @section sshserverauthproviderv01 SshServerAuthProvider Module Version 0.1
+    - initial release
 */
 
 public namespace SshServerAuthProvider {

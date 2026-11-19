@@ -380,4 +380,12 @@ module SftpServerDataProvider {
     | @ref sftpserverdataprovider-virtualsftpentryinfo "SftpServerDataProvider::VirtualSftpEntryInfo" | typed listing entry hash
     | @ref sftpserverdataprovider-virtualsftprecordinfo "SftpServerDataProvider::VirtualSftpRecordInfo" | typed record result hash
     | @ref sftpserverdataprovider-virtualsftpbuiltinstate "SftpServerDataProvider::VirtualSftpBuiltinState" | typed built-in helper state projection hash
+
+    @subpage sftpserverdataproviderreleasenotes
+*/
+
+/** @page sftpserverdataproviderreleasenotes SftpServerDataProvider Release Notes
+
+    @section sftpserverdataproviderv01 SftpServerDataProvider Module Version 0.1
+    - initial release
 */
