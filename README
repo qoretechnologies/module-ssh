@@ -716,3 +716,17 @@ Run the loopback producer/consumer example from the checkout:
 
 See the SFTP Backend Guide for the capability table, receipt fields, and
 reconciliation after a lost rename reply.
+
+Develop CI
+----------
+
+On develop, Ubuntu and Alpine can reuse their own successful test results when
+the Git tree and platform fingerprint match. For squash merges, CI compares
+the merged pull request's head tree. Both platform jobs must have passed in
+the same earlier pipeline. The GitHub status links to the original full job.
+
+The fingerprint covers installed packages, Qore and its modules, libssh and
+its headers, and the ssh and sftp clients used by the integration tests.
+Changed inputs or missing evidence trigger a full suite on the affected
+platform. Feature branches, manual pipelines, and schedules run both suites.
+Set QORE_CI_FORCE_FULL=1 to force a full run on develop.
