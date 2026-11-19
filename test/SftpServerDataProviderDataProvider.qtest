@@ -121,7 +121,8 @@ class SftpServerDataProviderDataProviderTest inherits QUnit::Test {
         SftpServerDataProvider::VirtualSftpExchangeRecordStore store = getStore();
         list<hash<DataProviderActionInfo>> actions = DataProviderActionCatalog::getActionsForScheme("sftpserver");
         # DP4: includes the inbound-file-rejected event action
-        assertEq(12, actions.size());
+        assertEq(13, actions.size());
+        assertTrue(inlist("list-publications", map $1.action, actions.iterator()));
         assertTrue(inlist("cleanup-expired", map $1.action, actions.iterator()));
         assertTrue(inlist("list-outbound", map $1.action, actions.iterator()));
         assertTrue(inlist(SftpServerDataProvider::EventInboundFileAccepted, map $1.action, actions.iterator()));

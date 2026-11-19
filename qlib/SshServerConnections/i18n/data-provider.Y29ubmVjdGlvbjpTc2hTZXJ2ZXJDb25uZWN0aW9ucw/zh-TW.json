@@ -323,6 +323,18 @@
           "source": "Existing virtual exchange backend shared by the server and data provider",
           "message": "伺服器與資料提供者共用的現有虛擬交換後端"
         },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U2Z0cFNlcnZlckNvbm5lY3Rpb24.option.cHVibGljYXRpb25fZGF0YWJhc2U.desc": {
+          "source": "Absolute path to a dedicated SQLite database. Enables private `/staging` uploads, no-replace rename to `/inbound`, and replay through `list-publications`.",
+          "message": "專用 SQLite 資料庫的絕對路徑。允許私下上傳至 `/staging`、在不覆寫的情況下重新命名至 `/inbound`，並透過 `list-publications` 重新讀取紀錄。"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U2Z0cFNlcnZlckNvbm5lY3Rpb24.option.cHVibGljYXRpb25fZGF0YWJhc2U.display_name": {
+          "source": "Publication Database",
+          "message": "發布資料庫"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U2Z0cFNlcnZlckNvbm5lY3Rpb24.option.cHVibGljYXRpb25fZGF0YWJhc2U.short_desc": {
+          "source": "SQLite file for immutable staged publication",
+          "message": "用於分階段發布不可變檔案的 SQLite 檔案"
+        },
         "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U2Z0cFNlcnZlckNvbm5lY3Rpb24.short_desc": {
           "source": "A managed local SFTP server connection definition",
           "message": "管理式本機 SFTP 伺服器連接定義"

@@ -2123,6 +2123,54 @@
           "source": "List available outbound files in a virtual SFTP exchange",
           "message": "列出虛擬 SFTP 交換中的可用傳出檔案"
         },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.desc": {
+          "source": "Reconcile a staged exchange after a restart or a lost rename reply. Select a `principal` and resume after the last processed `version`. Receipts contain metadata only.",
+          "message": "重新啟動或遺失重新命名的回應後核對發布狀態。選取 `principal`，並從最後處理的 `version` 之後繼續。憑證僅包含中繼資料。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.display_name": {
+          "source": "List Published Files",
+          "message": "列出已發布的檔案"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.option.YWZ0ZXJfdmVyc2lvbg.desc": {
+          "source": "Return receipts newer than this exclusive cursor.",
+          "message": "傳回比此游標新的憑證，不含游標所在項目。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.option.YWZ0ZXJfdmVyc2lvbg.display_name": {
+          "source": "After Version",
+          "message": "版本之後"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.option.YWZ0ZXJfdmVyc2lvbg.short_desc": {
+          "source": "Return receipts newer than this exclusive cursor",
+          "message": "傳回比此游標新的憑證，不含游標所在項目"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.option.bGltaXQ.desc": {
+          "source": "Maximum receipts in one page, from 1 through 1000.",
+          "message": "每頁憑證數上限，範圍為 1 到 1000。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.option.bGltaXQ.display_name": {
+          "source": "Page Size",
+          "message": "每頁筆數"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.option.bGltaXQ.short_desc": {
+          "source": "Maximum receipts in one page, from 1 through 1000",
+          "message": "每頁憑證數上限，範圍為 1 到 1000"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.option.cHJpbmNpcGFs.desc": {
+          "source": "Authenticated owner whose receipts should be replayed.",
+          "message": "要重新讀取其憑證的已驗證擁有者。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.option.cHJpbmNpcGFs.display_name": {
+          "source": "Principal",
+          "message": "主體"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.option.cHJpbmNpcGFs.short_desc": {
+          "source": "Authenticated owner whose receipts should be replayed",
+          "message": "要重新讀取其憑證的已驗證擁有者"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.short_desc": {
+          "source": "Replay committed SFTP publication receipts",
+          "message": "重新讀取已確認的 SFTP 發布憑證"
+        },
         "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.desc": {
           "source": "Submits an inbound file into the configured virtual SFTP exchange backend.",
           "message": "提交傳入檔案至已設定的虛擬 SFTP 交換後端。"

@@ -1,0 +1,76 @@
+#!/usr/bin/env qore
+# Copyright 2026 Qore Technologies, s.r.o.
+# Self-contained loopback example. The fixture host key and "none" authentication are for this example only.
+%prepend-module-path "${SCRIPT_DIR}/../qlib"
+%requires SftpServerDataProvider
+%requires SshServerConnections
+%requires SshServerAuthProvider
+%requires FsUtil
+%try-module sqlite3
+%define NO_SQLITE3
+%endtry
+
+%ifdef NO_SQLITE3
+printf("The staged exchange example requires the sqlite3 driver.\n");
+%else
+TmpDir tmp("sftp-publication-");
+SshServerConnections::SftpServerConnection conn({
+    "name": "orders", "url": "sftpserver://127.0.0.1:0",
+    "opts": {
+        "host_keys": (get_script_dir() + "/../test/data/ssh_host_ed25519_key",),
+        "publication_database": ARGV[0] ?? (tmp.path + "/orders.sqlite"),
+        "auth": <SshServerAuthProvider::VirtualSshAuthProviderOptions>{
+            "methods": ("none",),
+            "none": <SshServerAuthProvider::VirtualSshStaticAuthMethodOptions>{
+                "allowed_usernames": ("partner",),
+                "success_decision": <SshServerAuthProvider::VirtualSshAuthDecisionTemplate>{
+                    "sftp_policy": {"mode": "enabled"},
+                    "command_policy": {"mode": "subsystem-only", "allowed_subsystems": ("sftp",)},
+                },
+            },
+        },
+    },
+});
+Qore::Ssh::SshServer server(conn.getServerConfig());
+server.start();
+on_exit server.stop();
+int port = server.getStatus().listeners[0].bound_port;
+string payload = "order 42\n";
+{
+    File file();
+    file.open(tmp.path + "/order.txt", O_CREAT | O_EXCL | O_WRONLY, 0600);
+    file.write(payload);
+}
+{
+    File batch();
+    batch.open(tmp.path + "/batch", O_CREAT | O_EXCL | O_WRONLY, 0600);
+    batch.write(sprintf("put %s/order.txt /staging/upload-42\nrename /staging/upload-42 /inbound/order-42.txt\n",
+        tmp.path));
+}
+Counter producer(1);
+int status = -1;
+background sub() {
+    on_exit producer.dec();
+    status = system(sprintf("sftp -q -F /dev/null -b '%s/batch' -oBatchMode=yes -oPreferredAuthentications=none "
+        "-oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null -P %d partner@127.0.0.1", tmp.path, port));
+}();
+Qore::Ssh::SshSession peer = server.acceptSession(10000);
+server.authenticateSession(peer, 10000);
+Qore::Ssh::SftpSession channel = server.dispatchSftpSession(peer, 10000);
+while (channel.processNextRequest(10000)) {
+    # Dispatch through CLOSE and RENAME, then finish on EOF.
+}
+channel.close();
+peer.disconnect();
+producer.waitForZero();
+if (status) {
+    throw "PRODUCER-ERROR", sprintf("sftp exited with status %d", status);
+}
+AbstractDataProvider consumer = conn.getDataProvider().getChildProviderEx("list-publications");
+list<hash<auto>> receipts = consumer.doRequest({"principal": "partner", "after_version": 0}).publications;
+if (receipts.size() != 1 || receipts[0].byte_count != payload.size()) {
+    throw "PUBLICATION-ERROR", "expected the complete order and one receipt";
+}
+printf("%s published %s (%d bytes), ID %s, version %d\n", receipts[0].principal, receipts[0].final_name,
+    receipts[0].byte_count, receipts[0].publication_id, receipts[0].version);
+%endif

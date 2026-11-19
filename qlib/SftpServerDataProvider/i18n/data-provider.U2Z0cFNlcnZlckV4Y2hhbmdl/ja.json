@@ -2123,6 +2123,54 @@
           "source": "List available outbound files in a virtual SFTP exchange",
           "message": "仮想SFTPエクスチェンジで利用可能な送信ファイルの一覧を取得します"
         },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.desc": {
+          "source": "Reconcile a staged exchange after a restart or a lost rename reply. Select a `principal` and resume after the last processed `version`. Receipts contain metadata only.",
+          "message": "再起動後や名前変更の応答が失われたときに公開状態を照合します。`principal` を選択し、最後に処理した `version` の次から再開してください。記録にはメタデータのみが含まれます。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.display_name": {
+          "source": "List Published Files",
+          "message": "公開済みファイルを一覧表示"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.option.YWZ0ZXJfdmVyc2lvbg.desc": {
+          "source": "Return receipts newer than this exclusive cursor.",
+          "message": "指定したカーソルを含まず、それより新しい記録を返す。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.option.YWZ0ZXJfdmVyc2lvbg.display_name": {
+          "source": "After Version",
+          "message": "指定バージョン以降"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.option.YWZ0ZXJfdmVyc2lvbg.short_desc": {
+          "source": "Return receipts newer than this exclusive cursor",
+          "message": "指定したカーソルを含まず、それより新しい記録を返す"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.option.bGltaXQ.desc": {
+          "source": "Maximum receipts in one page, from 1 through 1000.",
+          "message": "1 ページの最大記録数（1～1000）。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.option.bGltaXQ.display_name": {
+          "source": "Page Size",
+          "message": "ページサイズ"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.option.bGltaXQ.short_desc": {
+          "source": "Maximum receipts in one page, from 1 through 1000",
+          "message": "1 ページの最大記録数（1～1000）"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.option.cHJpbmNpcGFs.desc": {
+          "source": "Authenticated owner whose receipts should be replayed.",
+          "message": "記録を再取得する認証済み所有者。"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.option.cHJpbmNpcGFs.display_name": {
+          "source": "Principal",
+          "message": "プリンシパル"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.option.cHJpbmNpcGFs.short_desc": {
+          "source": "Authenticated owner whose receipts should be replayed",
+          "message": "記録を再取得する認証済み所有者"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.short_desc": {
+          "source": "Replay committed SFTP publication receipts",
+          "message": "確定済み SFTP 公開記録を再取得"
+        },
         "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.desc": {
           "source": "Submits an inbound file into the configured virtual SFTP exchange backend.",
           "message": "設定された仮想SFTPエクスチェンジバックエンドに受信ファイルを送信します。"

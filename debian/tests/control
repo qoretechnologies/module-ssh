@@ -1,5 +1,5 @@
 Tests: runtime
-Depends: qore-ssh-module, openssh-client
+Depends: qore-ssh-module, openssh-client, qore-sqlite3-module, python3
 # QUnit and expected invalid-input diagnostics use stderr.
 Restrictions: allow-stderr
 

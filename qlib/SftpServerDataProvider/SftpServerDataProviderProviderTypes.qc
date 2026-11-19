@@ -640,6 +640,90 @@ public namespace SftpServerDataProvider {
         }
     }
 
+    #! SftpPublicationQuery fields for publication reconciliation.
+    public class SftpPublicationQueryDataType inherits HashDataType {
+        public {
+            const Fields = {
+                "principal": {
+                    "display_name": "Principal", "type": StringType,
+                    "desc": "Authenticated owner whose receipts should be replayed.", "example_value": "partner-a",
+                },
+                "after_version": {
+                    "display_name": "After Version", "type": IntOrNothingType,
+                    "desc": "Return receipts newer than this exclusive cursor.",
+                },
+                "limit": {
+                    "display_name": "Page Size", "type": IntOrNothingType,
+                    "desc": "Maximum receipts in one page, from 1 through 1000.", "example_value": 100,
+                },
+            };
+        }
+        constructor() : HashDataType("SftpPublicationQuery") {
+            addQoreFields(Fields);
+        }
+    }
+    public const SftpPublicationQueryDataType = new SftpPublicationQueryDataType();
+
+    #! SftpPublicationReceipt fields for publication reconciliation.
+    public class SftpPublicationReceiptDataType inherits HashDataType {
+        private {
+            const Fields = {
+                "publication_id": {
+                    "display_name": "Publication ID", "type": StringType,
+                    "desc": "Immutable identifier for deduplication.",
+                },
+                "version": {
+                    "display_name": "Version", "type": IntType,
+                    "desc": "Database commit order used for the next page.",
+                },
+                "principal": {
+                    "display_name": "Principal", "type": StringType,
+                    "desc": "Authenticated owner of the file.",
+                },
+                "final_name": {
+                    "display_name": "Final Name", "type": StringType,
+                    "desc": "Logical name committed in the inbound directory.",
+                },
+                "staging_name": {
+                    "display_name": "Staging Name", "type": StringType,
+                    "desc": "Source name supplied at commit.",
+                },
+                "byte_count": {
+                    "display_name": "Byte Count", "type": IntType,
+                    "desc": "Number of bytes in the committed member.",
+                },
+                "committed_at": {
+                    "display_name": "Commit Time", "type": IntType,
+                    "desc": "Commit time in Unix epoch seconds.",
+                },
+                "digest": {
+                    "display_name": "Digest", "type": StringOrNothingType,
+                    "desc": "Content digest when available.",
+                },
+            };
+        }
+        constructor() : HashDataType("SftpPublicationReceipt") {
+            addQoreFields(Fields);
+        }
+    }
+    public const SftpPublicationReceiptDataType = new SftpPublicationReceiptDataType();
+
+    #! SftpPublicationPage fields for publication reconciliation.
+    public class SftpPublicationPageDataType inherits HashDataType {
+        private {
+            const Fields = {
+                "publications": {
+                    "display_name": "Publications", "type": new SoftListDataType("SftpPublicationList", SftpPublicationReceiptDataType),
+                    "desc": "Committed receipts in increasing version order.",
+                },
+            };
+        }
+        constructor() : HashDataType("SftpPublicationPage") {
+            addQoreFields(Fields);
+        }
+    }
+    public const SftpPublicationPageDataType = new SftpPublicationPageDataType();
+
     public const SftpServerRecordResponseDataType = new SftpServerRecordInfoDataType();
     public const SftpServerListResponseDataType = new SftpServerListResponseDataType();
     public const SftpServerSubmitResponseDataType = SftpServerRecordResponseDataType;

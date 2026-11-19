@@ -7,6 +7,7 @@ Build-Depends: debhelper-compat (= 13),
                pkgconf,
                libssh-dev,
                openssh-client <!nocheck>,
+               qore-sqlite3-module <!nocheck>,
                libqore-dev (>= 3.0.0~),
                qore (>= 3.0.0~),
                qore-misc-tools (>= 3.0.0~) <!nocheck>,
@@ -23,7 +24,7 @@ Architecture: any
 Depends: ${qore:Depends},
          ${shlibs:Depends},
          ${misc:Depends}
-Suggests: qore-ssh-module-doc
+Suggests: qore-ssh-module-doc, qore-sqlite3-module
 Description: SSH servers, authentication and virtual SFTP providers for Qore
  This package provides native libssh server/key bindings and compiled/source
  server authentication, connection, command and virtual SFTP provider modules.

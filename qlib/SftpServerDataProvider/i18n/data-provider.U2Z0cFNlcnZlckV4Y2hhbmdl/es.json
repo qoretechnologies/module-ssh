@@ -2123,6 +2123,54 @@
           "source": "List available outbound files in a virtual SFTP exchange",
           "message": "Listar archivos salientes disponibles en un intercambio SFTP virtual"
         },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.desc": {
+          "source": "Reconcile a staged exchange after a restart or a lost rename reply. Select a `principal` and resume after the last processed `version`. Receipts contain metadata only.",
+          "message": "Conciliar el intercambio tras un reinicio o la pérdida de la respuesta al cambio de nombre. Seleccione un `principal` y continúe después de la última `version` procesada. Los comprobantes solo contienen metadatos."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.display_name": {
+          "source": "List Published Files",
+          "message": "Listar archivos publicados"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.option.YWZ0ZXJfdmVyc2lvbg.desc": {
+          "source": "Return receipts newer than this exclusive cursor.",
+          "message": "Devolver los comprobantes posteriores a este cursor exclusivo."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.option.YWZ0ZXJfdmVyc2lvbg.display_name": {
+          "source": "After Version",
+          "message": "Después de la versión"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.option.YWZ0ZXJfdmVyc2lvbg.short_desc": {
+          "source": "Return receipts newer than this exclusive cursor",
+          "message": "Devolver los comprobantes posteriores a este cursor exclusivo"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.option.bGltaXQ.desc": {
+          "source": "Maximum receipts in one page, from 1 through 1000.",
+          "message": "Máximo de comprobantes por página, de 1 a 1000."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.option.bGltaXQ.display_name": {
+          "source": "Page Size",
+          "message": "Tamaño de página"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.option.bGltaXQ.short_desc": {
+          "source": "Maximum receipts in one page, from 1 through 1000",
+          "message": "Máximo de comprobantes por página, de 1 a 1000"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.option.cHJpbmNpcGFs.desc": {
+          "source": "Authenticated owner whose receipts should be replayed.",
+          "message": "Propietario autenticado cuyos comprobantes se consultarán."
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.option.cHJpbmNpcGFs.display_name": {
+          "source": "Principal",
+          "message": "Principal"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.option.cHJpbmNpcGFs.short_desc": {
+          "source": "Authenticated owner whose receipts should be replayed",
+          "message": "Propietario autenticado cuyos comprobantes se consultarán"
+        },
+        "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.bGlzdC1wdWJsaWNhdGlvbnM.short_desc": {
+          "source": "Replay committed SFTP publication receipts",
+          "message": "Volver a consultar los comprobantes de publicaciones SFTP confirmadas"
+        },
         "app.U2Z0cFNlcnZlckV4Y2hhbmdl.action.c3VibWl0LWluYm91bmQ.desc": {
           "source": "Submits an inbound file into the configured virtual SFTP exchange backend.",
           "message": "Envía un archivo entrante al backend de intercambio SFTP virtual configurado."

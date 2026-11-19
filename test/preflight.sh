@@ -12,6 +12,7 @@ qore --enable-debug test/Scaffold.qtest -v
 qore --enable-debug test/SshSession.qtest -v
 qore --enable-debug test/SshCommandSession.qtest -v
 qore --enable-debug test/SftpSession.qtest -v
+qore --enable-debug test/StagedSftpExchange.qtest -v
 qore --enable-debug test/SshServerConnections.qtest -v
 qore --enable-debug test/SshServerAuthProvider.qtest -v
 qore --enable-debug test/SshServerCommandProvider.qtest -v

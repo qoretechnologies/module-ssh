@@ -323,6 +323,18 @@
           "source": "Existing virtual exchange backend shared by the server and data provider",
           "message": "Stávající virtuální backend sdílený mezi serverem a poskytovatelem dat"
         },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U2Z0cFNlcnZlckNvbm5lY3Rpb24.option.cHVibGljYXRpb25fZGF0YWJhc2U.desc": {
+          "source": "Absolute path to a dedicated SQLite database. Enables private `/staging` uploads, no-replace rename to `/inbound`, and replay through `list-publications`.",
+          "message": "Absolutní cesta k vyhrazené databázi SQLite. Umožňuje soukromé nahrávání do `/staging`, přejmenování do `/inbound` bez přepsání a opětovné načtení pomocí `list-publications`."
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U2Z0cFNlcnZlckNvbm5lY3Rpb24.option.cHVibGljYXRpb25fZGF0YWJhc2U.display_name": {
+          "source": "Publication Database",
+          "message": "Databáze publikací"
+        },
+        "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U2Z0cFNlcnZlckNvbm5lY3Rpb24.option.cHVibGljYXRpb25fZGF0YWJhc2U.short_desc": {
+          "source": "SQLite file for immutable staged publication",
+          "message": "Soubor SQLite pro neměnné dvoufázové publikace"
+        },
         "connection.U3NoU2VydmVyQ29ubmVjdGlvbnM.scheme.U2Z0cFNlcnZlckNvbm5lY3Rpb24.short_desc": {
           "source": "A managed local SFTP server connection definition",
           "message": "Definice spravované lokální připojení SFTP serveru"
