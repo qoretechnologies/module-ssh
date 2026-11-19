@@ -127,6 +127,17 @@ class StagedSftpExchangeTest inherits QUnit::Test {
         string db = database();
         on_exit unlink(db);
         StagedSftpExchange exchange(db);
+        hash<Qore::Ssh::SftpOpenRequest> req = <Qore::Ssh::SftpOpenRequest>{
+            "path": "/staging/a", "session_info": session("alice"),
+        };
+        foreach int flags in ((0, 2, 8, 11, 14)) {
+            req.pflags = flags;
+            assertThrows("SFTP-PUBLICATION-DENIED", sub() { exchange.openWrite(req); });
+        }
+        auto buffered = openStage(exchange, "a", "alice");
+        buffered.data = <ff>;
+        assertThrows("SFTP-PUBLICATION-ERROR", sub() { exchange.closeWrite(buffered); });
+        assertThrows("SFTP-PUBLICATION-ERROR", sub() { exchange.commitPublication("alice", "a", "member"); });
         hash<Qore::Ssh::SftpCloseRequest> first = openStage(exchange, "a", "alice");
         chunk(exchange, first, 0, <42>);
         assertThrows("SFTP-PUBLICATION-ERROR", sub() { chunk(exchange, first, 2, <fe>); });
@@ -176,11 +187,15 @@ class StagedSftpExchangeTest inherits QUnit::Test {
         assertEq(binary(receipts[0].staging_name), exchange.readPublication("alice", receipts[0].publication_id, 0, 8));
     }
 
+    private static string shellQuote(string path) {
+        return "'" + replace(path, "'", "'\"'\"'") + "'";
+    }
+
     testProcessRestart() {
         string db = database();
         on_exit unlink(db);
         string example = get_script_dir() + "/../examples/StagedSftpExchange.qr";
-        int rc = system(sprintf("qore --enable-debug '%s' '%s'", example, db));
+        int rc = system(sprintf("qore --enable-debug %s %s", shellQuote(example), shellQuote(db)));
         assertEq(0, rc);
         StagedSftpExchange recovered(db);
         list<hash<SftpPublicationInfo>> receipts = recovered.listPublications("partner");
@@ -221,7 +236,7 @@ class StagedSftpExchangeTest inherits QUnit::Test {
         int rc = -1;
         background sub() {
             on_exit done.dec();
-            rc = system(sprintf("python3 '%s' %d", script, port));
+            rc = system(sprintf("python3 %s %d", shellQuote(script), port));
         }();
         Counter sessions();
         for (int i = 0; i < 9; ++i) {

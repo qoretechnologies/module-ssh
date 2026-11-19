@@ -122,8 +122,8 @@ public namespace SftpServerDataProvider {
         hash<Qore::Ssh::SftpOpenResult> openWrite(hash<Qore::Ssh::SftpOpenRequest> req) {
             string principal = owner(req.session_info);
             on_error emit("rejected", principal, req.path);
-            # SFTP v3 OPEN flags READ (1) and APPEND (4) conflict with exclusive sequential creation.
-            if (req.pflags && (req.pflags & 5)) {
+            # SFTP v3 requires WRITE (2) and CREAT (8). READ (1) and APPEND (4) are incompatible.
+            if (req.pflags.typeCode() == NT_INT && ((req.pflags & 10) != 10 || (req.pflags & 5))) {
                 throw "SFTP-PUBLICATION-DENIED", "staging supports write-only sequential uploads";
             }
             string name = member(req.path, "/staging");
@@ -178,7 +178,13 @@ public namespace SftpServerDataProvider {
         */
         hash<Qore::Ssh::SftpOperationResult> closeWrite(hash<Qore::Ssh::SftpCloseRequest> req) {
             string principal = owner(req.session_info);
-            finish(principal, member(req.path, "/staging"), req.backend_handle);
+            string name = member(req.path, "/staging");
+            if (req.data.typeCode() != NT_NOTHING) {
+                discard(principal, name, req.backend_handle);
+                emit("rejected", principal, req.path);
+                throw "SFTP-PUBLICATION-ERROR", "staged uploads must supply all data through write()";
+            }
+            finish(principal, name, req.backend_handle);
             emit("staged", principal, req.path);
             return <Qore::Ssh::SftpOperationResult>{"path": req.path, "completed": True};
         }

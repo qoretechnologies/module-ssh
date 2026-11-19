@@ -91,3 +91,21 @@ an unread rename response and receipt recovery across a process boundary.
 Memcheck reported zero errors and zero definitely lost bytes for SftpSession,
 VirtualSftpServer and StagedSftpExchange. The docs target built the backend
 guide, and the packaged provider catalogs validated 8,892 translations.
+
+Pre-push review
+---------------
+
+The review found that the staged backend created files on a write-only OPEN
+without CREAT and ignored data supplied by a buffered caller at CLOSE. The
+regressions failed on the original implementation. The backend now validates
+explicit open flags and discards a stream closed with buffered data. Both
+checks run alongside the existing successful wire and direct-helper paths.
+
+Local atomic copies now reserve the temporary sibling as a mode-0700
+directory. A concurrent regular-file rename cannot replace a reservation.
+Only the completed payload is renamed. Tests cover an occupied reservation
+and payload, cleanup after a missing source, and replacement of an existing
+destination. The sandbox checks cover both the directory and its child.
+
+The implementation-review table applies to this revision. No module, action,
+factory, translation key, or dependency was added in this review.

@@ -3658,7 +3658,6 @@ public:
         }
 
         const bool stage_copy = atomic_publish && !move;
-        const std::string& staging_path = stage_copy ? temporary_path : final_path;
         // Identical parent spellings and different leaf names exclude lexical aliases, including "../".
         if (stage_copy && (temporary_path.empty() || temporary_path == final_path
                 || temporary_path.substr(0, temporary_path.rfind('/') + 1)
@@ -3712,32 +3711,46 @@ public:
             }
         }
         if (move) {
-            if (::rename(source_path.c_str(), staging_path.c_str())) {
+            if (::rename(source_path.c_str(), final_path.c_str())) {
                 xsink->raiseErrnoException("SFTP-ATOMIC-PUBLISH-ERROR", errno,
-                    "cannot rename local file '%s' to staging path '%s'", source_path.c_str(), staging_path.c_str());
+                    "cannot rename local file '%s' to '%s'", source_path.c_str(), final_path.c_str());
                 return nullptr;
             }
-        } else if (ssh_sftp_copy_file(source_path, staging_path, xsink, stage_copy)) {
-            return nullptr;
-        }
-
-        if (stage_copy) {
+        } else if (stage_copy) {
+            // A competing rename of a regular file cannot replace this reservation. The payload
+            // remains private even on filesystems that fold two different sibling spellings together.
+            const std::string payload_path = temporary_path + "/payload";
+            if (ssh_sftp_check_fs_access(payload_path, QSEC_WRITE | QSEC_CREATE | QSEC_DELETE, xsink)) {
+                return nullptr;
+            }
+            if (::mkdir(temporary_path.c_str(), 0700)) {
+                xsink->raiseErrnoException("SFTP-ATOMIC-PUBLISH-ERROR", errno,
+                    "cannot reserve temporary directory '%s'", temporary_path.c_str());
+                return nullptr;
+            }
+            ON_BLOCK_EXIT([&]() {
+                ::rmdir(temporary_path.c_str());
+            });
+            if (ssh_sftp_copy_file(source_path, payload_path, xsink, true)) {
+                return nullptr;
+            }
             bool renamed = false;
             ON_BLOCK_EXIT([&]() {
                 if (!renamed) {
-                    ::unlink(staging_path.c_str());
+                    ::unlink(payload_path.c_str());
                 }
             });
             if (qore_check_cancel(xsink, "sftp atomic publish")) {
                 return nullptr;
             }
-
-            if (::rename(staging_path.c_str(), final_path.c_str())) {
+            if (::rename(payload_path.c_str(), final_path.c_str())) {
                 xsink->raiseErrnoException("SFTP-ATOMIC-PUBLISH-ERROR", errno,
-                    "cannot rename staging file '%s' to final path '%s'", staging_path.c_str(), final_path.c_str());
+                    "cannot rename staged file into '%s'", final_path.c_str());
                 return nullptr;
             }
             renamed = true;
+        } else if (ssh_sftp_copy_file(source_path, final_path, xsink)) {
+            return nullptr;
         }
 
         ReferenceHolder<QoreHashNode> updated_transfer_info(reinterpret_cast<QoreHashNode*>(
@@ -4733,8 +4746,9 @@ hash<SftpOperationResult> SftpSession::retrieveToLocalFile(hash<SftpOpenRequest>
 //! Publishes a local staged file through the active transfer plan
 /** Uses the current <tt>SftpTransferInfo</tt> to copy or rename a local file into
     the planned final destination. With @c atomic_publish, a copy requires a fresh temporary
-    sibling name in the same trusted destination directory. It creates that file exclusively
-    with mode 0600, finishes and closes the copy, then renames it over the destination.
+    sibling name in the same trusted destination directory. It reserves that name as a private directory
+    with mode 0700, copies and closes a mode-0600 file inside it, then renames the file over
+    the destination and removes the reservation.
     An atomic move renames the source directly and requires the same filesystem.
 
     @throw SFTP-ATOMIC-PUBLISH-ERROR staging is unsuitable or the commit rename failed

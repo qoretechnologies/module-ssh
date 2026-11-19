@@ -86,6 +86,8 @@ def session(port, principal):
 def qualify(port):
     stage, final = b"/staging/member", b"/inbound/order"
     with session(port, "alice") as client:
+        client.status(3, field(stage) + u32(2) + u32(0), success=False)
+        assert not client.exists(stage)
         handle = client.open(stage)
         client.write(handle, 0, b"abandoned")
         client.rename(stage, final, success=False)

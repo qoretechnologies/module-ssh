@@ -70,6 +70,10 @@
     |Custom streamed backend|Defined by its own close, abort and rename implementations|Select strict mode only by agreement with a backend that enforces the requested guarantees
     |SftpSession::publishLocalFile with atomic_publish|Local filesystem rename|Replaces a regular destination on a suitable filesystem. Provides filesystem visibility without an exchange receipt
 
+    For a local atomic copy, supply a fresh temporary sibling in a trusted directory.
+    The helper reserves it as a private directory, so another local publication cannot
+    replace the payload while it is being copied. A failed copy releases its reservation.
+
     A producer creates a unique filename under <tt>/staging</tt>, writes consecutively from
     offset zero and closes it. Before rename, verify successful writes and close and compare
     the staged size with the intended length when available. The filename must be one path component. An open stage rejects rename.

@@ -758,7 +758,17 @@ class SftpSessionTest inherits QUnit::Test {
             assertFalse(s.getTransferInfo().completed);
         }
         unlink(stage);
+        mkdir(stage, 0700);
+        writeTestFile(stage + "/payload", "other transfer");
+        assertThrows("SFTP-ATOMIC-PUBLISH-ERROR", sub() { s.publishLocalFile(source); });
+        assertEq("other transfer", ReadOnlyFile::readTextFile(stage + "/payload"));
+        unlink(stage + "/payload");
+        rmdir(stage);
+        assertThrows("SFTPSESSION-FILESYSTEM-ERROR", sub() { s.publishLocalFile(source + ".missing"); });
+        assertFalse(is_dir(stage));
+        assertEq("previous", ReadOnlyFile::readTextFile(dest));
         assertTrue(s.publishLocalFile(source).completed);
+        assertFalse(is_dir(stage));
         assertEq("new bytes", ReadOnlyFile::readTextFile(dest));
         assertFalse(is_file(stage));
         info.final_path = source;
