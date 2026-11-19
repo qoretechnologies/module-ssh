@@ -106,6 +106,14 @@ module SshServerCommandProvider {
 
     See @ref sshcommandcookbook "Virtual Command Server Cookbook" for complete examples
     and @ref sshcookbook "Typed Helper Cookbook" for the full cookbook.
+
+    @subpage sshservercommandproviderreleasenotes
+*/
+
+/** @page sshservercommandproviderreleasenotes SshServerCommandProvider Release Notes
+
+    @section sshservercommandproviderv01 SshServerCommandProvider Module Version 0.1
+    - initial release
 */
 
 public namespace SshServerCommandProvider {

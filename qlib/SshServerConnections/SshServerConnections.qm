@@ -72,6 +72,9 @@ module SshServerConnections {
     - connection-owned @c DataProvider bridging for generic SFTP exchange
       backends
 
+    @par Connection options
+    Connection option labels and descriptions are localized in all twelve standard locales.
+
     @section sshserverconnectionsschemes Registered Connection Schemes
 
     The module registers the following connection schemes on load:
@@ -141,7 +144,14 @@ module SshServerConnections {
     - @ref SshServerConnections::AbstractSshServerConnection
     - @ref SshServerConnections::SshCommandServerConnection
     - @ref SshServerConnections::SftpServerConnection
-    @section sshserverconnectionsrelnotes Release Notes
-    @subsection sshserverconnections_0_2 SshServerConnections 0.2
-    - added source-owned SSH and SFTP connection presentation catalogs in all twelve standard locales
+
+    @anchor sshserverconnectionsrelnotes
+
+    @subpage sshserverconnectionsreleasenotes
+*/
+
+/** @page sshserverconnectionsreleasenotes SshServerConnections Release Notes
+
+    @section sshserverconnections_0_2 SshServerConnections Module Version 0.2
+    - initial release
 */
