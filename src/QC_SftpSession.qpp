@@ -180,13 +180,14 @@ static int ssh_sftp_ensure_parent_dirs(const std::string& path, ExceptionSink* x
     return 0;
 }
 
-static int ssh_sftp_copy_file(const std::string& source_path, const std::string& target_path, ExceptionSink* xsink) {
+static int ssh_sftp_copy_file(const std::string& source_path, const std::string& target_path, ExceptionSink* xsink,
+        bool exclusive = false) {
     if (ssh_sftp_check_fs_access(source_path, QSEC_READ, xsink)
             || ssh_sftp_check_fs_access(target_path, QSEC_WRITE, xsink)) {
         return -1;
     }
 
-    int in_fd = ::open(source_path.c_str(), O_RDONLY);
+    int in_fd = ::open(source_path.c_str(), O_RDONLY | (exclusive ? O_NONBLOCK : 0));
     if (in_fd < 0) {
         xsink->raiseErrnoException("SFTPSESSION-FILESYSTEM-ERROR", errno, "cannot open source file '%s' for read",
             source_path.c_str());
@@ -198,15 +199,28 @@ static int ssh_sftp_copy_file(const std::string& source_path, const std::string&
         }
     });
 
-    int out_fd = ::open(target_path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0600);
+    if (exclusive) {
+        struct stat st;
+        if (::fstat(in_fd, &st) || !S_ISREG(st.st_mode)) {
+            xsink->raiseException("SFTP-ATOMIC-PUBLISH-ERROR", "atomic copy requires a regular source file");
+            return -1;
+        }
+    }
+
+    int out_fd = ::open(target_path.c_str(), O_WRONLY | O_CREAT | (exclusive ? O_EXCL : O_TRUNC), 0600);
     if (out_fd < 0) {
-        xsink->raiseErrnoException("SFTPSESSION-FILESYSTEM-ERROR", errno, "cannot open target file '%s' for write",
+        xsink->raiseErrnoException(exclusive ? "SFTP-ATOMIC-PUBLISH-ERROR" : "SFTPSESSION-FILESYSTEM-ERROR",
+            errno, "cannot open target file '%s' for write",
             target_path.c_str());
         return -1;
     }
-    ON_BLOCK_EXIT([out_fd]() {
+    bool complete = false;
+    ON_BLOCK_EXIT([&]() {
         if (out_fd >= 0) {
             ::close(out_fd);
+        }
+        if (exclusive && !complete) {
+            ::unlink(target_path.c_str());
         }
     });
 
@@ -244,6 +258,10 @@ static int ssh_sftp_copy_file(const std::string& source_path, const std::string&
                     "cannot write target file '%s'", target_path.c_str());
                 return -1;
             }
+            if (!wc) {
+                xsink->raiseException("SFTPSESSION-FILESYSTEM-ERROR", "no progress writing '%s'", target_path.c_str());
+                return -1;
+            }
             offset += wc;
         }
     }
@@ -254,6 +272,13 @@ static int ssh_sftp_copy_file(const std::string& source_path, const std::string&
         return -1;
     }
 
+    int close_rc = ::close(out_fd);
+    out_fd = -1;
+    if (close_rc) {
+        xsink->raiseErrnoException("SFTPSESSION-FILESYSTEM-ERROR", errno, "cannot close '%s'", target_path.c_str());
+        return -1;
+    }
+    complete = true;
     return 0;
 }
 
@@ -705,20 +730,21 @@ public:
 
     struct FileHandleState {
         std::string data;
-        QoreHashNode* metadata;
         std::string path;
+        QoreHashNode* metadata;
+        QoreObject* owner;
         bool write_mode;
         bool stream_read;
         bool stream_write;
 
-        explicit FileHandleState(const std::string& n_data = std::string(), QoreHashNode* n_metadata = nullptr,
-                const std::string& n_path = std::string(), bool n_write_mode = false, bool n_stream_read = false,
-                bool n_stream_write = false)
-                : data(n_data), metadata(n_metadata), path(n_path), write_mode(n_write_mode), stream_read(n_stream_read),
-                  stream_write(n_stream_write) {
+        FileHandleState(QoreObject* backend, const std::string& data, const QoreHashNode* metadata,
+                const std::string& path, bool write_mode, bool stream_read, bool stream_write = false)
+                : data(data), path(path), metadata(metadata->hashRefSelf()), owner(backend->objectRefSelf()),
+                  write_mode(write_mode), stream_read(stream_read), stream_write(stream_write) {
         }
 
         ~FileHandleState() {
+            owner->deref(nullptr);
             if (metadata) {
                 metadata->deref(nullptr);
             }
@@ -820,9 +846,18 @@ public:
             return;
         }
 
+        std::unique_lock<std::mutex> dispatch(dispatch_mutex, std::try_to_lock);
+        if (!dispatch.owns_lock()) {
+            xsink->raiseException("SFTPSESSION-STATE-ERROR", "cannot replace the backend during request dispatch");
+            return;
+        }
         QoreObject* old_backend = nullptr;
         {
             std::lock_guard<std::mutex> lock(m);
+            if (!file_handles.empty()) {
+                xsink->raiseException("SFTPSESSION-STATE-ERROR", "cannot replace the backend with open files");
+                return;
+            }
             old_backend = backend;
             backend = q_backend ? q_backend->objectRefSelf() : nullptr;
         }
@@ -840,7 +875,7 @@ public:
         return channel.isOpen();
     }
 
-    QoreHashNode* waitProtocolMessage(int timeout_ms, ExceptionSink* xsink) {
+    QoreHashNode* waitProtocolMessage(int timeout_ms, ExceptionSink* xsink, bool* peer_closed = nullptr) {
         std::string payload;
         uint32_t packet_size;
         {
@@ -851,6 +886,9 @@ public:
                 return nullptr;
             }
             if (readPacket(io, timeout_ms, payload, xsink)) {
+                if (peer_closed) {
+                    *peer_closed = ssh_channel_is_eof(io.get()) || !ssh_channel_is_open(io.get());
+                }
                 return nullptr;
             }
             packet_size = static_cast<uint32_t>(payload.size());
@@ -915,13 +953,14 @@ public:
         body.push_back(static_cast<char>(SSH_FXP_VERSION));
         ssh_sftp_write_u32_be(body, static_cast<uint32_t>(version));
 
-        // Advertise statvfs@openssh.com extension
-        const std::string ext_name = "statvfs@openssh.com";
-        const std::string ext_version = "2";
-        ssh_sftp_write_u32_be(body, static_cast<uint32_t>(ext_name.size()));
-        body.append(ext_name);
-        ssh_sftp_write_u32_be(body, static_cast<uint32_t>(ext_version.size()));
-        body.append(ext_version);
+        if (backendHasMethod("statvfs")) {
+            const std::string ext_name = "statvfs@openssh.com";
+            const std::string ext_version = "2";
+            ssh_sftp_write_u32_be(body, static_cast<uint32_t>(ext_name.size()));
+            body.append(ext_name);
+            ssh_sftp_write_u32_be(body, static_cast<uint32_t>(ext_version.size()));
+            body.append(ext_version);
+        }
 
         std::string packet;
         packet.reserve(4 + body.size());
@@ -1260,8 +1299,9 @@ public:
         return result->copy();
     }
 
-    QoreHashNode* callBackendMethodDirectTyped(const char* method, const QoreHashNode* req, ExceptionSink* xsink) {
-        ReferenceHolder<QoreObject> backend_holder(getBackend(), xsink);
+    QoreHashNode* callBackendMethodDirectTyped(const char* method, const QoreHashNode* req, ExceptionSink* xsink,
+            QoreObject* owner = nullptr) {
+        ReferenceHolder<QoreObject> backend_holder(owner ? owner->objectRefSelf() : getBackend(), xsink);
         if (*xsink || !backend_holder) {
             return nullptr;
         }
@@ -1361,9 +1401,8 @@ public:
         ReferenceHolder<QoreHashNode> backend_result(callBackendMethodDirectTyped("list", *typed_backend_req, xsink),
             xsink);
         if (*xsink) {
-            sendStatus(request_id, SSH_FX_FAILURE, "backend operation failed", "en", xsink);
             xsink->clear();
-            return -1;
+            return sendStatus(request_id, SSH_FX_FAILURE, "backend operation failed", "en", xsink);
         }
         if (!backend_result) {
             return 0;
@@ -1386,6 +1425,7 @@ public:
 
     int handleBackendReadDir(int request_id, const std::string& handle, ExceptionSink* xsink) {
         logDebug("SFTP readdir handle=" + handle);
+        constexpr size_t page_size = 64;
         QoreListNode* copied_entries = nullptr;
         size_t offset = 0;
         {
@@ -1396,9 +1436,9 @@ public:
             } else if (!i->second || !i->second->entries) {
                 offset = static_cast<size_t>(-1);
             } else {
-                copied_entries = i->second->entries->copy();
+                copied_entries = i->second->entries->listRefSelf();
                 offset = i->second->offset;
-                i->second->offset = i->second->entries->size();
+                i->second->offset = std::min(offset + page_size, i->second->entries->size());
             }
         }
         ReferenceHolder<QoreListNode> entries(copied_entries, xsink);
@@ -1407,7 +1447,7 @@ public:
             return sendStatus(request_id, SSH_FX_INVALID_HANDLE, "invalid directory handle", "en", xsink);
         }
 
-        if (sendNames(request_id, *entries, offset, 64, xsink)) {
+        if (sendNames(request_id, *entries, offset, page_size, xsink)) {
             return -1;
         }
         return 0;
@@ -1432,9 +1472,8 @@ public:
         ReferenceHolder<QoreHashNode> backend_result(callBackendMethodDirectTyped("openRead", *typed_backend_req,
             xsink), xsink);
         if (*xsink) {
-            sendStatus(request_id, SSH_FX_FAILURE, "backend operation failed", "en", xsink);
             xsink->clear();
-            return -1;
+            return sendStatus(request_id, SSH_FX_FAILURE, "backend operation failed", "en", xsink);
         }
         if (!backend_result) {
             return 0;
@@ -1482,8 +1521,8 @@ public:
             std::lock_guard<std::mutex> lock(m);
             handle = "file-" + std::to_string(next_file_handle_id++);
             file_handles.emplace(handle,
-                std::unique_ptr<FileHandleState>(new FileHandleState(data, backend_result->copy(), normalized_path, false,
-                    stream_read)));
+                std::unique_ptr<FileHandleState>(new FileHandleState(backend, data, *backend_result,
+                    normalized_path, false, stream_read)));
         }
 
         return sendHandle(request_id, handle, xsink);
@@ -1511,9 +1550,8 @@ public:
         ReferenceHolder<QoreHashNode> backend_result(callBackendMethodDirectTyped("openWrite", *typed_backend_req,
             xsink), xsink);
         if (*xsink) {
-            sendStatus(request_id, SSH_FX_FAILURE, "backend operation failed", "en", xsink);
             xsink->clear();
-            return -1;
+            return sendStatus(request_id, SSH_FX_FAILURE, "backend operation failed", "en", xsink);
         }
         if (!backend_result) {
             return 0;
@@ -1527,11 +1565,15 @@ public:
             std::lock_guard<std::mutex> lock(m);
             handle = "file-" + std::to_string(next_file_handle_id++);
             file_handles.emplace(handle,
-                std::unique_ptr<FileHandleState>(new FileHandleState(std::string(), backend_result->copy(),
+                std::unique_ptr<FileHandleState>(new FileHandleState(backend, std::string(), *backend_result,
                     normalized_path, true, false, stream_write)));
         }
 
-        return sendHandle(request_id, handle, xsink);
+        int rc = sendHandle(request_id, handle, xsink);
+        if (rc) {
+            discardWrite(handle);
+        }
+        return rc;
     }
 
     int handleBackendRead(int request_id, const std::string& handle, uint64_t offset, uint32_t length, ExceptionSink* xsink) {
@@ -1601,9 +1643,8 @@ public:
 
             ReferenceHolder<QoreHashNode> backend_result(callBackendMethodDirectTyped("read", *req, xsink), xsink);
             if (*xsink) {
-                sendStatus(request_id, SSH_FX_FAILURE, "backend operation failed", "en", xsink);
                 xsink->clear();
-                return -1;
+                return sendStatus(request_id, SSH_FX_FAILURE, "backend operation failed", "en", xsink);
             }
             if (!backend_result) {
                 return 0;
@@ -1637,9 +1678,35 @@ public:
         return sendData(request_id, chunk.data(), chunk.size(), xsink);
     }
 
+    // Remove the capability before invoking backend code. A later CLOSE/WRITE cannot reuse it.
+    void discardWrite(const std::string& handle) {
+        std::unique_ptr<FileHandleState> state;
+        {
+            std::lock_guard<std::mutex> lock(m);
+            auto it = file_handles.find(handle);
+            if (it == file_handles.end() || !it->second->write_mode) {
+                return;
+            }
+            state = std::move(it->second);
+            file_handles.erase(it);
+        }
+        ExceptionSink cleanup;
+        abandonBackendFileState(*state, &cleanup);
+        if (cleanup) {
+            logWarn("backend abortWrite failed for " + state->path);
+            cleanup.clear();
+        }
+    }
+
     int handleBackendWrite(int request_id, const std::string& handle, uint64_t offset, const std::string& data,
             ExceptionSink* xsink) {
         logDebug("SFTP write handle=" + handle + " offset=" + std::to_string(offset) + " length=" + std::to_string(data.size()));
+        bool acknowledged = false;
+        ON_BLOCK_EXIT([&]() {
+            if (!acknowledged) {
+                discardWrite(handle);
+            }
+        });
         bool invalid = false;
         bool too_large = false;
         bool stream_write = false;
@@ -1725,97 +1792,102 @@ public:
             }
 
             ReferenceHolder<QoreHashNode> backend_result(callBackendMethodDirectTyped("write", *req, xsink), xsink);
-            if (*xsink) {
-                sendStatus(request_id, SSH_FX_FAILURE, "backend operation failed", "en", xsink);
+            if (*xsink || !backend_result) {
                 xsink->clear();
-                return -1;
+                return sendStatus(request_id, SSH_FX_FAILURE, "backend write failed", "en", xsink);
             }
-            if (!backend_result) {
-                return 0;
+            const QoreValue written = backend_result->getKeyValue("written");
+            if ((written.getType() != NT_NOTHING && (written.getType() != NT_INT
+                    || written.getAsBigInt() != static_cast<int64>(data.size())))
+                    || !ssh_sftp_get_hash_bool(*backend_result, "completed", true, xsink)) {
+                return sendStatus(request_id, SSH_FX_FAILURE, "incomplete backend write", "en", xsink);
             }
         }
-        return sendStatus(request_id, SSH_FX_OK, "written", "en", xsink);
+        int rc = sendStatus(request_id, SSH_FX_OK, "written", "en", xsink);
+        acknowledged = !rc;
+        return rc;
     }
 
-    int finalizeBackendFileState(FileHandleState& file_state, bool send_backend_errors, int request_id,
-            ExceptionSink* xsink) {
-        if (file_state.write_mode) {
-            ReferenceHolder<QoreHashNode> req(new QoreHashNode(hashdeclSftpCloseRequest, xsink), xsink);
-            req->setKeyValue("session_info", getInfo(xsink), xsink);
-            req->setKeyValue("path", new QoreStringNode(file_state.path.c_str()), xsink);
-            req->setKeyValue("operation", new QoreStringNode("close-write"), xsink);
-            if (*xsink) {
-                return -1;
-            }
-            if (file_state.metadata) {
-                ReferenceHolder<QoreHashNode> typed_open_result(reinterpret_cast<QoreHashNode*>(
-                    hashdeclSftpOpenResult->doRuntimeCast(file_state.metadata, xsink)), xsink);
-                if (*xsink) {
-                    return -1;
-                }
-                req->setKeyValue("open_result", typed_open_result.release(), xsink);
-                const QoreValue backend_handle = file_state.metadata->getKeyValue("backend_handle");
-                if (backend_handle.getType() != NT_NOTHING) {
-                    req->setKeyValue("backend_handle", backend_handle.refSelf(), xsink);
-                }
-            }
-            if (!file_state.stream_write) {
-                SimpleRefHolder<BinaryNode> data(new BinaryNode());
-                if (!file_state.data.empty()) {
-                    data->append(file_state.data.data(), file_state.data.size());
-                }
-                req->setKeyValue("data", data.release(), xsink);
-            }
-            if (*xsink) {
-                return -1;
-            }
-            ReferenceHolder<QoreHashNode> backend_result(callBackendMethodDirectTyped("closeWrite", *req, xsink), xsink);
-            if (*xsink) {
-                if (send_backend_errors) {
-                    sendStatus(request_id, SSH_FX_FAILURE, "backend operation failed", "en", xsink);
-                    xsink->clear();
-                }
-                return -1;
-            }
-            if (!backend_result) {
+    int abandonBackendFileState(FileHandleState& state, ExceptionSink* xsink) {
+#if QORE_VERSION_MAJOR >= 3
+        // Permit the owner's bounded local cleanup to release its reservation on a cancelled dispatcher.
+        QoreCancelDeferralHelper cleanup;
+#endif
+        return finalizeBackendFileState(state, false, 0, xsink);
+    }
+
+    int finalizeBackendFileState(FileHandleState& state, bool explicit_close, int request_id, ExceptionSink* xsink) {
+        const char* method;
+        const char* operation;
+        if (state.write_mode) {
+            method = explicit_close ? "closeWrite" : "abortWrite";
+            operation = explicit_close ? "close-write" : "abort-write";
+        } else {
+            if (!state.stream_read) {
                 return 0;
             }
-        } else if (file_state.stream_read && backendHasMethod("closeRead")) {
-            ReferenceHolder<QoreHashNode> req(new QoreHashNode(hashdeclSftpCloseRequest, xsink), xsink);
-            req->setKeyValue("session_info", getInfo(xsink), xsink);
-            req->setKeyValue("path", new QoreStringNode(file_state.path.c_str()), xsink);
-            req->setKeyValue("operation", new QoreStringNode("close-read"), xsink);
-            if (*xsink) {
-                return -1;
-            }
-            if (file_state.metadata) {
-                ReferenceHolder<QoreHashNode> typed_open_result(reinterpret_cast<QoreHashNode*>(
-                    hashdeclSftpOpenResult->doRuntimeCast(file_state.metadata, xsink)), xsink);
-                if (*xsink) {
-                    return -1;
-                }
-                req->setKeyValue("open_result", typed_open_result.release(), xsink);
-                const QoreValue backend_handle = file_state.metadata->getKeyValue("backend_handle");
-                if (backend_handle.getType() != NT_NOTHING) {
-                    req->setKeyValue("backend_handle", backend_handle.refSelf(), xsink);
-                }
-            }
-            if (*xsink) {
-                return -1;
-            }
-            ReferenceHolder<QoreHashNode> backend_result(callBackendMethodDirectTyped("closeRead", *req, xsink), xsink);
-            if (*xsink) {
-                if (send_backend_errors) {
-                    sendStatus(request_id, SSH_FX_FAILURE, "backend operation failed", "en", xsink);
-                    xsink->clear();
-                }
-                return -1;
-            }
-            if (!backend_result) {
-                return 0;
-            }
+            method = "closeRead";
+            operation = "close-read";
+        }
+        if (!state.owner->getClass()->findMethod(method)) {
+            return 0;
         }
 
+        // A failed explicit close must release the original reservation even if request construction fails.
+        bool completed = false;
+        ON_BLOCK_EXIT([&]() {
+            if (!completed && explicit_close && state.write_mode) {
+                ExceptionSink cleanup;
+                abandonBackendFileState(state, &cleanup);
+                if (cleanup) {
+                    logWarn("backend abortWrite failed after close error for " + state.path);
+                    cleanup.clear();
+                }
+            }
+        });
+        ReferenceHolder<QoreHashNode> req(new QoreHashNode(hashdeclSftpCloseRequest, xsink), xsink);
+        req->setKeyValue("session_info", getInfo(xsink), xsink);
+        req->setKeyValue("path", new QoreStringNode(state.path.c_str()), xsink);
+        req->setKeyValue("operation", new QoreStringNode(operation), xsink);
+        if (*xsink) {
+            return -1;
+        }
+        if (state.metadata) {
+            req->setKeyValue("backend_handle", state.metadata->getKeyValue("backend_handle").refSelf(), xsink);
+            if (*xsink) {
+                return -1;
+            }
+            ReferenceHolder<QoreHashNode> open_result(reinterpret_cast<QoreHashNode*>(
+                hashdeclSftpOpenResult->doRuntimeCast(state.metadata, xsink)), xsink);
+            if (*xsink) {
+                if (explicit_close) {
+                    return -1;
+                }
+                // A malformed open result must not prevent cleanup by the original backend handle.
+                xsink->clear();
+            } else {
+                req->setKeyValue("open_result", open_result.release(), xsink);
+            }
+        }
+        if (explicit_close && state.write_mode && !state.stream_write) {
+            SimpleRefHolder<BinaryNode> data(new BinaryNode());
+            if (!state.data.empty()) {
+                data->append(state.data.data(), state.data.size());
+            }
+            req->setKeyValue("data", data.release(), xsink);
+        }
+        if (*xsink) {
+            return -1;
+        }
+        ReferenceHolder<QoreHashNode> result(callBackendMethodDirectTyped(method, *req, xsink, state.owner), xsink);
+        if (!result || !ssh_sftp_get_hash_bool(*result, "completed", true, xsink)) {
+            if (explicit_close) {
+                xsink->clear();
+                sendStatus(request_id, SSH_FX_FAILURE, "backend close failed", "en", xsink);
+            }
+            return -1;
+        }
+        completed = true;
         return 0;
     }
 
@@ -1935,9 +2007,8 @@ public:
 
         ReferenceHolder<QoreHashNode> backend_result(callBackendMethodDirectTyped("setstat", *typed_req, xsink), xsink);
         if (*xsink) {
-            sendStatus(request_id, SSH_FX_FAILURE, "backend operation failed", "en", xsink);
             xsink->clear();
-            return -1;
+            return sendStatus(request_id, SSH_FX_FAILURE, "backend operation failed", "en", xsink);
         }
         if (!backend_result) {
             return 0;
@@ -1962,9 +2033,8 @@ public:
 
         ReferenceHolder<QoreHashNode> backend_result(callBackendMethodDirectTyped("setstat", *typed_req, xsink), xsink);
         if (*xsink) {
-            sendStatus(request_id, SSH_FX_FAILURE, "backend operation failed", "en", xsink);
             xsink->clear();
-            return -1;
+            return sendStatus(request_id, SSH_FX_FAILURE, "backend operation failed", "en", xsink);
         }
         if (!backend_result) {
             return 0;
@@ -1993,9 +2063,8 @@ public:
         ReferenceHolder<QoreHashNode> backend_result(callBackendMethodDirectTyped(method, *typed_backend_req, xsink),
             xsink);
         if (*xsink) {
-            sendStatus(request_id, SSH_FX_FAILURE, "backend operation failed", "en", xsink);
             xsink->clear();
-            return -1;
+            return sendStatus(request_id, SSH_FX_FAILURE, "backend operation failed", "en", xsink);
         }
         if (!backend_result) {
             return 0;
@@ -2023,9 +2092,8 @@ public:
         ReferenceHolder<QoreHashNode> backend_result(callBackendMethodDirectTyped("rename", *typed_backend_req, xsink),
             xsink);
         if (*xsink) {
-            sendStatus(request_id, SSH_FX_FAILURE, "backend operation failed", "en", xsink);
             xsink->clear();
-            return -1;
+            return sendStatus(request_id, SSH_FX_FAILURE, "backend operation failed", "en", xsink);
         }
         if (!backend_result) {
             return 0;
@@ -2053,9 +2121,8 @@ public:
         ReferenceHolder<QoreHashNode> backend_result(callBackendMethodDirectTyped("symlink", *typed_backend_req, xsink),
             xsink);
         if (*xsink) {
-            sendStatus(request_id, SSH_FX_FAILURE, "backend operation failed", "en", xsink);
             xsink->clear();
-            return -1;
+            return sendStatus(request_id, SSH_FX_FAILURE, "backend operation failed", "en", xsink);
         }
         if (!backend_result) {
             return 0;
@@ -2082,9 +2149,8 @@ public:
         ReferenceHolder<QoreHashNode> backend_result(callBackendMethodDirectTyped("readlink", *typed_backend_req, xsink),
             xsink);
         if (*xsink) {
-            sendStatus(request_id, SSH_FX_FAILURE, "backend operation failed", "en", xsink);
             xsink->clear();
-            return -1;
+            return sendStatus(request_id, SSH_FX_FAILURE, "backend operation failed", "en", xsink);
         }
         if (!backend_result) {
             return 0;
@@ -2145,9 +2211,8 @@ public:
         ReferenceHolder<QoreHashNode> backend_result(callBackendMethodDirectTyped("statvfs", *typed_backend_req, xsink),
             xsink);
         if (*xsink) {
-            sendStatus(request_id, SSH_FX_FAILURE, "backend operation failed", "en", xsink);
             xsink->clear();
-            return -1;
+            return sendStatus(request_id, SSH_FX_FAILURE, "backend operation failed", "en", xsink);
         }
         if (!backend_result) {
             return 0;
@@ -2169,7 +2234,22 @@ public:
     }
 
     QoreHashNode* processNextRequest(int timeout_ms, ExceptionSink* xsink) {
-        ReferenceHolder<QoreHashNode> msg(waitProtocolMessage(timeout_ms, xsink), xsink);
+        // One dispatcher owns the request/reply sequence and all open handles on this channel.
+        std::unique_lock<std::mutex> dispatch(dispatch_mutex, std::try_to_lock);
+        if (!dispatch.owns_lock()) {
+            xsink->raiseException("SFTPSESSION-STATE-ERROR", "another operation is dispatching SFTP requests");
+            return nullptr;
+        }
+        ON_BLOCK_EXIT([&]() {
+            if (*xsink) {
+                abandonHandles();
+            }
+        });
+        bool peer_closed = false;
+        ReferenceHolder<QoreHashNode> msg(waitProtocolMessage(timeout_ms, xsink, &peer_closed), xsink);
+        if (peer_closed) {
+            abandonHandles();
+        }
         if (*xsink || !msg) {
             return nullptr;
         }
@@ -2189,7 +2269,7 @@ public:
                     "the decoded SFTP init message is missing a valid version");
                 return nullptr;
             }
-            if (sendVersion(version > 0 ? version : 3, xsink)) {
+            if (sendVersion(version > 0 ? std::min<int64>(version, 3) : 3, xsink)) {
                 return nullptr;
             }
             return msg.release();
@@ -2212,7 +2292,6 @@ public:
         // backend dispatch or local filesystem access.  SSH_FXP_OPEN is conditionally mutating and is
         // gated separately below once its pflags are decoded.
         switch (type) {
-            case SSH_FXP_WRITE:
             case SSH_FXP_SETSTAT:
             case SSH_FXP_FSETSTAT:
             case SSH_FXP_REMOVE:
@@ -2276,9 +2355,11 @@ public:
                 ReferenceHolder<QoreHashNode> backend_result(callBackendMethodDirectTyped("stat", *typed_backend_req,
                     xsink), xsink);
                 if (*xsink) {
-                    sendStatus(request_id, SSH_FX_FAILURE, "backend operation failed", "en", xsink);
                     xsink->clear();
-                    return nullptr;
+                    if (sendStatus(request_id, SSH_FX_FAILURE, "backend operation failed", "en", xsink)) {
+                        return nullptr;
+                    }
+                    return msg.release();
                 }
                 if (!backend_result) {
                     return msg.release();
@@ -2367,9 +2448,11 @@ public:
                 ReferenceHolder<QoreHashNode> backend_result(callBackendMethodDirectTyped("stat", *typed_backend_req,
                     xsink), xsink);
                 if (*xsink) {
-                    sendStatus(request_id, SSH_FX_FAILURE, "backend operation failed", "en", xsink);
                     xsink->clear();
-                    return nullptr;
+                    if (sendStatus(request_id, SSH_FX_FAILURE, "backend operation failed", "en", xsink)) {
+                        return nullptr;
+                    }
+                    return msg.release();
                 }
                 if (!backend_result) {
                     return msg.release();
@@ -2572,6 +2655,13 @@ public:
                 xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR",
                     "received a malformed SSH_FXP_WRITE handle field");
                 return nullptr;
+            }
+            if (isReadOnly()) {
+                discardWrite(handle);
+                if (sendStatus(request_id, SSH_FX_PERMISSION_DENIED, "read-only SFTP session", "en", xsink)) {
+                    return nullptr;
+                }
+                return msg.release();
             }
             if (offset + 12 > payload->size()) {
                 xsink->raiseException("SFTPSESSION-PROTOCOL-ERROR",
@@ -3493,7 +3583,7 @@ public:
         logDebug("SftpSession cleared transfer info");
     }
 
-    void closeIntern() {
+    void abandonHandles() {
         std::map<std::string, std::unique_ptr<FileHandleState>> current_file_handles;
         {
             std::lock_guard<std::mutex> lock(m);
@@ -3506,7 +3596,7 @@ public:
                 continue;
             }
             ExceptionSink xsink;
-            if (finalizeBackendFileState(*i.second, false, 0, &xsink) && xsink) {
+            if (abandonBackendFileState(*i.second, &xsink) && xsink) {
                 std::string msg = "SftpSession backend handle finalization failed during close";
                 QoreValue err = xsink.getExceptionErr();
                 QoreValue desc = xsink.getExceptionDesc();
@@ -3531,6 +3621,10 @@ public:
             }
         }
 
+    }
+
+    void closeIntern() {
+        abandonHandles();
         if (channel.close()) {
             logInfo("SftpSession closed");
         }
@@ -3563,38 +3657,77 @@ public:
             return nullptr;
         }
 
-        std::string staging_path = atomic_publish && !temporary_path.empty() ? temporary_path : final_path;
+        const bool stage_copy = atomic_publish && !move;
+        const std::string& staging_path = stage_copy ? temporary_path : final_path;
+        // Identical parent spellings and different leaf names exclude lexical aliases, including "../".
+        if (stage_copy && (temporary_path.empty() || temporary_path == final_path
+                || temporary_path.substr(0, temporary_path.rfind('/') + 1)
+                    != final_path.substr(0, final_path.rfind('/') + 1))) {
+            xsink->raiseException("SFTP-ATOMIC-PUBLISH-ERROR",
+                "atomic copy requires a distinct temporary file in the destination directory");
+            return nullptr;
+        }
 
-        if (ssh_sftp_check_fs_access(source_path, move ? QSEC_READ | QSEC_WRITE : QSEC_READ, xsink)) {
+        int source_access = move ? QSEC_READ | QSEC_WRITE : QSEC_READ;
+        if (atomic_publish && move) {
+            source_access |= QSEC_DELETE;
+        }
+        if (ssh_sftp_check_fs_access(source_path, source_access, xsink)) {
             return nullptr;
         }
-        if (ssh_sftp_check_fs_access(final_path, QSEC_WRITE, xsink)) {
+        if (ssh_sftp_check_fs_access(final_path, atomic_publish ? QSEC_WRITE | QSEC_CREATE : QSEC_WRITE, xsink)) {
             return nullptr;
         }
-        if (!temporary_path.empty() && ssh_sftp_check_fs_access(temporary_path, QSEC_WRITE, xsink)) {
+        if (stage_copy && ssh_sftp_check_fs_access(temporary_path, QSEC_WRITE | QSEC_CREATE | QSEC_DELETE, xsink)) {
             return nullptr;
         }
 
-        if (create_parents) {
-            if (ssh_sftp_ensure_parent_dirs(staging_path, xsink)) {
+        if (create_parents && ssh_sftp_ensure_parent_dirs(final_path, xsink)) {
+            return nullptr;
+        }
+
+        if (qore_check_cancel(xsink, "sftp local publish")) {
+            return nullptr;
+        }
+        if (atomic_publish) {
+            struct stat source_stat;
+            if (move && (::lstat(source_path.c_str(), &source_stat) || !S_ISREG(source_stat.st_mode))) {
+                xsink->raiseException("SFTP-ATOMIC-PUBLISH-ERROR", "atomic move requires a regular source file");
                 return nullptr;
             }
-            if (atomic_publish && staging_path != final_path && ssh_sftp_ensure_parent_dirs(final_path, xsink)) {
+            // A dangling final symlink could expose the staging name while a copy is still in progress.
+            struct stat st;
+            if (!::lstat(final_path.c_str(), &st)) {
+                if (!S_ISREG(st.st_mode)) {
+                    xsink->raiseException("SFTP-ATOMIC-PUBLISH-ERROR", "existing destination must be a regular file");
+                    return nullptr;
+                }
+                if (move && source_stat.st_dev == st.st_dev && source_stat.st_ino == st.st_ino) {
+                    xsink->raiseException("SFTP-ATOMIC-PUBLISH-ERROR", "source and destination are the same file");
+                    return nullptr;
+                }
+            } else if (errno != ENOENT) {
+                xsink->raiseErrnoException("SFTP-ATOMIC-PUBLISH-ERROR", errno, "cannot inspect destination");
                 return nullptr;
             }
         }
-
         if (move) {
             if (::rename(source_path.c_str(), staging_path.c_str())) {
                 xsink->raiseErrnoException("SFTP-ATOMIC-PUBLISH-ERROR", errno,
                     "cannot rename local file '%s' to staging path '%s'", source_path.c_str(), staging_path.c_str());
                 return nullptr;
             }
-        } else if (ssh_sftp_copy_file(source_path, staging_path, xsink)) {
+        } else if (ssh_sftp_copy_file(source_path, staging_path, xsink, stage_copy)) {
             return nullptr;
         }
 
-        if (atomic_publish && staging_path != final_path) {
+        if (stage_copy) {
+            bool renamed = false;
+            ON_BLOCK_EXIT([&]() {
+                if (!renamed) {
+                    ::unlink(staging_path.c_str());
+                }
+            });
             if (qore_check_cancel(xsink, "sftp atomic publish")) {
                 return nullptr;
             }
@@ -3604,6 +3737,7 @@ public:
                     "cannot rename staging file '%s' to final path '%s'", staging_path.c_str(), final_path.c_str());
                 return nullptr;
             }
+            renamed = true;
         }
 
         ReferenceHolder<QoreHashNode> updated_transfer_info(reinterpret_cast<QoreHashNode*>(
@@ -3983,6 +4117,7 @@ private:
     //! the SFTP subsystem channel
     SshChildChannel channel;
     std::map<std::string, std::unique_ptr<DirectoryHandleState>> dir_handles;
+    std::mutex dispatch_mutex;
     std::map<std::string, std::unique_ptr<FileHandleState>> file_handles;
     uint64_t next_dir_handle_id;
     uint64_t next_file_handle_id;
@@ -4597,9 +4732,12 @@ hash<SftpOperationResult> SftpSession::retrieveToLocalFile(hash<SftpOpenRequest>
 
 //! Publishes a local staged file through the active transfer plan
 /** Uses the current <tt>SftpTransferInfo</tt> to copy or rename a local file into
-    the planned final destination. When @c atomic_publish is set and a
-    temporary path is present, the file is first staged to the temporary path
-    and then renamed into place.
+    the planned final destination. With @c atomic_publish, a copy requires a fresh temporary
+    sibling name in the same trusted destination directory. It creates that file exclusively
+    with mode 0600, finishes and closes the copy, then renames it over the destination.
+    An atomic move renames the source directly and requires the same filesystem.
+
+    @throw SFTP-ATOMIC-PUBLISH-ERROR staging is unsuitable or the commit rename failed
 
     @param source_path the local staged file to publish
     @param move if set to <tt>True</tt>, renames the source instead of copying it

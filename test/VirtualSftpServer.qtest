@@ -346,10 +346,7 @@ class VirtualSftpServerTest inherits QUnit::Test {
 
         # the oversized payload must not have been buffered/stored; an upload comfortably under
         # the cap on the same session must still succeed
-        assertTrue(!vfs.exists("/big.bin") || vfs.getFileData("/big.bin").size() <= cap,
-            "oversized buffered upload must be rejected, not stored");
-        assertFalse(vfs.exists("/big.bin") && vfs.getFileData("/big.bin").size() == 64 * 1024,
-            "the full oversized payload must never be buffered");
+        assertFalse(vfs.exists("/big.bin"), "CLOSE after a rejected WRITE must discard the upload");
         assertTrue(vfs.exists("/small.txt"), "an upload under the cap must still succeed");
         assertEq("small ok\n", vfs.getFileText("/small.txt"));
     }

@@ -701,8 +701,9 @@ hashdecl Qore::Ssh::SftpWriteRequest {
 }
 
 //! typed SFTP streamed close request hash
-/** Used by backend @c closeRead() and @c closeWrite() to finalize a streamed
-    handle. May carry a final buffered data payload for write operations.
+/** Used by backend @c closeRead() and @c closeWrite() to finalize a handle. An explicit
+    buffered write close carries its data. Optional @c abortWrite() receives the original
+    handle and operation <tt>abort-write</tt> without a data payload on abandonment.
 */
 hashdecl Qore::Ssh::SftpCloseRequest {
     //! optional live SFTP session metadata
