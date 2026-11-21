@@ -1,6 +1,14 @@
 public namespace SshServerConnections {
 #! connection for managed local SSH command server instances
 public class SshCommandServerConnection inherits AbstractSshServerConnection {
+    #! Returns the functional domains of the connection's server (qoretechnologies/qore#7098)
+    /** The server listens on the network, reads its host key files and can serve local files (\c sftp_config
+        \c root_dir)
+    */
+    private final int getConnectionDomainsImpl() {
+        return DOM_NETWORK | DOM_FILESYSTEM;
+    }
+
     public {
         const ConnectionScheme = ConnectionProvider::connection_scheme_presentation("SshServerConnections",
             "SshCommandServerConnection", "en", <ConnectionSchemeInfo>{
